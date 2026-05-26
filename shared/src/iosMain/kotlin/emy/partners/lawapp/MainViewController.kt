@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitView
 import androidx.compose.ui.window.ComposeUIViewController
+import io.ktor.client.request.invoke
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFoundation.AVLayerVideoGravityResizeAspect
 import platform.AVFoundation.AVPlayer
@@ -40,19 +41,12 @@ actual fun PlatformVideoPlayer(
         AVPlayer(NSURL(string = url))
     }
 
-    val playerLayer = remember(player) {
+    val playerLayer = remember {
         AVPlayerLayer(player)
     }
 
-    LaunchedEffect(isPlaying) {
+    LaunchedEffect(player, isPlaying) {
         if (isPlaying) player.play() else player.pause()
-    }
-
-    DisposableEffect(player, playerLayer) {
-        onDispose {
-            player.pause()
-            playerLayer.player = null
-        }
     }
 
     UIKitView(
