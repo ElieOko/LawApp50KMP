@@ -37,6 +37,11 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.foundation.pager)
+            implementation("io.ktor:ktor-client-okhttp:3.0.0")
+            implementation("androidx.media3:media3-exoplayer:1.4.1")
+            implementation("androidx.media3:media3-ui:1.4.1")
+            implementation(libs.androidx.media3.exoplayer)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -47,6 +52,14 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+           // implementation("io.coil-kt:coil-compose:3.0.0")
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
+            implementation("io.coil-kt.coil3:coil-compose:3.0.0")
+
+        }
+        appleMain.dependencies {
+            // Ktor client dependency required for iOS
+            implementation(libs.ktor.client.darwin)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
