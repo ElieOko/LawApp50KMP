@@ -48,10 +48,10 @@ actual fun PlatformVideoPlayer(
         if (isPlaying) player.play() else player.pause()
     }
 
-    DisposableEffect(player) {
+    DisposableEffect(player, playerLayer) {
         onDispose {
             player.pause()
-            player.replaceCurrentItemWithPlayerItem(null)
+            playerLayer.player = null
         }
     }
 
