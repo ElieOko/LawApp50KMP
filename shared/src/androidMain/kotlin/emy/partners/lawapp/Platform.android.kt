@@ -3,7 +3,7 @@ package emy.partners.lawapp
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,7 +30,7 @@ actual fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boole
         }
     }
 
-    LaunchedEffect(exoPlayer, isPlaying) {
+    SideEffect {
         exoPlayer.playWhenReady = isPlaying // clé TikTok
     }
 
