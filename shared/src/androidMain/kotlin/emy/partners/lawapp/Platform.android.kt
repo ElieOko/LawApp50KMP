@@ -30,11 +30,11 @@ actual fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boole
         }
     }
 
-    LaunchedEffect(isPlaying) {
+    LaunchedEffect(exoPlayer, isPlaying) {
         exoPlayer.playWhenReady = isPlaying // clé TikTok
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(exoPlayer) {
         onDispose {
             exoPlayer.release()
         }

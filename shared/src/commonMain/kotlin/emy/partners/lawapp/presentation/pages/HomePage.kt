@@ -50,7 +50,11 @@ fun HomeBuild(){
                     )
                 }
                 else{
-                    PlatformVideoPlayer(generateArticle[it].video, Modifier.fillMaxSize(), true)
+                    PlatformVideoPlayer(
+                        url = generateArticle[it].video,
+                        modifier = Modifier.fillMaxSize(),
+                        isPlaying = pagerState.currentPage == it
+                    )
                 }
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
