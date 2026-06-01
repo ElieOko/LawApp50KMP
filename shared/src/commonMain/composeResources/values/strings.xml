@@ -1,0 +1,8 @@
+<resources>
+    <string name="house">Home</string>
+    <string name="discovery">Discovery</string>
+    <string name="profil">Profil</string>
+    <string name="status">Status</string>
+    <string name="evaluation">Session</string>
+    <string name="quiz">Quiz</string>
+</resources>
