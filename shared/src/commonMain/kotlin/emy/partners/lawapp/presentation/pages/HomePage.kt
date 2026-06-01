@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages
 
+import VideoPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,11 +51,17 @@ fun HomeBuild(){
                     )
                 }
                 else{
-                    PlatformVideoPlayer(
-                        url = generateArticle[it].video,
+                    VideoPlayer(
                         modifier = Modifier.fillMaxSize(),
-                        isPlaying = pagerState.currentPage == it
+                        url = generateArticle[it].video, // Automatically Detect the URL, Wether to Play YouTube Video or .mp4 e.g
+                        pagerState.currentPage == it,
+                        showControls = true,
                     )
+//                    PlatformVideoPlayer(
+//                        url = generateArticle[it].video,
+//                        modifier = Modifier.fillMaxSize(),
+//                        isPlaying = pagerState.currentPage == it
+//                    )
                 }
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

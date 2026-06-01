@@ -18,8 +18,8 @@ import platform.UIKit.UIView
 
 fun MainViewController() = ComposeUIViewController { App() }
 
-//@Composable
-//actual fun PlatformVideoPlayer(url: String) {
+@Composable
+actual fun PlatformVideoPlayer(url: String,modifier: Modifier,isPlaying: Boolean) {
 //    UIKitView(
 //        factory = {
 //            val player = AVPlayer(NSURL(string = url))
@@ -27,46 +27,46 @@ fun MainViewController() = ComposeUIViewController { App() }
 //            playerLayer
 //        }
 //    )
-//}
-
-@OptIn(ExperimentalForeignApi::class)
-@Composable
-actual fun PlatformVideoPlayer(
-    url: String,
-    modifier: Modifier,
-    isPlaying: Boolean
-) {
-    val player = remember(url) {
-        AVPlayer(NSURL(string = url))
-    }
-
-    val playerLayer = remember(player) {
-        AVPlayerLayer(player)
-    }
-
-    SideEffect {
-        if (isPlaying) player.play() else player.pause()
-    }
-
-    DisposableEffect(player, playerLayer) {
-        onDispose {
-            player.pause()
-            playerLayer.player = null
-        }
-    }
-
-    UIKitView(
-        modifier = modifier,
-        factory = {
-            val view = UIView()
-
-            playerLayer.videoGravity = AVLayerVideoGravityResizeAspect
-            view.layer.addSublayer(playerLayer)
-
-            view
-        },
-        update = { view ->
-            playerLayer.frame = view.bounds
-        }
-    )
 }
+
+//@OptIn(ExperimentalForeignApi::class)
+//@Composable
+//actual fun PlatformVideoPlayer(
+//    url: String,
+//    modifier: Modifier,
+//    isPlaying: Boolean
+//) {
+//    val player = remember(url) {
+//        AVPlayer(NSURL(string = url))
+//    }
+//
+//    val playerLayer = remember(player) {
+//        AVPlayerLayer(player)
+//    }
+//
+//    SideEffect {
+//        if (isPlaying) player.play() else player.pause()
+//    }
+//
+//    DisposableEffect(player, playerLayer) {
+//        onDispose {
+//            player.pause()
+//            playerLayer.player = null
+//        }
+//    }
+//
+//    UIKitView(
+//        modifier = modifier,
+//        factory = {
+//            val view = UIView()
+//
+//            playerLayer.videoGravity = AVLayerVideoGravityResizeAspect
+//            view.layer.addSublayer(playerLayer)
+//
+//            view
+//        },
+//        update = { view ->
+//            playerLayer.frame = view.bounds
+//        }
+//    )
+//}
