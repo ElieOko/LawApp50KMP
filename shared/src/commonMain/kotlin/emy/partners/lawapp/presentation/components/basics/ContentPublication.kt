@@ -36,7 +36,7 @@ fun ContentPublication(
     member : String = "Community",
     content : String = "LawApp 50, vulgarisation du droit dans votre poche.",
 ){
-    Column(Modifier.padding(5.dp)) {
+    Column(Modifier) {
         Row {
             Image(painter = painterResource(Res.drawable.one),null, Modifier
                 .size(45.dp)
@@ -62,6 +62,6 @@ fun ContentPublication(
             }
         }
 
-        Text(content,color = Color.White.copy(0.9f), fontSize = 18.sp,modifier = Modifier.absoluteOffset(y = (-4).dp))
+        Text(content,color = Color.White.copy(0.9f), fontSize = 14.sp,modifier = Modifier.absoluteOffset(y = (-4).dp), fontWeight = FontWeight.Bold)
     }
 }
