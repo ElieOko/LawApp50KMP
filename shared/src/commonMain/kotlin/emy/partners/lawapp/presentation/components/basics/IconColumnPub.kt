@@ -30,9 +30,9 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 @Preview(showBackground = false)
-fun IconColumnPub(extra: ExtraContent = ExtraContent()) {
+fun IconColumnPub(extra: ExtraContent = ExtraContent(), eventComment : ()-> Any = {}) {
     val like = remember { mutableStateOf(0) }
-    val comment = remember { mutableStateOf(0) }
+    val comment = remember { mutableStateOf(extra.comment) }
     val favorite = remember { mutableStateOf(0) }
     val share = remember { mutableStateOf(0) }
     val isLike = remember{mutableStateOf(false)}
@@ -54,7 +54,9 @@ fun IconColumnPub(extra: ExtraContent = ExtraContent()) {
             }
         }
         Box{
-            IconButton(onClick = {},colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)){
+            IconButton(onClick = {
+                eventComment()
+            },colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)){
                 Icon(painter = painterResource(Res.drawable.comment), null, modifier = Modifier.size(35.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
