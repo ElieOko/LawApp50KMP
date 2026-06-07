@@ -164,7 +164,6 @@ fun App() {
                                 ExplorePage(
                                     modifier = Modifier.padding(
                                         top = it.calculateTopPadding(),
-                                        bottom = it.calculateBottomPadding()
                                     ),
                                     scrollVertical = scrollVertical,
                                     onBlogClick = { selectedBlog.value = it }
@@ -173,10 +172,10 @@ fun App() {
                                 ExploreDetailPage(
                                     blog = blog,
                                     modifier = Modifier.padding(
-                                        top = it.calculateTopPadding(),
-                                        bottom = it.calculateBottomPadding()
+                                        top = it.calculateTopPadding()
                                     ),
-                                    onBack = { selectedBlog.value = null }
+                                    onBack = { selectedBlog.value = null },
+                                    scrollVertical
                                 )
                             }
                         }
@@ -185,51 +184,51 @@ fun App() {
                             if (isCreatingEvaluation.value) {
                                 EvaluationCreatePage(
                                     modifier = Modifier.padding(
-                                        top = it.calculateTopPadding(),
-                                        bottom = it.calculateBottomPadding()
+                                        top = it.calculateTopPadding()
                                     ),
                                     onBack = { isCreatingEvaluation.value = false },
                                     onSave = { evaluation ->
                                         createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
                                         isCreatingEvaluation.value = false
-                                    }
+                                    },
+                                    scrollVertical
                                 )
                             } else if (evaluation == null) {
                                 EvaluationPage(
                                     evaluations = Constants.evaluations + createdEvaluations,
                                     modifier = Modifier.padding(
-                                        top = it.calculateTopPadding(),
-                                        bottom = it.calculateBottomPadding()
+                                        top = it.calculateTopPadding()
                                     ),
                                     onEvaluationClick = { selectedEvaluation.value = it },
-                                    onCreateClick = { isCreatingEvaluation.value = true }
+                                    onCreateClick = { isCreatingEvaluation.value = true },
+                                    scrollVertical = scrollVertical
                                 )
                             } else {
                                 EvaluationDetailPage(
                                     evaluation = evaluation,
                                     modifier = Modifier.padding(
-                                        top = it.calculateTopPadding(),
-                                        bottom = it.calculateBottomPadding()
+                                        top = it.calculateTopPadding()
                                     ),
                                     onBack = { selectedEvaluation.value = null },
                                     onStartQuiz = {
                                         selectedEvaluation.value = null
                                         state.intValue = 3
-                                    }
+                                    },
+                                    scrollVertical
                                 )
                             }
                         }
                         3 -> QuizPage(
                             Modifier.padding(
-                                top = it.calculateTopPadding(),
-                                bottom = it.calculateBottomPadding()
-                            )
+                                top = it.calculateTopPadding()
+                            ),
+                            scrollVertical
                         )
                         4 -> ProfilPage(
                             Modifier.padding(
-                                top = it.calculateTopPadding(),
-                                bottom = it.calculateBottomPadding()
-                            )
+                                top = it.calculateTopPadding()
+                            ),
+                            scrollVertical
                         )
                     }
                 }

@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.session
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,12 +53,14 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 fun EvaluationCreatePage(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onSave: (EvaluationDAO) -> Unit = {}
+    onSave: (EvaluationDAO) -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     EvaluationCreateBuild(
         modifier = modifier,
         onBack = onBack,
-        onSave = onSave
+        onSave = onSave,
+                scrollVertical
     )
 }
 
@@ -65,7 +68,8 @@ fun EvaluationCreatePage(
 fun EvaluationCreateBuild(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onSave: (EvaluationDAO) -> Unit = {}
+    onSave: (EvaluationDAO) -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -90,7 +94,7 @@ fun EvaluationCreateBuild(
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
         Text(

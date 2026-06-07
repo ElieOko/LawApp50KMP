@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.session
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,13 +46,15 @@ fun EvaluationPage(
     modifier: Modifier = Modifier,
     evaluations: List<EvaluationSession> = Constants.evaluations,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
-    onCreateClick: () -> Unit = {}
+    onCreateClick: () -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     EvaluationBuild(
         modifier = modifier,
         evaluations = evaluations,
         onEvaluationClick = onEvaluationClick,
-        onCreateClick = onCreateClick
+        onCreateClick = onCreateClick,
+        scrollVertical
     )
 }
 
@@ -60,7 +63,8 @@ fun EvaluationBuild(
     modifier: Modifier = Modifier,
     evaluations: List<EvaluationSession> = Constants.evaluations,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
-    onCreateClick: () -> Unit = {}
+    onCreateClick: () -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     var activeFilter by remember { mutableStateOf<EvaluationStatus?>(null) }
     val visibleEvaluations = evaluations.filter { activeFilter == null || it.status == activeFilter }
@@ -70,7 +74,7 @@ fun EvaluationBuild(
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         EvaluationHero(

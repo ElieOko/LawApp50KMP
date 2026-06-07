@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.session
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,13 +43,15 @@ fun EvaluationDetailPage(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {}
+    onStartQuiz: () -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     EvaluationDetailBuild(
         evaluation = evaluation,
         modifier = modifier,
         onBack = onBack,
-        onStartQuiz = onStartQuiz
+        onStartQuiz = onStartQuiz,
+        scrollVertical
     )
 }
 
@@ -57,7 +60,8 @@ fun EvaluationDetailBuild(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {}
+    onStartQuiz: () -> Unit = {},
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     val completed = evaluation.status == EvaluationStatus.Completed
     val remaining = evaluation.questionCount - evaluation.completedQuestions
@@ -65,7 +69,7 @@ fun EvaluationDetailBuild(
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
         Text(

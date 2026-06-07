@@ -1,6 +1,7 @@
 package emy.partners.lawapp.presentation.pages.explore
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,18 +36,22 @@ import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.presentation.themes.BlueDark
+import io.github.fletchmckee.liquid.liquefiable
+import io.github.fletchmckee.liquid.rememberLiquidState
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun ExploreDetailPage(
     blog: Blog,
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    scrollVertical: ScrollState =  rememberScrollState()
 ) {
     ExploreDetailBuild(
         blog = blog,
         modifier = modifier,
-        onBack = onBack
+        onBack = onBack,
+        scrollVertical
     )
 }
 
@@ -54,13 +59,14 @@ fun ExploreDetailPage(
 fun ExploreDetailBuild(
     blog: Blog,
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    scrollVertical: ScrollState =  rememberScrollState()
 ) {
+    val liquidState = rememberLiquidState()
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .verticalScroll(scrollVertical)
     ) {
         Text(
             text = "< Retour a Explore",
@@ -91,6 +97,7 @@ fun ExploreDetailBuild(
             Box(
                 Modifier
                     .matchParentSize()
+                    .liquefiable(liquidState)
                     .background(
                         Brush.verticalGradient(
                             listOf(
