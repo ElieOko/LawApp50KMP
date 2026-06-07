@@ -28,13 +28,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.domain.models.Blog
+import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
+import emy.partners.lawapp.domain.models.EvaluationStatus
 import emy.partners.lawapp.presentation.pages.ProfilPage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
 import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
+import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
@@ -70,6 +74,8 @@ fun App() {
     val scrollVertical = rememberScrollState()
     val selectedBlog = remember { mutableStateOf<Blog?>(null) }
     val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
+    val isCreatingEvaluation = remember { mutableStateOf(false) }
+    val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
     val listParent = listOf<Parent>(
         Parent(1, stringResource(Res.string.house), icon = Res.drawable.house),
         Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore),
@@ -103,6 +109,7 @@ fun App() {
                                     state.intValue = i
                                     selectedBlog.value = null
                                     selectedEvaluation.value = null
+                                    isCreatingEvaluation.value = false
                                 },
                                 icon = {
                                     Icon(
@@ -175,13 +182,27 @@ fun App() {
                         }
                         2 -> {
                             val evaluation = selectedEvaluation.value
-                            if (evaluation == null) {
-                                EvaluationPage(
+                            if (isCreatingEvaluation.value) {
+                                EvaluationCreatePage(
                                     modifier = Modifier.padding(
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
-                                    onEvaluationClick = { selectedEvaluation.value = it }
+                                    onBack = { isCreatingEvaluation.value = false },
+                                    onSave = { evaluation ->
+                                        createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
+                                        isCreatingEvaluation.value = false
+                                    }
+                                )
+                            } else if (evaluation == null) {
+                                EvaluationPage(
+                                    evaluations = Constants.evaluations + createdEvaluations,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onEvaluationClick = { selectedEvaluation.value = it },
+                                    onCreateClick = { isCreatingEvaluation.value = true }
                                 )
                             } else {
                                 EvaluationDetailPage(
@@ -222,3 +243,18 @@ fun App() {
 
 @Composable
 expect fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean)
+
+private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
+    id = id ?: (1_000L + index),
+    title = title,
+    domain = "Brouillon",
+    description = description,
+    status = EvaluationStatus.InProgress,
+    progress = 0f,
+    score = null,
+    questionCount = compteur?.toInt() ?: 0,
+    completedQuestions = 0,
+    duration = "A definir",
+    updatedAt = "Cree maintenant",
+    level = "Personnalise"
+)

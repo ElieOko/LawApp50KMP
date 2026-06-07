@@ -43,21 +43,26 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 @Composable
 fun EvaluationPage(
     modifier: Modifier = Modifier,
-    onEvaluationClick: (EvaluationSession) -> Unit = {}
+    evaluations: List<EvaluationSession> = Constants.evaluations,
+    onEvaluationClick: (EvaluationSession) -> Unit = {},
+    onCreateClick: () -> Unit = {}
 ) {
     EvaluationBuild(
         modifier = modifier,
-        onEvaluationClick = onEvaluationClick
+        evaluations = evaluations,
+        onEvaluationClick = onEvaluationClick,
+        onCreateClick = onCreateClick
     )
 }
 
 @Composable
 fun EvaluationBuild(
     modifier: Modifier = Modifier,
-    onEvaluationClick: (EvaluationSession) -> Unit = {}
+    evaluations: List<EvaluationSession> = Constants.evaluations,
+    onEvaluationClick: (EvaluationSession) -> Unit = {},
+    onCreateClick: () -> Unit = {}
 ) {
     var activeFilter by remember { mutableStateOf<EvaluationStatus?>(null) }
-    val evaluations = remember { Constants.evaluations }
     val visibleEvaluations = evaluations.filter { activeFilter == null || it.status == activeFilter }
     val completedCount = evaluations.count { it.status == EvaluationStatus.Completed }
     val progressCount = evaluations.count { it.status == EvaluationStatus.InProgress }
@@ -71,7 +76,8 @@ fun EvaluationBuild(
         EvaluationHero(
             total = evaluations.size,
             completed = completedCount,
-            inProgress = progressCount
+            inProgress = progressCount,
+            onCreateClick = onCreateClick
         )
         Spacer(Modifier.height(18.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -117,7 +123,8 @@ fun EvaluationBuild(
 private fun EvaluationHero(
     total: Int,
     completed: Int,
-    inProgress: Int
+    inProgress: Int,
+    onCreateClick: () -> Unit
 ) {
     Box(
         Modifier
@@ -152,6 +159,31 @@ private fun EvaluationHero(
                 EvaluationMetric("Total", total.toString(), Modifier.weight(1f))
                 EvaluationMetric("En cours", inProgress.toString(), Modifier.weight(1f))
                 EvaluationMetric("Faites", completed.toString(), Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White)
+                    .clickable(onClick = onCreateClick)
+                    .padding(horizontal = 16.dp, vertical = 13.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "Creer une evaluation",
+                        color = BlueDark,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        "Questions, compteur, dates et contenu",
+                        color = Color.Black.copy(alpha = 0.48f),
+                        fontSize = 12.sp
+                    )
+                }
+                Text("+", color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
             }
         }
     }
