@@ -29,7 +29,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
+import emy.partners.lawapp.domain.models.Blog
+import emy.partners.lawapp.domain.models.EvaluationSession
+import emy.partners.lawapp.presentation.pages.ProfilPage
+import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
+import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
+import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
+import emy.partners.lawapp.presentation.pages.session.EvaluationPage
+import emy.partners.lawapp.presentation.pages.session.QuizPage
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
@@ -60,6 +68,8 @@ fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
     val scrollVertical = rememberScrollState()
+    val selectedBlog = remember { mutableStateOf<Blog?>(null) }
+    val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
     val listParent = listOf<Parent>(
         Parent(1, stringResource(Res.string.house), icon = Res.drawable.house),
         Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore),
@@ -91,6 +101,8 @@ fun App() {
                                 selected = i == state.intValue,
                                 onClick = {
                                     state.intValue = i
+                                    selectedBlog.value = null
+                                    selectedEvaluation.value = null
                                 },
                                 icon = {
                                     Icon(
@@ -137,8 +149,68 @@ fun App() {
                         )
                 )
                 Column {
-                    HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
-//                    ExplorePage(modifier = Modifier.padding(top = it.calculateTopPadding()), scrollVertical)
+                    when (state.intValue) {
+                        0 -> HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
+                        1 -> {
+                            val blog = selectedBlog.value
+                            if (blog == null) {
+                                ExplorePage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    scrollVertical = scrollVertical,
+                                    onBlogClick = { selectedBlog.value = it }
+                                )
+                            } else {
+                                ExploreDetailPage(
+                                    blog = blog,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onBack = { selectedBlog.value = null }
+                                )
+                            }
+                        }
+                        2 -> {
+                            val evaluation = selectedEvaluation.value
+                            if (evaluation == null) {
+                                EvaluationPage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onEvaluationClick = { selectedEvaluation.value = it }
+                                )
+                            } else {
+                                EvaluationDetailPage(
+                                    evaluation = evaluation,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onBack = { selectedEvaluation.value = null },
+                                    onStartQuiz = {
+                                        selectedEvaluation.value = null
+                                        state.intValue = 3
+                                    }
+                                )
+                            }
+                        }
+                        3 -> QuizPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding(),
+                                bottom = it.calculateBottomPadding()
+                            )
+                        )
+                        4 -> ProfilPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding(),
+                                bottom = it.calculateBottomPadding()
+                            )
+                        )
+                    }
                 }
             }
 
