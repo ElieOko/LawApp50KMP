@@ -1,10 +1,16 @@
 package emy.partners.lawapp.data
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import emy.partners.lawapp.domain.models.Article
+import emy.partners.lawapp.domain.models.Blog
+import emy.partners.lawapp.domain.models.Category
 import emy.partners.lawapp.domain.models.Comment
 import emy.partners.lawapp.domain.models.ExtraContent
 import emy.partners.lawapp.domain.models.User
 import lawapp.shared.generated.resources.Res
+import lawapp.shared.generated.resources.dr
+import lawapp.shared.generated.resources.droit
 import lawapp.shared.generated.resources.one
 import lawapp.shared.generated.resources.preview
 
@@ -39,6 +45,8 @@ object Constants {
         Comment(7, "Enfin quelqu’un qui explique clairement 💡", User(7, "KevinK", "")),
         Comment(8, "J’ai tout regardé sans pause, super intéressant ", User(8, "LinaFlow", ""))
     )
+
+
     val generateArticle = listOf<Article>(
         Article(
             1,
@@ -121,6 +129,33 @@ object Constants {
             "LawApp 50, vulgarisation du droit dans votre poche.",
             file = Res.drawable.preview,
             extra = ExtraContent()
+        ),
+    )
+
+    val blog = listOf<Blog>(
+        Blog(
+            id = 3,
+            title = "Droit du numerique",
+            background = Res.drawable.droit,
+            description = "",
+            author = User(1, "Ethberg", ""),
+            type = "Article"
+        ),
+        Blog(
+            id = 4,
+            title = "Droit moderne en RDC ",
+            background = Res.drawable.dr,
+            description = "",
+            author = User(2, "EmyMayumbi", ""),
+            type = "Article"
+        ),
+        Blog(
+            id = 0,
+            title = "LawApp50",
+            background = Res.drawable.preview,
+            description = "",
+            author = User(3, "ElieOko", ""),
+            type = "Article"
         ),
     )
 }
