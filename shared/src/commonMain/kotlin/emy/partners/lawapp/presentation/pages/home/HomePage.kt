@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,8 @@ import emy.partners.lawapp.domain.models.ExtraContent
 import emy.partners.lawapp.presentation.components.basics.ContentPublication
 import emy.partners.lawapp.presentation.components.basics.IconColumnPub
 import emy.partners.lawapp.presentation.components.basics.CommentsSheet
+import io.github.fletchmckee.liquid.liquefiable
+import io.github.fletchmckee.liquid.rememberLiquidState
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
@@ -45,7 +49,7 @@ fun HomePage(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeBuild(modifier: Modifier = Modifier) {
-
+    val liquidState = rememberLiquidState()
     val pagerState = rememberPagerState(pageCount = { generateArticle.size })
 
 //    LaunchedEffect(pagerState.currentPage){
@@ -63,16 +67,21 @@ fun HomeBuild(modifier: Modifier = Modifier) {
                             .build(),
                         contentDescription = "Translated description of what the image contains",
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = ColorFilter.colorMatrix(
+                            ColorMatrix().apply {
+                                setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
+                            }
+                        ),
                         modifier = Modifier.fillMaxSize().clickable{
                             show = false
-                        }
+                        }.liquefiable(liquidState)
                     )
                 }
                 else{
                     VideoPlayer(
                         modifier = Modifier.fillMaxSize().clickable{
                             show = false
-                        },
+                        }.liquefiable(liquidState),
                         url = generateArticle[it].video, // Automatically Detect the URL, Wether to Play YouTube Video or .mp4 e.g
                         pagerState.currentPage == it,
                         showControls = true,
@@ -83,7 +92,7 @@ fun HomeBuild(modifier: Modifier = Modifier) {
 //                        isPlaying = pagerState.currentPage == it
 //                    )
                 }
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                Column(Modifier.fillMaxSize().padding(2.dp), verticalArrangement = Arrangement.Bottom) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         IconColumnPub(ExtraContent(comment = generateArticle[it].comments.size), eventComment = {
                             show = true
