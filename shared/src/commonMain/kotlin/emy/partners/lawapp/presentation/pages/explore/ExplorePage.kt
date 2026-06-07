@@ -1,4 +1,4 @@
-package emy.partners.lawapp.presentation.pages
+package emy.partners.lawapp.presentation.pages.explore
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
