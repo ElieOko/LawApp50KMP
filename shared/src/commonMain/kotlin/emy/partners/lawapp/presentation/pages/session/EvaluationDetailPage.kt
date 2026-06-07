@@ -42,16 +42,16 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 fun EvaluationDetailPage(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onStartQuiz: () -> Unit = {}
 ) {
     EvaluationDetailBuild(
         evaluation = evaluation,
         modifier = modifier,
+        scrollVertical = scrollVertical,
         onBack = onBack,
-        onStartQuiz = onStartQuiz,
-        scrollVertical
+        onStartQuiz = onStartQuiz
     )
 }
 
@@ -59,9 +59,9 @@ fun EvaluationDetailPage(
 fun EvaluationDetailBuild(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onStartQuiz: () -> Unit = {}
 ) {
     val completed = evaluation.status == EvaluationStatus.Completed
     val remaining = evaluation.questionCount - evaluation.completedQuestions

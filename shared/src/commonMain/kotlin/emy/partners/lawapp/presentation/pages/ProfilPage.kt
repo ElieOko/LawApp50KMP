@@ -1,7 +1,7 @@
 package emy.partners.lawapp.presentation.pages
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,12 +38,18 @@ import lawapp.shared.generated.resources.one
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun ProfilPage(modifier: Modifier = Modifier,scrollVertical: ScrollState = rememberScrollState()){
-    ProfilBuild(modifier,scrollVertical)
+fun ProfilPage(
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState()
+){
+    ProfilBuild(modifier, scrollVertical)
 }
 
 @Composable
-fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = rememberScrollState()){
+fun ProfilBuild(
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState()
+){
     val evaluations = Constants.evaluations
     val completedCount = evaluations.count { it.score != null }
     val averageScore = evaluations.mapNotNull { it.score }.average().takeIf { !it.isNaN() }?.toInt() ?: 0
@@ -52,6 +58,7 @@ fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = reme
         modifier
             .fillMaxSize()
             .verticalScroll(scrollVertical)
+            .padding(16.dp)
     ) {
         Column(
             Modifier

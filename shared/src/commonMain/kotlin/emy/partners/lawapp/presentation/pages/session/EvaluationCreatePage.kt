@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,24 +53,24 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 @Composable
 fun EvaluationCreatePage(
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
-    onSave: (EvaluationDAO) -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onSave: (EvaluationDAO) -> Unit = {}
 ) {
     EvaluationCreateBuild(
         modifier = modifier,
+        scrollVertical = scrollVertical,
         onBack = onBack,
-        onSave = onSave,
-                scrollVertical
+        onSave = onSave
     )
 }
 
 @Composable
 fun EvaluationCreateBuild(
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
-    onSave: (EvaluationDAO) -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onSave: (EvaluationDAO) -> Unit = {}
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -364,7 +365,19 @@ private fun CreationField(
             .fillMaxWidth()
             .heightIn(min = minHeight.dp)
             .padding(bottom = 10.dp),
-        shape = RoundedCornerShape(18.dp)
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.Black.copy(alpha = 0.9f),
+            unfocusedTextColor = Color.Black.copy(alpha = 0.82f),
+            focusedContainerColor = Color.White.copy(alpha = 0.94f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.9f),
+            disabledContainerColor = Color.White.copy(alpha = 0.72f),
+            cursorColor = BlueDark,
+            focusedBorderColor = BlueDark,
+            unfocusedBorderColor = Color.White.copy(alpha = 0.72f),
+            focusedLabelColor = BlueDark,
+            unfocusedLabelColor = Color.Black.copy(alpha = 0.56f)
+        )
     )
 }
 

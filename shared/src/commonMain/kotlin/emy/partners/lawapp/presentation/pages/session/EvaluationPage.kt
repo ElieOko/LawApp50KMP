@@ -45,16 +45,16 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 fun EvaluationPage(
     modifier: Modifier = Modifier,
     evaluations: List<EvaluationSession> = Constants.evaluations,
+    scrollVertical: ScrollState = rememberScrollState(),
     onEvaluationClick: (EvaluationSession) -> Unit = {},
-    onCreateClick: () -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onCreateClick: () -> Unit = {}
 ) {
     EvaluationBuild(
         modifier = modifier,
         evaluations = evaluations,
+        scrollVertical = scrollVertical,
         onEvaluationClick = onEvaluationClick,
-        onCreateClick = onCreateClick,
-        scrollVertical
+        onCreateClick = onCreateClick
     )
 }
 
@@ -62,9 +62,9 @@ fun EvaluationPage(
 fun EvaluationBuild(
     modifier: Modifier = Modifier,
     evaluations: List<EvaluationSession> = Constants.evaluations,
+    scrollVertical: ScrollState = rememberScrollState(),
     onEvaluationClick: (EvaluationSession) -> Unit = {},
-    onCreateClick: () -> Unit = {},
-    scrollVertical: ScrollState = rememberScrollState()
+    onCreateClick: () -> Unit = {}
 ) {
     var activeFilter by remember { mutableStateOf<EvaluationStatus?>(null) }
     val visibleEvaluations = evaluations.filter { activeFilter == null || it.status == activeFilter }
