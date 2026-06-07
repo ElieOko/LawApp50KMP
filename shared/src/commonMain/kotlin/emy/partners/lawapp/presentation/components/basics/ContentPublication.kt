@@ -34,9 +34,9 @@ import org.jetbrains.compose.resources.painterResource
 fun ContentPublication(
     username : String = "Roni",
     member : String = "Community",
-    content : String = "LawApp 50, vulgarisation du droit dans votre poche.",
+    content : String = "LawApp 50, vulgarisation du droit dans votre poche.LawApp 50, vulgarisation du droit dans votre poche LawApp 50, vulgarisation du droit dans votre poche",
 ){
-    Column(Modifier) {
+    Column(Modifier.padding(2.dp)) {
         Row {
             Image(painter = painterResource(Res.drawable.one),null, Modifier
                 .size(45.dp)
@@ -46,7 +46,7 @@ fun ContentPublication(
             Spacer(Modifier.width(10.dp))
             Box(Modifier.absoluteOffset(y = 12.dp)){
                 Row {
-                    Text(username, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text(username, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp,lineHeight = 15.sp)
                     Spacer(Modifier.width(5.dp))
                     SuggestionChip(
                         modifier = Modifier.absoluteOffset(y = (-12).dp),
@@ -62,6 +62,6 @@ fun ContentPublication(
             }
         }
 
-        Text(content,color = Color.White.copy(0.9f), fontSize = 14.sp,modifier = Modifier.absoluteOffset(y = (-4).dp), fontWeight = FontWeight.Bold)
+        Text(content,color = Color.White.copy(0.9f), fontSize = 14.sp,modifier = Modifier.absoluteOffset(y = (-4).dp, x = 12.dp), fontWeight = FontWeight.Bold)
     }
 }
