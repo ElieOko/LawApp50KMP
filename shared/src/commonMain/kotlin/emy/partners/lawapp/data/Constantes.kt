@@ -6,7 +6,10 @@ import emy.partners.lawapp.domain.models.Article
 import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.domain.models.Category
 import emy.partners.lawapp.domain.models.Comment
+import emy.partners.lawapp.domain.models.EvaluationSession
+import emy.partners.lawapp.domain.models.EvaluationStatus
 import emy.partners.lawapp.domain.models.ExtraContent
+import emy.partners.lawapp.domain.models.QuizQuestion
 import emy.partners.lawapp.domain.models.User
 import lawapp.shared.generated.resources.Res
 import lawapp.shared.generated.resources.dr
@@ -137,7 +140,7 @@ object Constants {
             id = 3,
             title = "Droit du numerique",
             background = Res.drawable.droit,
-            description = "",
+            description = "Comprendre les droits et obligations qui encadrent les activites numeriques, la protection des donnees et les preuves electroniques.",
             author = User(1, "Ethberg", ""),
             type = "Article"
         ),
@@ -145,7 +148,7 @@ object Constants {
             id = 4,
             title = "Droit moderne en RDC ",
             background = Res.drawable.dr,
-            description = "",
+            description = "Un panorama clair des nouvelles pratiques juridiques en RDC et des reflexes a adopter dans la vie quotidienne.",
             author = User(2, "EmyMayumbi", ""),
             type = "Article"
         ),
@@ -153,9 +156,110 @@ object Constants {
             id = 0,
             title = "LawApp50",
             background = Res.drawable.preview,
-            description = "",
+            description = "Les bases de LawApp50 pour apprendre le droit rapidement avec des fiches, des cas pratiques et des quiz.",
             author = User(3, "ElieOko", ""),
             type = "Article"
         ),
+    )
+
+    val evaluations = listOf(
+        EvaluationSession(
+            id = 1,
+            title = "Diagnostic droit civil",
+            domain = "Droit Civil",
+            description = "Mesure ta comprehension des contrats, obligations et responsabilites civiles.",
+            status = EvaluationStatus.InProgress,
+            progress = 0.64f,
+            score = null,
+            questionCount = 25,
+            completedQuestions = 16,
+            duration = "18 min",
+            updatedAt = "Aujourd'hui",
+            level = "Intermediaire"
+        ),
+        EvaluationSession(
+            id = 2,
+            title = "Evaluation constitutionnelle",
+            domain = "Droit Constitutionnel",
+            description = "Revois les institutions, les droits fondamentaux et les principes de l'Etat.",
+            status = EvaluationStatus.Completed,
+            progress = 1f,
+            score = 86,
+            questionCount = 20,
+            completedQuestions = 20,
+            duration = "14 min",
+            updatedAt = "Hier",
+            level = "Avance"
+        ),
+        EvaluationSession(
+            id = 3,
+            title = "Cas pratique travail",
+            domain = "Droit du Travail",
+            description = "Teste tes reflexes sur le contrat de travail, les conges et les litiges employeur-salarie.",
+            status = EvaluationStatus.InProgress,
+            progress = 0.32f,
+            score = null,
+            questionCount = 18,
+            completedQuestions = 6,
+            duration = "12 min",
+            updatedAt = "Il y a 2 jours",
+            level = "Debutant"
+        ),
+        EvaluationSession(
+            id = 4,
+            title = "Revision procedure penale",
+            domain = "Droit Penal",
+            description = "Un parcours rapide sur les etapes de la procedure, les garanties et les recours.",
+            status = EvaluationStatus.Completed,
+            progress = 1f,
+            score = 74,
+            questionCount = 22,
+            completedQuestions = 22,
+            duration = "20 min",
+            updatedAt = "Cette semaine",
+            level = "Intermediaire"
+        )
+    )
+
+    val quizQuestions = listOf(
+        QuizQuestion(
+            id = 1,
+            title = "Quel element rend un contrat valable ?",
+            category = "Droit Civil",
+            options = listOf(
+                "Le consentement libre des parties",
+                "La signature d'un avocat",
+                "La publication au journal officiel",
+                "La presence obligatoire d'un temoin"
+            ),
+            correctIndex = 0,
+            explanation = "Un contrat repose notamment sur le consentement libre et eclaire des parties, une capacite et un objet licite."
+        ),
+        QuizQuestion(
+            id = 2,
+            title = "Quel droit protege la personne contre une arrestation arbitraire ?",
+            category = "Droit Constitutionnel",
+            options = listOf(
+                "La liberte d'association",
+                "La surete individuelle",
+                "Le droit de propriete",
+                "La liberte du commerce"
+            ),
+            correctIndex = 1,
+            explanation = "La surete individuelle protege contre les privations de liberte non prevues ou non controlees par la loi."
+        ),
+        QuizQuestion(
+            id = 3,
+            title = "Dans une relation de travail, le salaire est principalement :",
+            category = "Droit du Travail",
+            options = listOf(
+                "Une faveur accordee par l'employeur",
+                "Une sanction disciplinaire",
+                "La contrepartie du travail fourni",
+                "Un remboursement automatique des frais"
+            ),
+            correctIndex = 2,
+            explanation = "Le salaire remunere le travail fourni et fait partie des obligations essentielles de l'employeur."
+        )
     )
 }

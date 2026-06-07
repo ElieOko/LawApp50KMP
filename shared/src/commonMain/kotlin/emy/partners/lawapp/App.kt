@@ -28,8 +28,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
+import emy.partners.lawapp.domain.models.Blog
+import emy.partners.lawapp.domain.models.EvaluationDAO
+import emy.partners.lawapp.domain.models.EvaluationSession
+import emy.partners.lawapp.domain.models.EvaluationStatus
+import emy.partners.lawapp.presentation.pages.ProfilPage
+import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
+import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
+import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
+import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
+import emy.partners.lawapp.presentation.pages.session.EvaluationPage
+import emy.partners.lawapp.presentation.pages.session.QuizPage
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
@@ -60,6 +72,10 @@ fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
     val scrollVertical = rememberScrollState()
+    val selectedBlog = remember { mutableStateOf<Blog?>(null) }
+    val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
+    val isCreatingEvaluation = remember { mutableStateOf(false) }
+    val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
     val listParent = listOf<Parent>(
         Parent(1, stringResource(Res.string.house), icon = Res.drawable.house),
         Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore),
@@ -91,6 +107,9 @@ fun App() {
                                 selected = i == state.intValue,
                                 onClick = {
                                     state.intValue = i
+                                    selectedBlog.value = null
+                                    selectedEvaluation.value = null
+                                    isCreatingEvaluation.value = false
                                 },
                                 icon = {
                                     Icon(
@@ -137,8 +156,82 @@ fun App() {
                         )
                 )
                 Column {
-                    HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
-//                    ExplorePage(modifier = Modifier.padding(top = it.calculateTopPadding()), scrollVertical)
+                    when (state.intValue) {
+                        0 -> HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
+                        1 -> {
+                            val blog = selectedBlog.value
+                            if (blog == null) {
+                                ExplorePage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    scrollVertical = scrollVertical,
+                                    onBlogClick = { selectedBlog.value = it }
+                                )
+                            } else {
+                                ExploreDetailPage(
+                                    blog = blog,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onBack = { selectedBlog.value = null }
+                                )
+                            }
+                        }
+                        2 -> {
+                            val evaluation = selectedEvaluation.value
+                            if (isCreatingEvaluation.value) {
+                                EvaluationCreatePage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onBack = { isCreatingEvaluation.value = false },
+                                    onSave = { evaluation ->
+                                        createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
+                                        isCreatingEvaluation.value = false
+                                    }
+                                )
+                            } else if (evaluation == null) {
+                                EvaluationPage(
+                                    evaluations = Constants.evaluations + createdEvaluations,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onEvaluationClick = { selectedEvaluation.value = it },
+                                    onCreateClick = { isCreatingEvaluation.value = true }
+                                )
+                            } else {
+                                EvaluationDetailPage(
+                                    evaluation = evaluation,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                        bottom = it.calculateBottomPadding()
+                                    ),
+                                    onBack = { selectedEvaluation.value = null },
+                                    onStartQuiz = {
+                                        selectedEvaluation.value = null
+                                        state.intValue = 3
+                                    }
+                                )
+                            }
+                        }
+                        3 -> QuizPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding(),
+                                bottom = it.calculateBottomPadding()
+                            )
+                        )
+                        4 -> ProfilPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding(),
+                                bottom = it.calculateBottomPadding()
+                            )
+                        )
+                    }
                 }
             }
 
@@ -150,3 +243,18 @@ fun App() {
 
 @Composable
 expect fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean)
+
+private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
+    id = id ?: (1_000L + index),
+    title = title,
+    domain = "Brouillon",
+    description = description,
+    status = EvaluationStatus.InProgress,
+    progress = 0f,
+    score = null,
+    questionCount = compteur?.toInt() ?: 0,
+    completedQuestions = 0,
+    duration = "A definir",
+    updatedAt = "Cree maintenant",
+    level = "Personnalise"
+)

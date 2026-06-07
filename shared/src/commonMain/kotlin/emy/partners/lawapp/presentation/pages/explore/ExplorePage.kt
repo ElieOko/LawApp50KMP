@@ -1,7 +1,9 @@
 package emy.partners.lawapp.presentation.pages.explore
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import emy.partners.lawapp.data.Constants.blog
+import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.domain.models.Category
 import emy.partners.lawapp.presentation.components.basics.LiquidGlassDemo
 import emy.partners.lawapp.presentation.themes.BlueDark
@@ -33,12 +36,18 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun ExplorePage(
     modifier: Modifier = Modifier,
-    scrollVertical: ScrollState = rememberScrollState()) {
-    ExploreBuild(modifier,scrollVertical)
+    scrollVertical: ScrollState = rememberScrollState(),
+    onBlogClick: (Blog) -> Unit = {}
+) {
+    ExploreBuild(modifier, scrollVertical, onBlogClick)
 }
 
 @Composable
-fun ExploreBuild(modifier: Modifier = Modifier, scrollVertical: ScrollState = rememberScrollState()){
+fun ExploreBuild(
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
+    onBlogClick: (Blog) -> Unit = {}
+){
     val categories = remember {
         mutableStateListOf(
             Category(0, "Tous", true),
@@ -79,7 +88,7 @@ fun ExploreBuild(modifier: Modifier = Modifier, scrollVertical: ScrollState = re
             Spacer(Modifier.height(10.dp))
             Row(Modifier.horizontalScroll(scrollHorizontal2).fillMaxWidth()) {
                 blog.forEachIndexed { index, blog ->
-                    LiquidGlassDemo(blog)
+                    ExploreBlogCard(blog, onBlogClick)
                     Spacer(Modifier.width(10.dp))
                 }
 
@@ -90,7 +99,7 @@ fun ExploreBuild(modifier: Modifier = Modifier, scrollVertical: ScrollState = re
             Row(Modifier.horizontalScroll(scrollHorizontal2).fillMaxWidth()) {
 
                 blog.sortedBy { it.id }.forEachIndexed { index, blog ->
-                    LiquidGlassDemo(blog)
+                    ExploreBlogCard(blog, onBlogClick)
                     Spacer(Modifier.width(10.dp))
                 }
 
@@ -101,7 +110,7 @@ fun ExploreBuild(modifier: Modifier = Modifier, scrollVertical: ScrollState = re
             Row(Modifier.horizontalScroll(scrollHorizontal2).fillMaxWidth()) {
 
                 blog.sortedBy { it.id }.forEachIndexed { index, blog ->
-                    LiquidGlassDemo(blog)
+                    ExploreBlogCard(blog, onBlogClick)
                     Spacer(Modifier.width(10.dp))
                 }
 
@@ -117,6 +126,13 @@ fun ExploreBuild(modifier: Modifier = Modifier, scrollVertical: ScrollState = re
         }
     }
 
+}
+
+@Composable
+private fun ExploreBlogCard(blog: Blog, onBlogClick: (Blog) -> Unit) {
+    Box(Modifier.clickable { onBlogClick(blog) }) {
+        LiquidGlassDemo(blog)
+    }
 }
 
 @Composable
