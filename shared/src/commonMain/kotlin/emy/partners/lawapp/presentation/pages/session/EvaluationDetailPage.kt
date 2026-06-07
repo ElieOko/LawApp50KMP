@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.session
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,12 +42,14 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 fun EvaluationDetailPage(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
     onStartQuiz: () -> Unit = {}
 ) {
     EvaluationDetailBuild(
         evaluation = evaluation,
         modifier = modifier,
+        scrollVertical = scrollVertical,
         onBack = onBack,
         onStartQuiz = onStartQuiz
     )
@@ -56,6 +59,7 @@ fun EvaluationDetailPage(
 fun EvaluationDetailBuild(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {},
     onStartQuiz: () -> Unit = {}
 ) {
@@ -65,7 +69,7 @@ fun EvaluationDetailBuild(
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
         Text(

@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.explore
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,11 +42,13 @@ import org.jetbrains.compose.resources.painterResource
 fun ExploreDetailPage(
     blog: Blog,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {}
 ) {
     ExploreDetailBuild(
         blog = blog,
         modifier = modifier,
+        scrollVertical = scrollVertical,
         onBack = onBack
     )
 }
@@ -54,12 +57,13 @@ fun ExploreDetailPage(
 fun ExploreDetailBuild(
     blog: Blog,
     modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
     onBack: () -> Unit = {}
 ) {
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
         Text(

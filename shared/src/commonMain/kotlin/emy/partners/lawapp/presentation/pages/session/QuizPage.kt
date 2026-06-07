@@ -1,5 +1,6 @@
 package emy.partners.lawapp.presentation.pages.session
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,14 +40,16 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 
 @Composable
 fun QuizPage(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
-    QuizBuild(modifier)
+    QuizBuild(modifier, scrollVertical)
 }
 
 @Composable
 fun QuizBuild(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     val questions = remember { Constants.quizQuestions }
     val currentIndex = remember { mutableIntStateOf(0) }
@@ -61,7 +64,7 @@ fun QuizBuild(
     Column(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
         QuizHeader(

@@ -71,7 +71,11 @@ data class Parent(
 fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
-    val scrollVertical = rememberScrollState()
+    val homeScroll = rememberScrollState()
+    val exploreScroll = rememberScrollState()
+    val sessionScroll = rememberScrollState()
+    val quizScroll = rememberScrollState()
+    val profileScroll = rememberScrollState()
     val selectedBlog = remember { mutableStateOf<Blog?>(null) }
     val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
     val isCreatingEvaluation = remember { mutableStateOf(false) }
@@ -84,6 +88,13 @@ fun App() {
         Parent(5,stringResource(Res.string.profil), icon = Res.drawable.profil_user),
     )
     val state = remember { mutableIntStateOf(0) }
+    val currentTopBarScroll = when (state.intValue) {
+        1 -> exploreScroll
+        2 -> sessionScroll
+        3 -> quizScroll
+        4 -> profileScroll
+        else -> homeScroll
+    }
     MaterialTheme {
         Scaffold(
 //            contentWindowInsets = WindowInsets(0),
@@ -126,7 +137,7 @@ fun App() {
 
                 //}
             },
-            topBar = {TopBarCustom(scrollVertical)}
+            topBar = { TopBarCustom(currentTopBarScroll) }
 //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
         ) {
 
@@ -166,7 +177,7 @@ fun App() {
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
-                                    scrollVertical = scrollVertical,
+                                    scrollVertical = exploreScroll,
                                     onBlogClick = { selectedBlog.value = it }
                                 )
                             } else {
@@ -176,6 +187,7 @@ fun App() {
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
+                                    scrollVertical = exploreScroll,
                                     onBack = { selectedBlog.value = null }
                                 )
                             }
@@ -188,6 +200,7 @@ fun App() {
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
+                                    scrollVertical = sessionScroll,
                                     onBack = { isCreatingEvaluation.value = false },
                                     onSave = { evaluation ->
                                         createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
@@ -201,6 +214,7 @@ fun App() {
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
+                                    scrollVertical = sessionScroll,
                                     onEvaluationClick = { selectedEvaluation.value = it },
                                     onCreateClick = { isCreatingEvaluation.value = true }
                                 )
@@ -211,6 +225,7 @@ fun App() {
                                         top = it.calculateTopPadding(),
                                         bottom = it.calculateBottomPadding()
                                     ),
+                                    scrollVertical = sessionScroll,
                                     onBack = { selectedEvaluation.value = null },
                                     onStartQuiz = {
                                         selectedEvaluation.value = null
@@ -220,16 +235,18 @@ fun App() {
                             }
                         }
                         3 -> QuizPage(
-                            Modifier.padding(
+                            modifier = Modifier.padding(
                                 top = it.calculateTopPadding(),
                                 bottom = it.calculateBottomPadding()
-                            )
+                            ),
+                            scrollVertical = quizScroll
                         )
                         4 -> ProfilPage(
-                            Modifier.padding(
+                            modifier = Modifier.padding(
                                 top = it.calculateTopPadding(),
                                 bottom = it.calculateBottomPadding()
-                            )
+                            ),
+                            scrollVertical = profileScroll
                         )
                     }
                 }
