@@ -1,6 +1,7 @@
 <resources>
     <string name="house">Accueil</string>
     <string name="discovery">Decouverte</string>
+    <string name="session">Session</string>
     <string name="profil">Profil</string>
     <string name="status">Status</string>
     <string name="evaluation">Evaluation</string>
