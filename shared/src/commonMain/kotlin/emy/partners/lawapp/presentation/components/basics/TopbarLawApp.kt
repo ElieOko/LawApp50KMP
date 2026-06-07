@@ -66,15 +66,7 @@ fun TopBarCustom(scrollState: ScrollState =  rememberScrollState()) {
         colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor),
         navigationIcon = {
             Row(Modifier.padding(2.dp).fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalPlatformContext.current)
-                    .data(Res.drawable.app_)
-                    .size(300)
-                    .build(),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(iconColor),
-                modifier = Modifier.size(90.dp)
-            )
+            Icon(painterResource(Res.drawable.app_),null, modifier = Modifier.size(90.dp), tint = iconColor)
             }
             Row(Modifier.padding(5.dp).fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
                 Column {
