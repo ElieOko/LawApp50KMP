@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -92,237 +93,275 @@ fun EvaluationCreateBuild(
     val effectiveCounter = compteur.toLongOrNull() ?: totalQuestions.toLong()
 
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
-        Text(
-            text = "< Retour",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color.White.copy(alpha = 0.14f))
-                .clickable(onClick = onBack)
-                .padding(horizontal = 14.dp, vertical = 9.dp)
-        )
-        Spacer(Modifier.height(14.dp))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            Color(0xFF2563EB).copy(alpha = 0.94f),
-                            BlueDarkEffect.copy(alpha = 0.92f)
+        Column(modifier) {
+            Text(
+                text = "< Retour",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(Color.White.copy(alpha = 0.14f))
+                    .clickable(onClick = onBack)
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF2563EB).copy(alpha = 0.94f),
+                                BlueDarkEffect.copy(alpha = 0.92f)
+                            )
                         )
                     )
-                )
-                .padding(20.dp)
-        ) {
-            Column {
-                Text(
-                    "Creer une evaluation",
-                    color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 28.sp,
-                    lineHeight = 31.sp
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Compose ton evaluation avec des questions a choix, ouvertes et cas pratiques.",
-                    color = Color.White.copy(alpha = 0.74f),
-                    lineHeight = 20.sp
-                )
-                Spacer(Modifier.height(18.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    CreationMetric("Compteur", effectiveCounter.toString(), Modifier.weight(1f))
-                    CreationMetric("Options", optionQuestions.size.toString(), Modifier.weight(1f))
-                    CreationMetric("Ouvertes", openQuestions.size.toString(), Modifier.weight(1f))
-                }
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        CreationSection("Informations de base")
-        CreationField("Titre", title, { title = it }, singleLine = true)
-        CreationField("Description", description, { description = it }, minHeight = 96)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            CreationField("Date debut", startDate, { startDate = it }, modifier = Modifier.weight(1f), singleLine = true)
-            CreationField("Date fin", endDate, { endDate = it }, modifier = Modifier.weight(1f), singleLine = true)
-        }
-        CreationField(
-            label = "Compteur manuel (optionnel)",
-            value = compteur,
-            onValueChange = { compteur = it.filter { char -> char.isDigit() } },
-            singleLine = true
-        )
-        CreationField("Contenu fichier / lien", fileContent, { fileContent = it }, minHeight = 78)
-        Spacer(Modifier.height(14.dp))
-        CreationSection("Questions")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuestionTypeChip(
-                label = "Option",
-                selected = selectedQuestionType == CreationQuestionType.Option,
-                onClick = { selectedQuestionType = CreationQuestionType.Option }
-            )
-            QuestionTypeChip(
-                label = "Ouverte",
-                selected = selectedQuestionType == CreationQuestionType.Open,
-                onClick = { selectedQuestionType = CreationQuestionType.Open }
-            )
-            QuestionTypeChip(
-                label = "Cas",
-                selected = selectedQuestionType == CreationQuestionType.CaseStudy,
-                onClick = { selectedQuestionType = CreationQuestionType.CaseStudy }
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        CreationField("Question", questionTitle, { questionTitle = it }, minHeight = 76)
-        when (selectedQuestionType) {
-            CreationQuestionType.Option -> {
-                optionValues.forEachIndexed { index, option ->
-                    CreationField(
-                        label = "Option ${index + 1}",
-                        value = option,
-                        onValueChange = { optionValues[index] = it },
-                        singleLine = true
+                    .padding(20.dp)
+            ) {
+                Column {
+                    Text(
+                        "Creer une evaluation",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp,
+                        lineHeight = 31.sp
                     )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    optionValues.forEachIndexed { index, _ ->
-                        QuestionTypeChip(
-                            label = "Bonne ${index + 1}",
-                            selected = correctIndex.intValue == index,
-                            onClick = { correctIndex.intValue = index }
-                        )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Compose ton evaluation avec des questions a choix, ouvertes et cas pratiques.",
+                        color = Color.White.copy(alpha = 0.74f),
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CreationMetric("Compteur", effectiveCounter.toString(), Modifier.weight(1f))
+                        CreationMetric("Options", optionQuestions.size.toString(), Modifier.weight(1f))
+                        CreationMetric("Ouvertes", openQuestions.size.toString(), Modifier.weight(1f))
                     }
                 }
-                Spacer(Modifier.height(10.dp))
-                Button(
-                    onClick = {
-                        val answers = optionValues
-                            .mapIndexedNotNull { index, option ->
-                                option.takeIf { it.isNotBlank() }?.let {
-                                    QuestionOption(title = it, isCorrect = index == correctIndex.intValue)
+            }
+            Spacer(Modifier.height(16.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF2563EB).copy(alpha = 0.94f),
+                                BlueDarkEffect.copy(alpha = 0.92f)
+                            )
+                        )
+                    )
+                    .padding(20.dp)
+            ) {
+                Column {
+                    CreationSection("Informations de base")
+                    CreationField("Titre", title, { title = it }, singleLine = true)
+                    CreationField("Description", description, { description = it }, minHeight = 96)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CreationField("Date debut", startDate, { startDate = it }, modifier = Modifier.weight(1f), singleLine = true)
+                        CreationField("Date fin", endDate, { endDate = it }, modifier = Modifier.weight(1f), singleLine = true)
+                    }
+                    CreationField(
+                        label = "Compteur manuel (optionnel)",
+                        value = compteur,
+                        onValueChange = { compteur = it.filter { char -> char.isDigit() } },
+                        singleLine = true
+                    )
+                    CreationField("Contenu fichier / lien", fileContent, { fileContent = it }, minHeight = 78)
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            CreationSection("Questions")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuestionTypeChip(
+                    label = "Option",
+                    selected = selectedQuestionType == CreationQuestionType.Option,
+                    onClick = { selectedQuestionType = CreationQuestionType.Option }
+                )
+                QuestionTypeChip(
+                    label = "Ouverte",
+                    selected = selectedQuestionType == CreationQuestionType.Open,
+                    onClick = { selectedQuestionType = CreationQuestionType.Open }
+                )
+                QuestionTypeChip(
+                    label = "Cas",
+                    selected = selectedQuestionType == CreationQuestionType.CaseStudy,
+                    onClick = { selectedQuestionType = CreationQuestionType.CaseStudy }
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF2563EB).copy(alpha = 0.94f),
+                                BlueDarkEffect.copy(alpha = 0.92f)
+                            )
+                        )
+                    )
+                    .padding(20.dp)
+            ) {
+                Column {
+                    CreationField("Question", questionTitle, { questionTitle = it }, minHeight = 76)
+                    when (selectedQuestionType) {
+                        CreationQuestionType.Option -> {
+                            optionValues.forEachIndexed { index, option ->
+                                CreationField(
+                                    label = "Option ${index + 1}",
+                                    value = option,
+                                    onValueChange = { optionValues[index] = it },
+                                    singleLine = true
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                optionValues.forEachIndexed { index, _ ->
+                                    QuestionTypeChip(
+                                        label = "Bonne ${index + 1}",
+                                        selected = correctIndex.intValue == index,
+                                        onClick = { correctIndex.intValue = index }
+                                    )
                                 }
                             }
-                        if (questionTitle.isNotBlank() && answers.isNotEmpty()) {
-                            optionQuestions.add(
-                                QuestionOptionDAO(
-                                    question = Question(title = questionTitle),
-                                    questionOption = answers
-                                )
-                            )
-                            questionTitle = ""
-                            optionValues.indices.forEach { optionValues[it] = "" }
-                            savedMessage = "Question option ajoutee"
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                ) {
-                    Text("Ajouter la question option", fontWeight = FontWeight.Bold)
-                }
-            }
-            CreationQuestionType.Open -> {
-                CreationField("Reponse attendue", openExpectedAnswer, { openExpectedAnswer = it }, minHeight = 90)
-                Button(
-                    onClick = {
-                        if (questionTitle.isNotBlank() && openExpectedAnswer.isNotBlank()) {
-                            openQuestions.add(
-                                QuestionOuverteDAO(
-                                    question = Question(title = questionTitle),
-                                    questionOuverte = listOf(QuestionOuverte(expectedAnswer = openExpectedAnswer))
-                                )
-                            )
-                            questionTitle = ""
-                            openExpectedAnswer = ""
-                            savedMessage = "Question ouverte ajoutee"
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                ) {
-                    Text("Ajouter la question ouverte", fontWeight = FontWeight.Bold)
-                }
-            }
-            CreationQuestionType.CaseStudy -> {
-                CreationField("Enonce du cas", caseContent, { caseContent = it }, minHeight = 92)
-                CreationField("Resolution attendue", caseResolution, { caseResolution = it }, minHeight = 92)
-                Button(
-                    onClick = {
-                        if (questionTitle.isNotBlank() && caseContent.isNotBlank() && caseResolution.isNotBlank()) {
-                            caseStudyQuestions.add(
-                                QuestionCaseStudyDAO(
-                                    question = Question(title = questionTitle),
-                                    questionCaseStudy = listOf(
-                                        QuestionCaseStudy(
-                                            caseContent = caseContent,
-                                            expectedResolution = caseResolution
+                            Spacer(Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    val answers = optionValues
+                                        .mapIndexedNotNull { index, option ->
+                                            option.takeIf { it.isNotBlank() }?.let {
+                                                QuestionOption(title = it, isCorrect = index == correctIndex.intValue)
+                                            }
+                                        }
+                                    if (questionTitle.isNotBlank() && answers.isNotEmpty()) {
+                                        optionQuestions.add(
+                                            QuestionOptionDAO(
+                                                question = Question(title = questionTitle),
+                                                questionOption = answers
+                                            )
                                         )
-                                    )
-                                )
-                            )
-                            questionTitle = ""
-                            caseContent = ""
-                            caseResolution = ""
-                            savedMessage = "Cas pratique ajoute"
+                                        questionTitle = ""
+                                        optionValues.indices.forEach { optionValues[it] = "" }
+                                        savedMessage = "Question option ajoutee"
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                            ) {
+                                Text("Ajouter la question option", fontWeight = FontWeight.Bold)
+                            }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                ) {
-                    Text("Ajouter le cas pratique", fontWeight = FontWeight.Bold)
+                        CreationQuestionType.Open -> {
+                            CreationField("Reponse attendue", openExpectedAnswer, { openExpectedAnswer = it }, minHeight = 90)
+                            Button(
+                                onClick = {
+                                    if (questionTitle.isNotBlank() && openExpectedAnswer.isNotBlank()) {
+                                        openQuestions.add(
+                                            QuestionOuverteDAO(
+                                                question = Question(title = questionTitle),
+                                                questionOuverte = listOf(QuestionOuverte(expectedAnswer = openExpectedAnswer))
+                                            )
+                                        )
+                                        questionTitle = ""
+                                        openExpectedAnswer = ""
+                                        savedMessage = "Question ouverte ajoutee"
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                            ) {
+                                Text("Ajouter la question ouverte", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        CreationQuestionType.CaseStudy -> {
+                            CreationField("Enonce du cas", caseContent, { caseContent = it }, minHeight = 92)
+                            CreationField("Resolution attendue", caseResolution, { caseResolution = it }, minHeight = 92)
+                            Button(
+                                onClick = {
+                                    if (questionTitle.isNotBlank() && caseContent.isNotBlank() && caseResolution.isNotBlank()) {
+                                        caseStudyQuestions.add(
+                                            QuestionCaseStudyDAO(
+                                                question = Question(title = questionTitle),
+                                                questionCaseStudy = listOf(
+                                                    QuestionCaseStudy(
+                                                        caseContent = caseContent,
+                                                        expectedResolution = caseResolution
+                                                    )
+                                                )
+                                            )
+                                        )
+                                        questionTitle = ""
+                                        caseContent = ""
+                                        caseResolution = ""
+                                        savedMessage = "Cas pratique ajoute"
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                            ) {
+                                Text("Ajouter le cas pratique", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
-        }
-        savedMessage?.let {
-            Spacer(Modifier.height(10.dp))
-            Text(it, color = Color.White, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(16.dp))
-        CreationSection("Apercu du brouillon")
-        DraftCounterRow("Questions a choix", optionQuestions.size)
-        DraftCounterRow("Questions ouvertes", openQuestions.size)
-        DraftCounterRow("Cas pratiques", caseStudyQuestions.size)
-        Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.weight(1f).height(52.dp),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Text("Annuler", color = Color.White, fontWeight = FontWeight.Bold)
+
+            savedMessage?.let {
+                Spacer(Modifier.height(10.dp))
+                Text(it, color = Color.White, fontWeight = FontWeight.Bold)
             }
-            Button(
-                onClick = {
-                    val dao = EvaluationDAO(
-                        title = title.ifBlank { "Nouvelle evaluation" },
-                        description = description,
-                        compteur = effectiveCounter,
-                        fileContent = fileContent.takeIf { it.isNotBlank() },
-                        startDate = startDate,
-                        endDate = endDate,
-                        option = optionQuestions.toList(),
-                        ouverte = openQuestions.toList(),
-                        caseStudy = caseStudyQuestions.toList()
-                    )
-                    onSave(dao)
-                    savedMessage = "Evaluation prete avec $effectiveCounter question(s)"
-                },
-                modifier = Modifier.weight(1f).height(52.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
-            ) {
-                Text("Enregistrer", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+            CreationSection("Apercu du brouillon")
+            DraftCounterRow("Questions a choix", optionQuestions.size)
+            DraftCounterRow("Questions ouvertes", openQuestions.size)
+            DraftCounterRow("Cas pratiques", caseStudyQuestions.size)
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(
+                    onClick = onBack,
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text("Annuler", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+                Button(
+                    onClick = {
+                        val dao = EvaluationDAO(
+                            title = title.ifBlank { "Nouvelle evaluation" },
+                            description = description,
+                            compteur = effectiveCounter,
+                            fileContent = fileContent.takeIf { it.isNotBlank() },
+                            startDate = startDate,
+                            endDate = endDate,
+                            option = optionQuestions.toList(),
+                            ouverte = openQuestions.toList(),
+                            caseStudy = caseStudyQuestions.toList()
+                        )
+                        onSave(dao)
+                        savedMessage = "Evaluation prete avec $effectiveCounter question(s)"
+                    },
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
+                ) {
+                    Text("Enregistrer", fontWeight = FontWeight.Bold)
+                }
             }
+            Spacer(Modifier.height(90.dp))
         }
-        Spacer(Modifier.height(90.dp))
     }
 }
 
@@ -358,7 +397,11 @@ private fun CreationField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.White, focusedBorderColor = Color(
+            0x0F110505
+        )
+        ),
+        label = { Text(label, color = Color.White) },
         singleLine = singleLine,
         modifier = modifier
             .fillMaxWidth()

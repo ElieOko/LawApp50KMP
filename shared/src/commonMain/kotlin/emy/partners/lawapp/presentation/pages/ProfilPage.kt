@@ -49,12 +49,11 @@ fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = reme
     val averageScore = evaluations.mapNotNull { it.score }.average().takeIf { !it.isNaN() }?.toInt() ?: 0
 
     Column(
-        modifier
-            .fillMaxSize()
+        Modifier.fillMaxSize()
             .verticalScroll(scrollVertical)
     ) {
         Column(
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(34.dp))
                 .background(

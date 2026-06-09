@@ -72,6 +72,9 @@ fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
     val scrollVertical = rememberScrollState()
+    val scrollVertical2 = rememberScrollState()
+    val scrollVertical3 = rememberScrollState()
+    val scrollVertical4 = rememberScrollState()
     val selectedBlog = remember { mutableStateOf<Blog?>(null) }
     val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
     val isCreatingEvaluation = remember { mutableStateOf(false) }
@@ -90,10 +93,11 @@ fun App() {
             bottomBar = {
                 //CompositionLocalProvider(LocalRippleConfiguration provides null){
                 //Color(0xFF242D2C)
+//                modifier = Modifier.background(
+//                    Color.White.copy(alpha = 0.5f)
+//                )
                 Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                            Color.White.copy(alpha = 0.5f)
-                        )) {
+                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),) {
                         listParent.forEachIndexed { i, parent ->
                             NavigationBarItem(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -175,7 +179,7 @@ fun App() {
                                         top = it.calculateTopPadding()
                                     ),
                                     onBack = { selectedBlog.value = null },
-                                    scrollVertical
+                                    scrollVertical2
                                 )
                             }
                         }
@@ -201,7 +205,7 @@ fun App() {
                                     ),
                                     onEvaluationClick = { selectedEvaluation.value = it },
                                     onCreateClick = { isCreatingEvaluation.value = true },
-                                    scrollVertical = scrollVertical
+                                    scrollVertical = scrollVertical3
                                 )
                             } else {
                                 EvaluationDetailPage(
@@ -228,7 +232,7 @@ fun App() {
                             Modifier.padding(
                                 top = it.calculateTopPadding()
                             ),
-                            scrollVertical
+                            scrollVertical4
                         )
                     }
                 }

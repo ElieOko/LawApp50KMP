@@ -67,134 +67,136 @@ fun EvaluationDetailBuild(
     val remaining = evaluation.questionCount - evaluation.completedQuestions
 
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
-        Text(
-            text = "< Retour aux evaluations",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color.White.copy(alpha = 0.14f))
-                .clickable(onClick = onBack)
-                .padding(horizontal = 14.dp, vertical = 9.dp)
-        )
-        Spacer(Modifier.height(14.dp))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            BlueDark.copy(alpha = 0.95f),
-                            Color(0xFF0F172A).copy(alpha = 0.94f)
+        Column(modifier) {
+            Text(
+                text = "< Retour aux evaluations",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(Color.White.copy(alpha = 0.14f))
+                    .clickable(onClick = onBack)
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                BlueDark.copy(alpha = 0.95f),
+                                Color(0xFF0F172A).copy(alpha = 0.94f)
+                            )
                         )
                     )
-                )
-                .padding(20.dp)
-        ) {
-            Column {
-                Text(evaluation.domain, color = Color.White.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = evaluation.title,
-                    color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 28.sp,
-                    lineHeight = 31.sp
-                )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = evaluation.description,
-                    color = Color.White.copy(alpha = 0.75f),
-                    lineHeight = 20.sp
-                )
-                Spacer(Modifier.height(22.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    DetailMetric(
-                        label = if (completed) "Score final" else "Progression",
-                        value = if (completed) "${evaluation.score}%" else "${(evaluation.progress * 100).toInt()}%",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DetailMetric(
-                        label = "Compteur",
-                        value = if (completed) "0 restant" else "$remaining restant",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(14.dp))
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f))
-        ) {
-            Column(Modifier.padding(18.dp)) {
-                Text(
-                    text = "Parcours",
-                    color = Color.Black.copy(alpha = 0.86f),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 21.sp
-                )
-                Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = { evaluation.progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(50.dp)),
-                    color = if (completed) Color(0xFF10B981) else Color(0xFF2563EB),
-                    trackColor = Color.Black.copy(alpha = 0.08f)
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    DetailLine("Niveau", evaluation.level)
-                    DetailLine("Questions", "${evaluation.completedQuestions}/${evaluation.questionCount}")
-                    DetailLine("Duree", evaluation.duration)
-                }
-                Spacer(Modifier.height(18.dp))
-                Text(
-                    text = if (completed) {
-                        "Evaluation terminee. Consulte ton score, puis relance un quiz pour consolider tes acquis."
-                    } else {
-                        "Tu peux reprendre exactement ou tu t'es arrete. Le compteur t'indique les questions restantes."
-                    },
-                    color = Color.Black.copy(alpha = 0.56f),
-                    lineHeight = 19.sp
-                )
-                Spacer(Modifier.height(18.dp))
-                Button(
-                    onClick = onStartQuiz,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                ) {
+                    .padding(20.dp)
+            ) {
+                Column {
+                    Text(evaluation.domain, color = Color.White.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        text = if (completed) "Reviser avec un quiz" else "Continuer l'evaluation",
-                        fontWeight = FontWeight.Bold
+                        text = evaluation.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp,
+                        lineHeight = 31.sp
                     )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = evaluation.description,
+                        color = Color.White.copy(alpha = 0.75f),
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(22.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DetailMetric(
+                            label = if (completed) "Score final" else "Progression",
+                            value = if (completed) "${evaluation.score}%" else "${(evaluation.progress * 100).toInt()}%",
+                            modifier = Modifier.weight(1f)
+                        )
+                        DetailMetric(
+                            label = "Compteur",
+                            value = if (completed) "0 restant" else "$remaining restant",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
+            Spacer(Modifier.height(14.dp))
+            Card(
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f))
+            ) {
+                Column(Modifier.padding(18.dp)) {
+                    Text(
+                        text = "Parcours",
+                        color = Color.Black.copy(alpha = 0.86f),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 21.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = { evaluation.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(50.dp)),
+                        color = if (completed) Color(0xFF10B981) else Color(0xFF2563EB),
+                        trackColor = Color.Black.copy(alpha = 0.08f)
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        DetailLine("Niveau", evaluation.level)
+                        DetailLine("Questions", "${evaluation.completedQuestions}/${evaluation.questionCount}")
+                        DetailLine("Duree", evaluation.duration)
+                    }
+                    Spacer(Modifier.height(18.dp))
+                    Text(
+                        text = if (completed) {
+                            "Evaluation terminee. Consulte ton score, puis relance un quiz pour consolider tes acquis."
+                        } else {
+                            "Tu peux reprendre exactement ou tu t'es arrete. Le compteur t'indique les questions restantes."
+                        },
+                        color = Color.Black.copy(alpha = 0.56f),
+                        lineHeight = 19.sp
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    Button(
+                        onClick = onStartQuiz,
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                    ) {
+                        Text(
+                            text = if (completed) "Reviser avec un quiz" else "Continuer l'evaluation",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = "Recommandations",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 21.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            RecommendationCard("Relis les fiches de ${evaluation.domain}", "Priorite elevee")
+            Spacer(Modifier.height(10.dp))
+            RecommendationCard("Fais un quiz chronometre de 5 questions", "Entrainement")
+            Spacer(Modifier.height(90.dp))
         }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            text = "Recommandations",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 21.sp
-        )
-        Spacer(Modifier.height(10.dp))
-        RecommendationCard("Relis les fiches de ${evaluation.domain}", "Priorite elevee")
-        Spacer(Modifier.height(10.dp))
-        RecommendationCard("Fais un quiz chronometre de 5 questions", "Entrainement")
-        Spacer(Modifier.height(90.dp))
     }
 }
 

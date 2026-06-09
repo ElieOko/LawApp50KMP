@@ -1,7 +1,9 @@
 package emy.partners.lawapp.presentation.pages.explore
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -64,128 +66,137 @@ fun ExploreDetailBuild(
 ) {
     val liquidState = rememberLiquidState()
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .verticalScroll(scrollVertical)
     ) {
-        Text(
-            text = "< Retour a Explore",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color.White.copy(alpha = 0.14f))
-                .clickable(onClick = onBack)
-                .padding(horizontal = 14.dp, vertical = 9.dp)
-        )
-        Spacer(Modifier.height(14.dp))
-        Box(
-            Modifier
+        Column(
+            modifier
                 .fillMaxWidth()
-                .height(330.dp)
-                .clip(RoundedCornerShape(34.dp))
+                .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
-            Image(
-                painter = painterResource(blog.background),
-                contentDescription = blog.title,
-                contentScale = ContentScale.Crop,
-                colorFilter = ColorFilter.colorMatrix(
-                    ColorMatrix().apply { setToSaturation(0.62f) }
-                ),
-                modifier = Modifier.fillMaxSize()
+            Text(
+                text = "< Retour a Explore",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(Color.White.copy(alpha = 0.14f))
+                    .clickable(onClick = onBack)
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
             )
+            Spacer(Modifier.height(14.dp))
             Box(
                 Modifier
-                    .matchParentSize()
-                    .liquefiable(liquidState)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.78f)
+                    .fillMaxWidth()
+                    .height(330.dp)
+                    .clip(RoundedCornerShape(34.dp))
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalPlatformContext.current)
+                        .data(blog.background)
+                        .size(1000)
+                        .build(),
+                    contentDescription = blog.title,
+                    contentScale = ContentScale.Crop,
+                    colorFilter = ColorFilter.colorMatrix(
+                        ColorMatrix().apply { setToSaturation(0.62f) }
+                    ),
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .liquefiable(liquidState)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.78f)
+                                )
                             )
                         )
+                )
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    Text(
+                        text = blog.type,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(30.dp))
+                            .background(Color.White.copy(alpha = 0.18f))
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
                     )
-            )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = blog.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 31.sp,
+                        lineHeight = 34.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Par ${blog.author.username}",
+                        color = Color.White.copy(alpha = 0.74f),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
             Column(
                 Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.Bottom
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color.White.copy(alpha = 0.9f))
+                    .padding(18.dp)
             ) {
                 Text(
-                    text = blog.type,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(Color.White.copy(alpha = 0.18f))
-                        .padding(horizontal = 12.dp, vertical = 7.dp)
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = blog.title,
-                    color = Color.White,
+                    "A propos",
+                    color = Color.Black.copy(alpha = 0.88f),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 31.sp,
-                    lineHeight = 34.sp
+                    fontSize = 22.sp
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Par ${blog.author.username}",
-                    color = Color.White.copy(alpha = 0.74f),
-                    fontWeight = FontWeight.Bold
+                    text = blog.description.ifBlank {
+                        "Un contenu selectionne pour apprendre le droit avec une approche simple, pratique et orientee cas concrets."
+                    },
+                    color = Color.Black.copy(alpha = 0.58f),
+                    lineHeight = 20.sp
                 )
+                Spacer(Modifier.height(18.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ExploreDetailMetric("Lecture", "6 min", Modifier.weight(1f))
+                    ExploreDetailMetric("Niveau", "Clair", Modifier.weight(1f))
+                    ExploreDetailMetric("Theme", blog.type, Modifier.weight(1f))
+                }
             }
-        }
-        Spacer(Modifier.height(16.dp))
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color.White.copy(alpha = 0.9f))
-                .padding(18.dp)
-        ) {
-            Text(
-                "A propos",
-                color = Color.Black.copy(alpha = 0.88f),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 22.sp
-            )
+            Spacer(Modifier.height(14.dp))
+            Text("Ce que tu vas retenir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
             Spacer(Modifier.height(10.dp))
-            Text(
-                text = blog.description.ifBlank {
-                    "Un contenu selectionne pour apprendre le droit avec une approche simple, pratique et orientee cas concrets."
-                },
-                color = Color.Black.copy(alpha = 0.58f),
-                lineHeight = 20.sp
-            )
-            Spacer(Modifier.height(18.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ExploreDetailMetric("Lecture", "6 min", Modifier.weight(1f))
-                ExploreDetailMetric("Niveau", "Clair", Modifier.weight(1f))
-                ExploreDetailMetric("Theme", blog.type, Modifier.weight(1f))
+            KeyPoint("Les notions essentielles expliquees sans jargon.")
+            Spacer(Modifier.height(8.dp))
+            KeyPoint("Des exemples applicables a la vie quotidienne.")
+            Spacer(Modifier.height(8.dp))
+            KeyPoint("Une synthese rapide pour preparer tes evaluations.")
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+            ) {
+                Text("Commencer la lecture", fontWeight = FontWeight.Bold)
             }
+            Spacer(Modifier.height(90.dp))
         }
-        Spacer(Modifier.height(14.dp))
-        Text("Ce que tu vas retenir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
-        Spacer(Modifier.height(10.dp))
-        KeyPoint("Les notions essentielles expliquees sans jargon.")
-        Spacer(Modifier.height(8.dp))
-        KeyPoint("Des exemples applicables a la vie quotidienne.")
-        Spacer(Modifier.height(8.dp))
-        KeyPoint("Une synthese rapide pour preparer tes evaluations.")
-        Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-        ) {
-            Text("Commencer la lecture", fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(90.dp))
     }
 }
 

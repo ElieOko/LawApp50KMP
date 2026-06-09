@@ -59,9 +59,6 @@ fun TopBarCustom(scrollState: ScrollState =  rememberScrollState()) {
     )
 
     TopAppBar(
-        modifier = Modifier.shadow(
-            elevation = if (isScrolled) 8.dp else 0.dp
-        ),
         title = {},
         colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor),
         navigationIcon = {

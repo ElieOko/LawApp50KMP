@@ -62,44 +62,46 @@ fun QuizBuild(
     val progress = (answers.size.toFloat() / questions.size).coerceIn(0f, 1f)
 
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .verticalScroll(scrollVertical)
             .padding(16.dp)
     ) {
-        QuizHeader(
-            answered = answers.size,
-            total = questions.size,
-            score = score,
-            progress = progress
-        )
-        Spacer(Modifier.height(16.dp))
-        QuestionCard(
-            question = question,
-            current = currentIndex.intValue + 1,
-            total = questions.size,
-            selectedIndex = selectedIndex,
-            onSelect = { answers[question.id] = it }
-        )
-        Spacer(Modifier.height(14.dp))
-        Button(
-            onClick = {
-                currentIndex.intValue = if (currentIndex.intValue == questions.lastIndex) {
-                    0
-                } else {
-                    currentIndex.intValue + 1
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
-        ) {
-            Text(
-                text = if (currentIndex.intValue == questions.lastIndex) "Recommencer le tour" else "Question suivante",
-                fontWeight = FontWeight.Bold
+        Column(modifier) {
+            QuizHeader(
+                answered = answers.size,
+                total = questions.size,
+                score = score,
+                progress = progress
             )
+            Spacer(Modifier.height(16.dp))
+            QuestionCard(
+                question = question,
+                current = currentIndex.intValue + 1,
+                total = questions.size,
+                selectedIndex = selectedIndex,
+                onSelect = { answers[question.id] = it }
+            )
+            Spacer(Modifier.height(14.dp))
+            Button(
+                onClick = {
+                    currentIndex.intValue = if (currentIndex.intValue == questions.lastIndex) {
+                        0
+                    } else {
+                        currentIndex.intValue + 1
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
+            ) {
+                Text(
+                    text = if (currentIndex.intValue == questions.lastIndex) "Recommencer le tour" else "Question suivante",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.height(90.dp))
         }
-        Spacer(Modifier.height(90.dp))
     }
 }
 

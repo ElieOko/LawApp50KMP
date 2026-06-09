@@ -72,54 +72,56 @@ fun EvaluationBuild(
     val progressCount = evaluations.count { it.status == EvaluationStatus.InProgress }
 
     Column(
-        modifier
-            .fillMaxSize()
-            .verticalScroll(scrollVertical)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+        Modifier
+            .fillMaxSize().verticalScroll(scrollVertical)
+//            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        EvaluationHero(
-            total = evaluations.size,
-            completed = completedCount,
-            inProgress = progressCount,
-            onCreateClick = onCreateClick
-        )
-        Spacer(Modifier.height(18.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            EvaluationFilterChip(
-                label = "Tous",
-                count = evaluations.size,
-                selected = activeFilter == null,
-                onClick = { activeFilter = null }
+        Column(modifier.padding(5.dp)) {
+            EvaluationHero(
+                total = evaluations.size,
+                completed = completedCount,
+                inProgress = progressCount,
+                onCreateClick = onCreateClick
             )
-            EvaluationFilterChip(
-                label = "En cours",
-                count = progressCount,
-                selected = activeFilter == EvaluationStatus.InProgress,
-                onClick = { activeFilter = EvaluationStatus.InProgress }
-            )
-            EvaluationFilterChip(
-                label = "Terminees",
-                count = completedCount,
-                selected = activeFilter == EvaluationStatus.Completed,
-                onClick = { activeFilter = EvaluationStatus.Completed }
-            )
-        }
-        Spacer(Modifier.height(18.dp))
-        Text(
-            text = "Mes evaluations",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp
-        )
-        Spacer(Modifier.height(12.dp))
-        visibleEvaluations.forEach { evaluation ->
-            EvaluationCard(
-                evaluation = evaluation,
-                onClick = { onEvaluationClick(evaluation) }
+            Spacer(Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                EvaluationFilterChip(
+                    label = "Tous",
+                    count = evaluations.size,
+                    selected = activeFilter == null,
+                    onClick = { activeFilter = null }
+                )
+                EvaluationFilterChip(
+                    label = "En cours",
+                    count = progressCount,
+                    selected = activeFilter == EvaluationStatus.InProgress,
+                    onClick = { activeFilter = EvaluationStatus.InProgress }
+                )
+                EvaluationFilterChip(
+                    label = "Terminees",
+                    count = completedCount,
+                    selected = activeFilter == EvaluationStatus.Completed,
+                    onClick = { activeFilter = EvaluationStatus.Completed }
+                )
+            }
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = "Mes evaluations",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
             )
             Spacer(Modifier.height(12.dp))
+            visibleEvaluations.forEach { evaluation ->
+                EvaluationCard(
+                    evaluation = evaluation,
+                    onClick = { onEvaluationClick(evaluation) }
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+            Spacer(Modifier.height(90.dp))
         }
-        Spacer(Modifier.height(90.dp))
+
     }
 }
 
