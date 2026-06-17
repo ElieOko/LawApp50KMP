@@ -364,13 +364,7 @@ private fun TopLevelNavigator(
 
     Box(modifier) {
         Navigator(startScreen) { navigator ->
-            PlatformBackButtonHandler(enabled = isActive) {
-                if (navigator.pop()) {
-                    onBackConsumed()
-                } else {
-                    onRootBack()
-                }
-            }
+
 
             CurrentScreen()
         }
@@ -385,7 +379,6 @@ fun App() {
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
     val appState = remember(createdEvaluations) { LawAppState(createdEvaluations) }
     val defaultTopBarScrollState = rememberScrollState()
-    val exitController = rememberApplicationExitController()
     var backPressedOnce by remember { mutableStateOf(false) }
     val topLevelDestinations = listOf(
         TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
@@ -485,12 +478,6 @@ fun App() {
                                     isActive = destination.kind == appState.activeTopLevelDestination,
                                     onBackConsumed = { backPressedOnce = false },
                                     onRootBack = {
-                                        if (backPressedOnce) {
-                                            exitController.exitApplication()
-                                        } else {
-                                            backPressedOnce = true
-                                            exitController.showExitPrompt()
-                                        }
                                     },
                                 )
                             }
@@ -505,13 +492,13 @@ fun App() {
     }
 }
 
+
+
 interface ApplicationExitController {
     fun showExitPrompt()
     fun exitApplication()
 }
 
-@Composable
-expect fun rememberApplicationExitController(): ApplicationExitController
 
 @Composable
 expect fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean)
