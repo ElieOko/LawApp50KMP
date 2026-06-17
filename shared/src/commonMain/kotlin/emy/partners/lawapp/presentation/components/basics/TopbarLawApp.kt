@@ -38,7 +38,10 @@ import org.jetbrains.compose.resources.painterResource
 @Suppress("FrequentlyChangingValue")
 @Composable
 @Preview(showBackground = false)
-fun TopBarCustom(scrollState: ScrollState =  rememberScrollState()) {
+fun TopBarCustom(
+    scrollState: ScrollState = rememberScrollState(),
+    onActionClick: () -> Unit = {}
+) {
     val liquidState = rememberLiquidState()
     val isScrolled = scrollState.value > 0
 
@@ -68,7 +71,7 @@ fun TopBarCustom(scrollState: ScrollState =  rememberScrollState()) {
             Row(Modifier.padding(5.dp).fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
                 Column {
                     Spacer(Modifier.height(5.dp))
-                    IconButton({}, modifier = Modifier.size(50.dp)){
+                    IconButton(onActionClick, modifier = Modifier.size(50.dp)){
                         Icon(painterResource(Res.drawable.action),null, modifier = Modifier.size(50.dp), tint = iconColor)
                     }
                 }

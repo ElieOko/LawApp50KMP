@@ -8,9 +8,7 @@ fun NavHost(
     navigator: Navigator,
     content: @Composable (AppRoute) -> Unit
 ) {
-    val entries = navigator.state.toDecoratedEntries { route ->
-        NavEntry(route, emptyList()) // Decorators are already handled in toDecoratedEntries
-    }
+    val entries = navigator.state.toDecoratedEntries()
 
     CompositionLocalProvider(LocalNavigator provides navigator) {
         entries.lastOrNull()?.let { entry ->

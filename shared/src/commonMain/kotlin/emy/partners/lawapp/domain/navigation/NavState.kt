@@ -77,6 +77,9 @@ class NavState(
     var topLevelRoute: TopLevelRoute?
         get() = currentBackstack.firstOrNull() as? TopLevelRoute
         set(value) {
+            require(value == null || topLevelBackStacks.containsKey(value)) {
+                "Unknown top-level route: $value"
+            }
             val oldRoute = topLevelRoute
 
             // Save current backstack to the old route's storage
@@ -91,13 +94,14 @@ class NavState(
         }
 
     @Composable
-    fun toDecoratedEntries(
-        entryProvider: (AppRoute) -> NavEntry<AppRoute>
-    ): SnapshotStateList<NavEntry<AppRoute>> {
+    fun toDecoratedEntries(): SnapshotStateList<NavEntry<AppRoute>> {
         val decorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator<AppRoute>(),
             rememberViewModelStoreNavEntryDecorator(),
         )
+        val entryProvider: (AppRoute) -> NavEntry<AppRoute> = { route ->
+            NavEntry(route, decorators)
+        }
 
         val topLevelEntries = topLevelBackStacks
             .mapValues { (route, stack) ->
