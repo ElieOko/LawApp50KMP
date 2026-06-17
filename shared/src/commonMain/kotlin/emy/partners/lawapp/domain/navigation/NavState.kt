@@ -1,0 +1,124 @@
+package emy.partners.lawapp.domain.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSerializable
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
+import androidx.savedstate.compose.serialization.serializers.SnapshotStateListSerializer
+
+@Composable
+fun rememberNavigator(
+    startRoute: AppRoute,
+    topLevelRoutes: Set<TopLevelRoute>,
+    primaryTopLevelRoute: TopLevelRoute = startRoute as? TopLevelRoute ?: topLevelRoutes.first(),
+    topLevelBackEnabled: Boolean = true,
+): Navigator {
+    val state = rememberNavState(
+        startRoute = startRoute,
+        primaryTopLevelRoute = primaryTopLevelRoute,
+        topLevelRoutes = topLevelRoutes,
+    )
+    return remember(state) {
+        Navigator(state = state, topLevelBackEnabled = topLevelBackEnabled)
+    }
+}
+
+@Composable
+fun rememberNavState(
+    startRoute: AppRoute,
+    primaryTopLevelRoute: TopLevelRoute,
+    topLevelRoutes: Set<TopLevelRoute>,
+): NavState {
+
+    val topLevelBackstacks: Map<TopLevelRoute, SnapshotStateList<AppRoute>> = buildMap {
+        topLevelRoutes.forEach { route ->
+            put(route, rememberSerializable(serializer = SnapshotStateListSerializer()) {
+                mutableStateListOf(route)
+            })
+        }
+    }
+
+    val defaultBackstack = rememberSerializable(serializer = SnapshotStateListSerializer()) {
+        if (startRoute !is TopLevelRoute) {
+            mutableStateListOf(startRoute)
+        } else {
+            mutableStateListOf()
+        }
+    }
+
+    val currentBackstack = rememberSerializable(serializer = SnapshotStateListSerializer()) {
+        val restoredBackstack = if (startRoute is TopLevelRoute) {
+            topLevelBackstacks[startRoute]!!
+        } else {
+            defaultBackstack
+        }
+        restoredBackstack.toMutableStateList()
+    }
+
+    return remember(startRoute, topLevelRoutes) {
+        NavState(
+            primaryTopLevelRoute = primaryTopLevelRoute,
+            topLevelBackStacks = topLevelBackstacks,
+            defaultBackstack = defaultBackstack,
+            currentBackstack = currentBackstack,
+        )
+    }
+}
+
+class NavState(
+    val topLevelBackStacks: Map<TopLevelRoute, SnapshotStateList<AppRoute>>,
+    val defaultBackstack: SnapshotStateList<AppRoute>,
+    val primaryTopLevelRoute: TopLevelRoute,
+    val currentBackstack: SnapshotStateList<AppRoute>,
+) {
+
+    var topLevelRoute: TopLevelRoute?
+        get() = currentBackstack.firstOrNull() as? TopLevelRoute
+        set(value) {
+            val oldRoute = topLevelRoute
+
+            // Save current backstack to the old route's storage
+            val oldStorage = if (oldRoute != null) topLevelBackStacks[oldRoute]!! else defaultBackstack
+            oldStorage.clear()
+            oldStorage.addAll(currentBackstack)
+
+            // Load new route's backstack into currentBackstack
+            val newStorage = if (value != null) topLevelBackStacks[value]!! else defaultBackstack
+            currentBackstack.clear()
+            currentBackstack.addAll(newStorage)
+        }
+
+    @Composable
+    fun toDecoratedEntries(
+        entryProvider: (AppRoute) -> NavEntry<AppRoute>
+    ): SnapshotStateList<NavEntry<AppRoute>> {
+        val decorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator<AppRoute>(),
+            rememberViewModelStoreNavEntryDecorator(),
+        )
+
+        val topLevelEntries = topLevelBackStacks
+            .mapValues { (route, stack) ->
+                rememberDecoratedNavEntries(
+                    backStack = if (route == topLevelRoute) currentBackstack else stack,
+                    entryDecorators = decorators,
+                    entryProvider = entryProvider
+                )
+            }
+            .withDefault { emptyList() }
+
+        val defaultEntries = rememberDecoratedNavEntries(
+            backStack = if (topLevelRoute == null) currentBackstack else defaultBackstack,
+            entryDecorators = decorators,
+            entryProvider = entryProvider,
+        )
+
+        return when (val topRoute = topLevelRoute) {
+            null -> defaultEntries
+            primaryTopLevelRoute -> topLevelEntries.getValue(primaryTopLevelRoute)
+            else -> topLevelEntries.getValue(primaryTopLevelRoute) + topLevelEntries.getValue(topRoute)
+        }.toMutableStateList()
+    }
+}
