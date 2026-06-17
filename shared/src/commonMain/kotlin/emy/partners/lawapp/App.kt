@@ -86,19 +86,36 @@ private enum class TopLevelDestinationKind {
 
 private class LawAppNavigationContext(
     val contentPadding: PaddingValues,
-    val scrollVertical: ScrollState,
-    val createdEvaluations: SnapshotStateList<EvaluationSession>,
+    val state: LawAppState,
 ) {
     val evaluations: List<EvaluationSession>
-        get() = Constants.evaluations + createdEvaluations
+        get() = Constants.evaluations + state.createdEvaluations
 }
 
 private val LocalLawAppNavigationContext = staticCompositionLocalOf<LawAppNavigationContext> {
     error("No LawAppNavigationContext provided")
 }
 
+private class LawAppState(
+    val createdEvaluations: SnapshotStateList<EvaluationSession>,
+) {
+    private val pageScrollStates = mutableStateMapOf<String, ScrollState>()
+
+    var currentPageState by mutableStateOf<LawAppPageState?>(null)
+
+    fun scrollStateFor(pageKey: String): ScrollState =
+        pageScrollStates.getOrPut(pageKey) { ScrollState(initial = 0) }
+}
+
+private data class LawAppPageState(
+    val key: String,
+    val topLevelDestinationKind: TopLevelDestinationKind,
+    val scrollState: ScrollState,
+)
+
 private interface LawAppScreen : Screen {
     val topLevelDestinationKind: TopLevelDestinationKind
+    val pageStateKey: String
 }
 
 private abstract class UniqueLawAppScreen : LawAppScreen {
@@ -107,25 +124,29 @@ private abstract class UniqueLawAppScreen : LawAppScreen {
 
 private class HomeScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Home
+    override val pageStateKey: String = "home"
 
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
         HomePage(Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()))
     }
 }
 
 private class ExploreScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Explore
+    override val pageStateKey: String = "explore"
 
     @Composable
     override fun Content() {
-        ExploreRootContent()
+        ExploreRootContent(pageStateKey)
     }
 }
 
 private data class ExploreDetailScreen(val blogId: Long) : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Explore
+    override val pageStateKey: String = "explore/detail/$blogId"
 
     @Composable
     override fun Content() {
@@ -134,30 +155,34 @@ private data class ExploreDetailScreen(val blogId: Long) : UniqueLawAppScreen() 
         val blog = Constants.blog.firstOrNull { it.id == blogId }
 
         if (blog == null) {
-            ExploreRootContent()
+            ExploreRootContent("explore")
             return
         }
+
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ExploreDetailPage(
             blog = blog,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
-            scrollVertical = context.scrollVertical,
+            scrollVertical = scrollVertical,
         )
     }
 }
 
 private class EvaluationScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation"
 
     @Composable
     override fun Content() {
-        EvaluationRootContent()
+        EvaluationRootContent(pageStateKey)
     }
 }
 
 private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/detail/$evaluationId"
 
     @Composable
     override fun Content() {
@@ -166,92 +191,128 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawApp
         val evaluation = context.evaluations.firstOrNull { it.id == evaluationId }
 
         if (evaluation == null) {
-            EvaluationRootContent()
+            EvaluationRootContent("evaluation")
             return
         }
+
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         EvaluationDetailPage(
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
             onStartQuiz = { navigator.replaceAll(QuizScreen()) },
-            scrollVertical = context.scrollVertical,
+            scrollVertical = scrollVertical,
         )
     }
 }
 
 private class EvaluationCreateScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/create"
 
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
         val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         EvaluationCreatePage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
             onSave = { evaluation ->
-                context.createdEvaluations.add(evaluation.toSession(context.createdEvaluations.size))
+                context.state.createdEvaluations.add(evaluation.toSession(context.state.createdEvaluations.size))
                 navigator.pop()
             },
-            scrollVertical = context.scrollVertical,
+            scrollVertical = scrollVertical,
         )
     }
 }
 
 private class QuizScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Quiz
+    override val pageStateKey: String = "quiz"
 
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         QuizPage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            scrollVertical = context.scrollVertical,
+            scrollVertical = scrollVertical,
         )
     }
 }
 
 private class ProfileScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
+    override val pageStateKey: String = "profile"
 
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ProfilPage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            scrollVertical = context.scrollVertical,
+            scrollVertical = scrollVertical,
         )
     }
 }
 
 @Composable
-private fun ExploreRootContent() {
+private fun ExploreRootContent(pageStateKey: String) {
     val context = LocalLawAppNavigationContext.current
     val navigator = LocalNavigator.currentOrThrow
+    val scrollVertical = rememberPageScrollState(pageStateKey, TopLevelDestinationKind.Explore)
 
     ExplorePage(
         modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-        scrollVertical = context.scrollVertical,
+        scrollVertical = scrollVertical,
         onBlogClick = { navigator.push(ExploreDetailScreen(it.id)) },
     )
 }
 
 @Composable
-private fun EvaluationRootContent() {
+private fun EvaluationRootContent(pageStateKey: String) {
     val context = LocalLawAppNavigationContext.current
     val navigator = LocalNavigator.currentOrThrow
+    val scrollVertical = rememberPageScrollState(pageStateKey, TopLevelDestinationKind.Evaluation)
 
     EvaluationPage(
         evaluations = context.evaluations,
         modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
         onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
         onCreateClick = { navigator.push(EvaluationCreateScreen()) },
-        scrollVertical = context.scrollVertical,
+        scrollVertical = scrollVertical,
     )
+}
+
+@Composable
+private fun rememberPageScrollState(
+    pageStateKey: String,
+    topLevelDestinationKind: TopLevelDestinationKind,
+): ScrollState {
+    val context = LocalLawAppNavigationContext.current
+    val scrollState = remember(pageStateKey) {
+        context.state.scrollStateFor(pageStateKey)
+    }
+
+    DisposableEffect(context.state, pageStateKey, topLevelDestinationKind, scrollState) {
+        context.state.currentPageState = LawAppPageState(
+            key = pageStateKey,
+            topLevelDestinationKind = topLevelDestinationKind,
+            scrollState = scrollState,
+        )
+        onDispose {
+            if (context.state.currentPageState?.key == pageStateKey) {
+                context.state.currentPageState = null
+            }
+        }
+    }
+
+    return scrollState
 }
 
 @Composable
@@ -259,8 +320,9 @@ private fun EvaluationRootContent() {
 fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
-    val scrollVertical = rememberScrollState()
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
+    val appState = remember(createdEvaluations) { LawAppState(createdEvaluations) }
+    val defaultTopBarScrollState = rememberScrollState()
     val topLevelDestinations = listOf(
         TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
         TopLevelDestination(TopLevelDestinationKind.Explore, ::ExploreScreen, stringResource(Res.string.discovery), Res.drawable.explore),
@@ -270,6 +332,7 @@ fun App() {
     )
     MaterialTheme {
         Navigator(HomeScreen()) { navigator ->
+            val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
             Scaffold(
     //            contentWindowInsets = WindowInsets(0),
                 bottomBar = {
@@ -309,7 +372,7 @@ fun App() {
 
                     //}
                 },
-                topBar = {TopBarCustom(scrollVertical)}
+                topBar = {TopBarCustom(topBarScrollState)}
     //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
             ) {
 
@@ -340,8 +403,7 @@ fun App() {
                     )
                     val navigationContext = LawAppNavigationContext(
                         contentPadding = it,
-                        scrollVertical = scrollVertical,
-                        createdEvaluations = createdEvaluations,
+                        state = appState,
                     )
                     Column {
                         CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
