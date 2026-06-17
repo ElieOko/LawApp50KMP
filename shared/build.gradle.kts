@@ -52,12 +52,12 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.voyager.navigator)
            // implementation("io.coil-kt:coil-compose:3.0.0")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
             implementation("io.coil-kt.coil3:coil-compose:3.0.0")
             implementation("io.github.khubaibkhan4:mediaplayer-kmp:2.0.9")
             implementation("io.github.fletchmckee.liquid:liquid:1.1.1")
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.2")
 
         }
         appleMain.dependencies {
