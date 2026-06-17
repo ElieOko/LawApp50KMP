@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,8 +43,9 @@ import io.github.fletchmckee.liquid.rememberLiquidState
 fun HomePage(
     modifier: Modifier = Modifier,
     isActive: Boolean = true,
+    pagerState: PagerState = rememberPagerState(pageCount = { generateArticle.size }),
 ) {
-    HomeBuild(modifier, isActive)
+    HomeBuild(modifier, isActive, pagerState)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,9 +53,9 @@ fun HomePage(
 fun HomeBuild(
     modifier: Modifier = Modifier,
     isActive: Boolean = true,
+    pagerState: PagerState = rememberPagerState(pageCount = { generateArticle.size }),
 ) {
     val liquidState = rememberLiquidState()
-    val pagerState = rememberPagerState(pageCount = { generateArticle.size })
 
 //    LaunchedEffect(pagerState.currentPage){
 //        show = false

@@ -1,6 +1,7 @@
 package emy.partners.lawapp
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -66,6 +68,7 @@ import lawapp.shared.generated.resources.profil_user
 import lawapp.shared.generated.resources.quiz
 import lawapp.shared.generated.resources.session
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -105,6 +108,7 @@ private class LawAppState(
 
     var activeTopLevelDestination by mutableStateOf(TopLevelDestinationKind.Home)
     var currentPageState by mutableStateOf<LawAppPageState?>(null)
+    var homePagerPage by mutableIntStateOf(0)
 
     fun scrollStateFor(pageKey: String): ScrollState =
         pageScrollStates.getOrPut(pageKey) { ScrollState(initial = 0) }
@@ -133,9 +137,24 @@ private class HomeScreen : UniqueLawAppScreen() {
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
         rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        val pagerState = rememberPagerState(
+            initialPage = context.state.homePagerPage.coerceIn(
+                minimumValue = 0,
+                maximumValue = (Constants.generateArticle.size - 1).coerceAtLeast(0),
+            ),
+            pageCount = { Constants.generateArticle.size },
+        )
+
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }
+                .distinctUntilChanged()
+                .collect { context.state.homePagerPage = it }
+        }
+
         HomePage(
             modifier = Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()),
             isActive = context.state.activeTopLevelDestination == topLevelDestinationKind,
+            pagerState = pagerState,
         )
     }
 }
@@ -338,7 +357,8 @@ private fun TopLevelNavigator(
             .zIndex(1f)
     } else {
         Modifier
-            .size(0.dp)
+            .fillMaxSize()
+            .alpha(0f)
             .zIndex(0f)
     }
 
