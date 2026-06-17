@@ -39,13 +39,19 @@ import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.rememberLiquidState
 
 @Composable
-fun HomePage(modifier: Modifier = Modifier) {
-    HomeBuild(modifier)
+fun HomePage(
+    modifier: Modifier = Modifier,
+    isActive: Boolean = true,
+) {
+    HomeBuild(modifier, isActive)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeBuild(modifier: Modifier = Modifier) {
+fun HomeBuild(
+    modifier: Modifier = Modifier,
+    isActive: Boolean = true,
+) {
     val liquidState = rememberLiquidState()
     val pagerState = rememberPagerState(pageCount = { generateArticle.size })
 
@@ -80,7 +86,7 @@ fun HomeBuild(modifier: Modifier = Modifier) {
                             show = false
                         }.liquefiable(liquidState),
                         url = generateArticle[it].video, // Automatically Detect the URL, Wether to Play YouTube Video or .mp4 e.g
-                        pagerState.currentPage == it,
+                        isActive && pagerState.currentPage == it,
                         showControls = true,
                     )
 //                    PlatformVideoPlayer(

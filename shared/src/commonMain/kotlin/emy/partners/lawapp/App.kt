@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
@@ -64,6 +65,7 @@ import lawapp.shared.generated.resources.profil
 import lawapp.shared.generated.resources.profil_user
 import lawapp.shared.generated.resources.quiz
 import lawapp.shared.generated.resources.session
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -101,6 +103,7 @@ private class LawAppState(
 ) {
     private val pageScrollStates = mutableStateMapOf<String, ScrollState>()
 
+    var activeTopLevelDestination by mutableStateOf(TopLevelDestinationKind.Home)
     var currentPageState by mutableStateOf<LawAppPageState?>(null)
 
     fun scrollStateFor(pageKey: String): ScrollState =
@@ -130,7 +133,10 @@ private class HomeScreen : UniqueLawAppScreen() {
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
         rememberPageScrollState(pageStateKey, topLevelDestinationKind)
-        HomePage(Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()))
+        HomePage(
+            modifier = Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()),
+            isActive = context.state.activeTopLevelDestination == topLevelDestinationKind,
+        )
     }
 }
 
@@ -201,7 +207,7 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawApp
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
-            onStartQuiz = { navigator.replaceAll(QuizScreen()) },
+            onStartQuiz = { context.state.activeTopLevelDestination = TopLevelDestinationKind.Quiz },
             scrollVertical = scrollVertical,
         )
     }
@@ -298,13 +304,16 @@ private fun rememberPageScrollState(
     val scrollState = remember(pageStateKey) {
         context.state.scrollStateFor(pageStateKey)
     }
+    val isActiveTopLevel = context.state.activeTopLevelDestination == topLevelDestinationKind
 
-    DisposableEffect(context.state, pageStateKey, topLevelDestinationKind, scrollState) {
-        context.state.currentPageState = LawAppPageState(
-            key = pageStateKey,
-            topLevelDestinationKind = topLevelDestinationKind,
-            scrollState = scrollState,
-        )
+    DisposableEffect(context.state, pageStateKey, topLevelDestinationKind, scrollState, isActiveTopLevel) {
+        if (isActiveTopLevel) {
+            context.state.currentPageState = LawAppPageState(
+                key = pageStateKey,
+                topLevelDestinationKind = topLevelDestinationKind,
+                scrollState = scrollState,
+            )
+        }
         onDispose {
             if (context.state.currentPageState?.key == pageStateKey) {
                 context.state.currentPageState = null
@@ -316,6 +325,39 @@ private fun rememberPageScrollState(
 }
 
 @Composable
+private fun TopLevelNavigator(
+    destination: TopLevelDestination,
+    isActive: Boolean,
+    onBackConsumed: () -> Unit,
+    onRootBack: () -> Unit,
+) {
+    val startScreen = remember(destination.kind) { destination.createScreen() }
+    val modifier = if (isActive) {
+        Modifier
+            .fillMaxSize()
+            .zIndex(1f)
+    } else {
+        Modifier
+            .size(0.dp)
+            .zIndex(0f)
+    }
+
+    Box(modifier) {
+        Navigator(startScreen) { navigator ->
+            PlatformBackButtonHandler(enabled = isActive) {
+                if (navigator.pop()) {
+                    onBackConsumed()
+                } else {
+                    onRootBack()
+                }
+            }
+
+            CurrentScreen()
+        }
+    }
+}
+
+@Composable
 @Preview(showBackground = true)
 fun App() {
     val liquidState = rememberLiquidState()
@@ -323,6 +365,8 @@ fun App() {
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
     val appState = remember(createdEvaluations) { LawAppState(createdEvaluations) }
     val defaultTopBarScrollState = rememberScrollState()
+    val exitController = rememberApplicationExitController()
+    var backPressedOnce by remember { mutableStateOf(false) }
     val topLevelDestinations = listOf(
         TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
         TopLevelDestination(TopLevelDestinationKind.Explore, ::ExploreScreen, stringResource(Res.string.discovery), Res.drawable.explore),
@@ -330,94 +374,127 @@ fun App() {
         TopLevelDestination(TopLevelDestinationKind.Quiz, ::QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
         TopLevelDestination(TopLevelDestinationKind.Profile, ::ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
     )
+
+    LaunchedEffect(backPressedOnce) {
+        if (backPressedOnce) {
+            delay(2_000)
+            backPressedOnce = false
+        }
+    }
+
     MaterialTheme {
-        Navigator(HomeScreen()) { navigator ->
-            val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
-            Scaffold(
-    //            contentWindowInsets = WindowInsets(0),
-                bottomBar = {
-                    //CompositionLocalProvider(LocalRippleConfiguration provides null){
-                    //Color(0xFF242D2C)
-                    val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
-                        ?.topLevelDestinationKind
-                        ?: TopLevelDestinationKind.Home
-                    Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                        BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                                Color.White.copy(alpha = 0.5f)
-                            )) {
-                            topLevelDestinations.forEach { destination ->
-                                NavigationBarItem(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    colors =  NavigationBarItemDefaults.colors(
-                                        indicatorColor =  Color.White.copy(alpha = 0.65f),
-                                        selectedTextColor = Color(0xFf2563EB),
-                                        selectedIconColor = Color(0xFf2563EB),
-                                        unselectedIconColor = Color.Black.copy(0.6f),
-                                        unselectedTextColor = Color.Black.copy(0.6f),
-                                    ),
-                                    selected = destination.kind == selectedTopLevel,
-                                    onClick = { navigator.replaceAll(destination.createScreen()) },
-                                    icon = {
-                                        Icon(
-                                            painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
-                                        )
-                                    },
-                                    label = {
-                                        Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    //}
-                },
-                topBar = {TopBarCustom(topBarScrollState)}
-    //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
-            ) {
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .liquefiable(liquidState)
-                ) {
-                    Image(
-                        painter = painterResource(Res.drawable.justice),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize(),
-                        colorFilter = ColorFilter.colorMatrix(
-                            ColorMatrix().apply {
-                                setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
-                            }
-                        )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .liquid(liquidState)
-                            .background(
-                                Color.White.copy(alpha = 0.15f)
+        val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
+        Scaffold(
+//            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                //CompositionLocalProvider(LocalRippleConfiguration provides null){
+                //Color(0xFF242D2C)
+                Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
+                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
+                            Color.White.copy(alpha = 0.5f)
+                        )) {
+                        topLevelDestinations.forEach { destination ->
+                            NavigationBarItem(
+                                interactionSource = remember { MutableInteractionSource() },
+                                colors =  NavigationBarItemDefaults.colors(
+                                    indicatorColor =  Color.White.copy(alpha = 0.65f),
+                                    selectedTextColor = Color(0xFf2563EB),
+                                    selectedIconColor = Color(0xFf2563EB),
+                                    unselectedIconColor = Color.Black.copy(0.6f),
+                                    unselectedTextColor = Color.Black.copy(0.6f),
+                                ),
+                                selected = destination.kind == appState.activeTopLevelDestination,
+                                onClick = {
+                                    backPressedOnce = false
+                                    appState.activeTopLevelDestination = destination.kind
+                                },
+                                icon = {
+                                    Icon(
+                                        painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
+                                    )
+                                },
+                                label = {
+                                    Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
                             )
-                    )
-                    val navigationContext = LawAppNavigationContext(
-                        contentPadding = it,
-                        state = appState,
-                    )
-                    Column {
-                        CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
-                            CurrentScreen()
                         }
                     }
                 }
 
+                //}
+            },
+            topBar = {TopBarCustom(topBarScrollState)}
+//            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
+        ) {
 
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .liquefiable(liquidState)
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.justice),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                    colorFilter = ColorFilter.colorMatrix(
+                        ColorMatrix().apply {
+                            setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
+                        }
+                    )
+                )
 
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .liquid(liquidState)
+                        .background(
+                            Color.White.copy(alpha = 0.15f)
+                        )
+                )
+                val navigationContext = LawAppNavigationContext(
+                    contentPadding = it,
+                    state = appState,
+                )
+                Column {
+                    CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
+                        topLevelDestinations.forEach { destination ->
+                            key(destination.kind) {
+                                TopLevelNavigator(
+                                    destination = destination,
+                                    isActive = destination.kind == appState.activeTopLevelDestination,
+                                    onBackConsumed = { backPressedOnce = false },
+                                    onRootBack = {
+                                        if (backPressedOnce) {
+                                            exitController.exitApplication()
+                                        } else {
+                                            backPressedOnce = true
+                                            exitController.showExitPrompt()
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
             }
+
+
+
         }
     }
 }
+
+@Composable
+expect fun PlatformBackButtonHandler(enabled: Boolean, onBack: () -> Unit)
+
+interface ApplicationExitController {
+    fun showExitPrompt()
+    fun exitApplication()
+}
+
+@Composable
+expect fun rememberApplicationExitController(): ApplicationExitController
 
 @Composable
 expect fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean)

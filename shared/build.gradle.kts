@@ -36,6 +36,7 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.foundation.pager)
             implementation("io.ktor:ktor-client-okhttp:3.0.0")
