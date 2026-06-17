@@ -16,7 +16,7 @@ material3 = "1.11.0-alpha07"
 pagerVersion = "1.7.2"
 media3Exoplayer = "1.10.1"
 ktor = "3.0.1"
-voyager = "1.0.1"
+voyager = "1.1.0-beta03"
 #mediaPlayerKMP = "2.0.9"
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
