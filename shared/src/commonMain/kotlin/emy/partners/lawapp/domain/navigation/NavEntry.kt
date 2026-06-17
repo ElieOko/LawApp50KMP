@@ -3,6 +3,7 @@ package emy.partners.lawapp.domain.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisallowComposableCalls
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -69,7 +70,11 @@ fun <T : AppRoute> rememberDecoratedNavEntries(
     entryDecorators: List<NavEntryDecorator>,
     entryProvider: (T) -> NavEntry<T> = { route -> NavEntry(route, entryDecorators) }
 ): List<NavEntry<T>> {
-    return remember(backStack, entryDecorators) {
-        backStack.map { route -> entryProvider(route) }
+    return backStack.map { route ->
+        key(route) {
+            remember(route, entryDecorators) {
+                entryProvider(route)
+            }
+        }
     }
 }

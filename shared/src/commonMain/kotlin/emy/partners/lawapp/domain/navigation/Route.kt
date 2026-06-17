@@ -45,7 +45,7 @@ data object EvaluationScreen : TopLevelRoute
 
 @Serializable
 @SerialName("settings")
-data object SettingScreen : TopLevelRoute
+data object SettingScreen : DetailRoute
 
 @Serializable
 @SerialName("quiz")
@@ -53,7 +53,7 @@ data object QuizScreen : TopLevelRoute
 
 @Serializable
 @SerialName("exploreDetail")
-data class ExploreDetailScreen(val sessionId: Long) : DetailRoute
+data class ExploreDetailScreen(val blogId: Long) : DetailRoute
 
 @Serializable
 @SerialName("evaluationCreate")
