@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.CurrentScreen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
@@ -68,10 +70,19 @@ import org.jetbrains.compose.resources.stringResource
 
 
 private data class TopLevelDestination(
-    val screen: LawAppScreen,
+    val kind: TopLevelDestinationKind,
+    val createScreen: () -> LawAppScreen,
     val name: String,
     val icon: DrawableResource,
 )
+
+private enum class TopLevelDestinationKind {
+    Home,
+    Explore,
+    Evaluation,
+    Quiz,
+    Profile,
+}
 
 private class LawAppNavigationContext(
     val contentPadding: PaddingValues,
@@ -86,12 +97,16 @@ private val LocalLawAppNavigationContext = staticCompositionLocalOf<LawAppNaviga
     error("No LawAppNavigationContext provided")
 }
 
-private sealed interface LawAppScreen : Screen {
-    val topLevelScreen: LawAppScreen
+private interface LawAppScreen : Screen {
+    val topLevelDestinationKind: TopLevelDestinationKind
 }
 
-private data object HomeScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = this
+private abstract class UniqueLawAppScreen : LawAppScreen {
+    override val key: ScreenKey = uniqueScreenKey
+}
+
+private class HomeScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Home
 
     @Composable
     override fun Content() {
@@ -100,24 +115,17 @@ private data object HomeScreen : LawAppScreen {
     }
 }
 
-private data object ExploreScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = this
+private class ExploreScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Explore
 
     @Composable
     override fun Content() {
-        val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
-
-        ExplorePage(
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            scrollVertical = context.scrollVertical,
-            onBlogClick = { navigator.push(ExploreDetailScreen(it.id)) },
-        )
+        ExploreRootContent()
     }
 }
 
-private data class ExploreDetailScreen(val blogId: Long) : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = ExploreScreen
+private data class ExploreDetailScreen(val blogId: Long) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Explore
 
     @Composable
     override fun Content() {
@@ -126,7 +134,7 @@ private data class ExploreDetailScreen(val blogId: Long) : LawAppScreen {
         val blog = Constants.blog.firstOrNull { it.id == blogId }
 
         if (blog == null) {
-            ExploreScreen.Content()
+            ExploreRootContent()
             return
         }
 
@@ -139,26 +147,17 @@ private data class ExploreDetailScreen(val blogId: Long) : LawAppScreen {
     }
 }
 
-private data object EvaluationScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = this
+private class EvaluationScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
 
     @Composable
     override fun Content() {
-        val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
-
-        EvaluationPage(
-            evaluations = context.evaluations,
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
-            onCreateClick = { navigator.push(EvaluationCreateScreen) },
-            scrollVertical = context.scrollVertical,
-        )
+        EvaluationRootContent()
     }
 }
 
-private data class EvaluationDetailScreen(val evaluationId: Long) : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = EvaluationScreen
+private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
 
     @Composable
     override fun Content() {
@@ -167,7 +166,7 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : LawAppScreen
         val evaluation = context.evaluations.firstOrNull { it.id == evaluationId }
 
         if (evaluation == null) {
-            EvaluationScreen.Content()
+            EvaluationRootContent()
             return
         }
 
@@ -175,14 +174,14 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : LawAppScreen
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
-            onStartQuiz = { navigator.replaceAll(QuizScreen) },
+            onStartQuiz = { navigator.replaceAll(QuizScreen()) },
             scrollVertical = context.scrollVertical,
         )
     }
 }
 
-private data object EvaluationCreateScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = EvaluationScreen
+private class EvaluationCreateScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
 
     @Composable
     override fun Content() {
@@ -201,8 +200,8 @@ private data object EvaluationCreateScreen : LawAppScreen {
     }
 }
 
-private data object QuizScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = this
+private class QuizScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Quiz
 
     @Composable
     override fun Content() {
@@ -215,8 +214,8 @@ private data object QuizScreen : LawAppScreen {
     }
 }
 
-private data object ProfileScreen : LawAppScreen {
-    override val topLevelScreen: LawAppScreen = this
+private class ProfileScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
 
     @Composable
     override fun Content() {
@@ -230,6 +229,32 @@ private data object ProfileScreen : LawAppScreen {
 }
 
 @Composable
+private fun ExploreRootContent() {
+    val context = LocalLawAppNavigationContext.current
+    val navigator = LocalNavigator.currentOrThrow
+
+    ExplorePage(
+        modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+        scrollVertical = context.scrollVertical,
+        onBlogClick = { navigator.push(ExploreDetailScreen(it.id)) },
+    )
+}
+
+@Composable
+private fun EvaluationRootContent() {
+    val context = LocalLawAppNavigationContext.current
+    val navigator = LocalNavigator.currentOrThrow
+
+    EvaluationPage(
+        evaluations = context.evaluations,
+        modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+        onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
+        onCreateClick = { navigator.push(EvaluationCreateScreen()) },
+        scrollVertical = context.scrollVertical,
+    )
+}
+
+@Composable
 @Preview(showBackground = true)
 fun App() {
     val liquidState = rememberLiquidState()
@@ -237,20 +262,22 @@ fun App() {
     val scrollVertical = rememberScrollState()
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
     val topLevelDestinations = listOf(
-        TopLevelDestination(HomeScreen, stringResource(Res.string.house), Res.drawable.house),
-        TopLevelDestination(ExploreScreen, stringResource(Res.string.discovery), Res.drawable.explore),
-        TopLevelDestination(EvaluationScreen, stringResource(Res.string.session), Res.drawable.evaluation),
-        TopLevelDestination(QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
-        TopLevelDestination(ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
+        TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
+        TopLevelDestination(TopLevelDestinationKind.Explore, ::ExploreScreen, stringResource(Res.string.discovery), Res.drawable.explore),
+        TopLevelDestination(TopLevelDestinationKind.Evaluation, ::EvaluationScreen, stringResource(Res.string.session), Res.drawable.evaluation),
+        TopLevelDestination(TopLevelDestinationKind.Quiz, ::QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
+        TopLevelDestination(TopLevelDestinationKind.Profile, ::ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
     )
     MaterialTheme {
-        Navigator(HomeScreen) { navigator ->
+        Navigator(HomeScreen()) { navigator ->
             Scaffold(
     //            contentWindowInsets = WindowInsets(0),
                 bottomBar = {
                     //CompositionLocalProvider(LocalRippleConfiguration provides null){
                     //Color(0xFF242D2C)
-                    val selectedTopLevel = (navigator.lastItem as? LawAppScreen)?.topLevelScreen ?: HomeScreen
+                    val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
+                        ?.topLevelDestinationKind
+                        ?: TopLevelDestinationKind.Home
                     Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
                         BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
                                 Color.White.copy(alpha = 0.5f)
@@ -265,8 +292,8 @@ fun App() {
                                         unselectedIconColor = Color.Black.copy(0.6f),
                                         unselectedTextColor = Color.Black.copy(0.6f),
                                     ),
-                                    selected = destination.screen == selectedTopLevel,
-                                    onClick = { navigator.replaceAll(destination.screen) },
+                                    selected = destination.kind == selectedTopLevel,
+                                    onClick = { navigator.replaceAll(destination.createScreen()) },
                                     icon = {
                                         Icon(
                                             painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
