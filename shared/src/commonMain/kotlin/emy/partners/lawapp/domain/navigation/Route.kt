@@ -63,3 +63,17 @@ data object EvaluationCreateScreen : DetailRoute
 @SerialName("evaluationDetail")
 data class EvaluationDetailScreen (val evaluationId: Long) : DetailRoute
 
+internal fun AppRoute.saveableKey(): String = when (this) {
+    AuthLoginScreen -> "auth/login"
+    AuthForgotPasswordScreen -> "auth/forgot-password"
+    AuthRegisterScreen -> "auth/register"
+    HomeScreen -> "home"
+    ProfilScreen -> "profile"
+    ExploreScreen -> "explore"
+    EvaluationScreen -> "evaluations"
+    SettingScreen -> "settings"
+    QuizScreen -> "quiz"
+    is ExploreDetailScreen -> "explore/detail/$blogId"
+    EvaluationCreateScreen -> "evaluations/create"
+    is EvaluationDetailScreen -> "evaluations/detail/$evaluationId"
+}

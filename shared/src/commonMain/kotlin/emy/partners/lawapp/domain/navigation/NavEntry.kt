@@ -45,7 +45,7 @@ private class SaveableStateHolderNavEntryDecorator(
 ) : NavEntryDecorator {
     @Composable
     override fun Decorate(entry: NavEntry<*>, content: @Composable () -> Unit) {
-        holder.SaveableStateProvider(entry.route) {
+        holder.SaveableStateProvider(entry.route.saveableKey()) {
             content()
         }
     }
@@ -71,7 +71,7 @@ fun <T : AppRoute> rememberDecoratedNavEntries(
     entryProvider: (T) -> NavEntry<T> = { route -> NavEntry(route, entryDecorators) }
 ): List<NavEntry<T>> {
     return backStack.map { route ->
-        key(route) {
+        key(route.saveableKey()) {
             remember(route, entryDecorators) {
                 entryProvider(route)
             }
