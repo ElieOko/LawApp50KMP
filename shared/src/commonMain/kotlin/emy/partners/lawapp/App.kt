@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -326,7 +325,7 @@ private fun rememberPageScrollState(
 }
 
 @Composable
-private fun BoxScope.TopLevelNavigator(
+private fun TopLevelNavigator(
     destination: TopLevelDestination,
     isActive: Boolean,
     onBackConsumed: () -> Unit,
@@ -335,7 +334,7 @@ private fun BoxScope.TopLevelNavigator(
     val startScreen = remember(destination.kind) { destination.createScreen() }
     val modifier = if (isActive) {
         Modifier
-            .matchParentSize()
+            .fillMaxSize()
             .zIndex(1f)
     } else {
         Modifier
