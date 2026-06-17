@@ -56,21 +56,7 @@ fun AppAndroidPreview() {
 
 @Composable
 private fun CrashBoundary(content: @Composable () -> Unit) {
-    var crash by remember { mutableStateOf<Throwable?>(null) }
-    val currentCrash = crash
-
-    if (currentCrash != null) {
-        CrashScreen(currentCrash)
-        return
-    }
-
-    try {
-        content()
-    } catch (throwable: Throwable) {
-        Log.e(CRASH_TAG, "Exception while rendering the app", throwable)
-        crash = throwable
-        CrashScreen(throwable)
-    }
+    content()
 }
 
 @Composable
