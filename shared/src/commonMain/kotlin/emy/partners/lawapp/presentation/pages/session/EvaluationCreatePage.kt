@@ -12,17 +12,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,12 +38,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import emy.partners.lawapp.convertMillisToDate
+import emy.partners.lawapp.data.Constants.typeEvaluationItems
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.Question
 import emy.partners.lawapp.domain.models.QuestionCaseStudy
@@ -47,8 +56,13 @@ import emy.partners.lawapp.domain.models.QuestionOption
 import emy.partners.lawapp.domain.models.QuestionOptionDAO
 import emy.partners.lawapp.domain.models.QuestionOuverte
 import emy.partners.lawapp.domain.models.QuestionOuverteDAO
+import emy.partners.lawapp.presentation.components.basics.InputFieldCompose
+import emy.partners.lawapp.presentation.components.basics.SelectInputField
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
+import lawapp.shared.generated.resources.Res
+import lawapp.shared.generated.resources.date
+import kotlin.time.Clock
 
 @Composable
 fun EvaluationCreatePage(
@@ -72,11 +86,13 @@ fun EvaluationCreateBuild(
     onSave: (EvaluationDAO) -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showDatePicker2 by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
+    var typeEvaluation by remember { mutableStateOf("") }
+    var matiere by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var fileContent by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf("") }
-    var endDate by remember { mutableStateOf("") }
     var compteur by remember { mutableStateOf("") }
     var selectedQuestionType by remember { mutableStateOf(CreationQuestionType.Option) }
     var questionTitle by remember { mutableStateOf("") }
@@ -91,7 +107,14 @@ fun EvaluationCreateBuild(
     val caseStudyQuestions = remember { mutableStateListOf<QuestionCaseStudyDAO>() }
     val totalQuestions = optionQuestions.size + openQuestions.size + caseStudyQuestions.size
     val effectiveCounter = compteur.toLongOrNull() ?: totalQuestions.toLong()
-
+    val datePickerState = rememberDatePickerState()
+    val datePickerState2 = rememberDatePickerState()
+    var startDate = datePickerState.selectedDateMillis?.let {
+        convertMillisToDate(it)
+    } ?: convertMillisToDate(Clock.System.now().toEpochMilliseconds())
+    var endDate = datePickerState2.selectedDateMillis?.let {
+        convertMillisToDate(it)
+    } ?: convertMillisToDate(Clock.System.now().toEpochMilliseconds())
     Column(
         Modifier
             .fillMaxSize()
@@ -152,30 +175,72 @@ fun EvaluationCreateBuild(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(32.dp))
                     .background(
-                        Brush.linearGradient(
-                            listOf(
-                                Color(0xFF2563EB).copy(alpha = 0.94f),
-                                BlueDarkEffect.copy(alpha = 0.92f)
-                            )
-                        )
+                        Color.White
                     )
-                    .padding(20.dp)
+                    .padding(10.dp)
             ) {
                 Column {
-                    CreationSection("Informations de base")
-                    CreationField("Titre", title, { title = it }, singleLine = true)
-                    CreationField("Description", description, { description = it }, minHeight = 96)
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CreationField("Date debut", startDate, { startDate = it }, modifier = Modifier.weight(1f), singleLine = true)
-                        CreationField("Date fin", endDate, { endDate = it }, modifier = Modifier.weight(1f), singleLine = true)
+                    CreationSection("Informations generales")
+                    CreationSection("Titre *", size = 16)
+                    CreationField("Titre", title, { title = it }, singleLine = true, placeHolder = "Interro 3, chapitre 5")
+                    CreationSection("Description", size = 16)
+                    CreationField("Description", description, { description = it }, minHeight = 96, placeHolder = "Description optionnelle")
+                    CreationSection("Matiere *", size = 16)
+                    CreationField("Matiere", matiere, { matiere = it }, singleLine = true, placeHolder = "Mathematique")
+                    CreationSection("Type d'evaluation *", size = 16)
+                    SelectInputField(itemList = typeEvaluationItems, textValueIn = typeEvaluation)
+//                    CreationSection("Duree *", size = 16)
+//                    CreationField("", matiere, { matiere = it }, singleLine = true, placeHolder = "30")
+                    CreationSection("Instructions pour les etudiants", size = 16)
+                    CreationField("Description", description, { description = it }, minHeight = 96, placeHolder = "Consignes optionnelles")
+
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                        CreationSection("Date debut", size = 16)
+                        CreationSection("Date de fin", size = 16)
                     }
-                    CreationField(
-                        label = "Compteur manuel (optionnel)",
-                        value = compteur,
-                        onValueChange = { compteur = it.filter { char -> char.isDigit() } },
-                        singleLine = true
-                    )
-                    CreationField("Contenu fichier / lien", fileContent, { fileContent = it }, minHeight = 78)
+                    Row(Modifier.fillMaxWidth()) {
+                        InputFieldCompose(
+                            modifier = Modifier.width(150.dp),
+                            value = startDate,
+                            onValueChange = { dataValue ->
+                                startDate = dataValue },
+                            onclickLastIcon = {
+                                showDatePicker = !showDatePicker },
+                            isSingle = false,
+                            iconLast = Res.drawable.date
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        InputFieldCompose(
+                            modifier = Modifier.width(150.dp),
+                            value = endDate,
+                            onValueChange = { dataValue ->
+                                endDate = dataValue },
+                            onclickLastIcon = {
+                                showDatePicker2 = !showDatePicker2 },
+                            isSingle = false,
+                            iconLast = Res.drawable.date
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                    ) {
+                        Text("Suivant", fontWeight = FontWeight.Bold)
+                    }
+
+
+//                    CreationField(
+//                        label = "Compteur manuel (optionnel)",
+//                        value = compteur,
+//                        onValueChange = { compteur = it.filter { char -> char.isDigit() } },
+//                        singleLine = true
+//                    )
+//                    CreationField("Contenu fichier / lien", fileContent, { fileContent = it }, minHeight = 78)
                 }
             }
 
@@ -361,13 +426,69 @@ fun EvaluationCreateBuild(
                 }
             }
             Spacer(Modifier.height(90.dp))
+            if (showDatePicker) {
+                Popup(
+                    onDismissRequest = { showDatePicker = false },
+                    alignment = Alignment.TopStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = 64.dp)
+                            .shadow(elevation = 4.dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp)
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = false,
+                            headline = {
+                                Button(onClick = {
+                                    showDatePicker = false
+                                }, modifier = Modifier.padding(10.dp)) {
+                                    Text("Valider")
+                                }
+                            }
+                        )
+
+                    }
+                }
+            }
+            if (showDatePicker2) {
+                Popup(
+                    onDismissRequest = { showDatePicker2 = false },
+                    alignment = Alignment.TopStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = 64.dp)
+                            .shadow(elevation = 4.dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp)
+                    ) {
+                        DatePicker(
+                            state = datePickerState2,
+                            showModeToggle = false,
+                            headline = {
+                                Button(onClick = {
+                                    showDatePicker2 = false
+                                }, modifier = Modifier.padding(10.dp)) {
+                                    Text("Valider")
+                                }
+                            }
+                        )
+
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun CreationSection(title: String) {
-    Text(title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
+private fun CreationSection(title: String, size : Int = 21) {
+    Text(title, color = Color.Black, fontWeight = FontWeight.ExtraBold, fontSize = size.sp)
     Spacer(Modifier.height(10.dp))
 }
 
@@ -392,16 +513,16 @@ private fun CreationField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
-    minHeight: Int = 56
+    minHeight: Int = 56,
+    placeHolder : String = ""
 ) {
     OutlinedTextField(
         value = value,
+        placeholder = {Text(placeHolder)},
         onValueChange = onValueChange,
-        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.White, focusedBorderColor = Color(
-            0x0F110505
-        )
+        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Black.copy(0.4f), focusedBorderColor = Color.Blue.copy(alpha = 0.6f),
         ),
-        label = { Text(label, color = Color.White) },
+//        label = { Text(label, color = Color.White) },
         singleLine = singleLine,
         modifier = modifier
             .fillMaxWidth()
