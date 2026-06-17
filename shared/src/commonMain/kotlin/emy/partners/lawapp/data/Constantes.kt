@@ -6,6 +6,7 @@ import emy.partners.lawapp.domain.models.Article
 import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.domain.models.Category
 import emy.partners.lawapp.domain.models.Comment
+import emy.partners.lawapp.domain.models.DataSelect
 import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
 import emy.partners.lawapp.domain.models.ExtraContent
@@ -261,5 +262,13 @@ object Constants {
             correctIndex = 2,
             explanation = "Le salaire remunere le travail fourni et fait partie des obligations essentielles de l'employeur."
         )
+    )
+
+    val typeEvaluationItems = listOf<DataSelect>(
+        DataSelect(name = "Travaux pratique"),
+        DataSelect(name = "Interrogation"),
+        DataSelect(name = "Devoir"),
+        DataSelect(name = "Exercice"),
+        DataSelect(name = "Autres")
     )
 }

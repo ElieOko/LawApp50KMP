@@ -54,6 +54,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.voyager.navigator)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
            // implementation("io.coil-kt:coil-compose:3.0.0")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
             implementation("io.coil-kt.coil3:coil-compose:3.0.0")

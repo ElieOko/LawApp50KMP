@@ -51,6 +51,7 @@ import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
+import emy.partners.lawapp.presentation.themes.tekoTypography
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
@@ -330,7 +331,7 @@ fun App() {
         TopLevelDestination(TopLevelDestinationKind.Quiz, ::QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
         TopLevelDestination(TopLevelDestinationKind.Profile, ::ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
     )
-    MaterialTheme {
+    MaterialTheme(typography = tekoTypography()) {
         Navigator(HomeScreen()) { navigator ->
             val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
             Scaffold(
