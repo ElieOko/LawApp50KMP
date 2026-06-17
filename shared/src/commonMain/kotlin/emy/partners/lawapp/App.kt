@@ -34,25 +34,7 @@ import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
-import emy.partners.lawapp.domain.navigation.AuthForgotPasswordScreen
-import emy.partners.lawapp.domain.navigation.AuthLoginScreen
-import emy.partners.lawapp.domain.navigation.AuthRegisterScreen
-import emy.partners.lawapp.domain.navigation.EvaluationCreateScreen
-import emy.partners.lawapp.domain.navigation.EvaluationDetailScreen
-import emy.partners.lawapp.domain.navigation.EvaluationScreen
-import emy.partners.lawapp.domain.navigation.ExploreDetailScreen
-import emy.partners.lawapp.domain.navigation.ExploreScreen
-import emy.partners.lawapp.domain.navigation.HomeScreen
-import emy.partners.lawapp.domain.navigation.NavHost
-import emy.partners.lawapp.domain.navigation.ProfilScreen
-import emy.partners.lawapp.domain.navigation.QuizScreen
-import emy.partners.lawapp.domain.navigation.SettingScreen
-import emy.partners.lawapp.domain.navigation.TopLevelRoute
-import emy.partners.lawapp.domain.navigation.rememberNavigator
 import emy.partners.lawapp.presentation.pages.ProfilPage
-import emy.partners.lawapp.presentation.pages.auth.LoginPage
-import emy.partners.lawapp.presentation.pages.auth.RecoveryAccountPage
-import emy.partners.lawapp.presentation.pages.auth.RegisterPage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
 import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
@@ -60,7 +42,6 @@ import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
-import emy.partners.lawapp.presentation.pages.settings.SettingPage
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
@@ -83,62 +64,36 @@ data class Parent(
     val id : Int,
     val name : String,
     var isActive : Boolean = false,
-    val icon : DrawableResource,
-    val route: TopLevelRoute
+    val icon : DrawableResource
 )
 @Composable
 @Preview(showBackground = true)
 fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
-    val homeScrollState = rememberScrollState()
-    val exploreScrollState = rememberScrollState()
-    val exploreDetailScrollState = rememberScrollState()
-    val evaluationScrollState = rememberScrollState()
-    val evaluationCreateScrollState = rememberScrollState()
-    val evaluationDetailScrollState = rememberScrollState()
-    val quizScrollState = rememberScrollState()
-    val profileScrollState = rememberScrollState()
-    val settingsScrollState = rememberScrollState()
+    val scrollVertical = rememberScrollState()
+    val selectedBlog = remember { mutableStateOf<Blog?>(null) }
+    val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
+    val isCreatingEvaluation = remember { mutableStateOf(false) }
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
-    val topLevelRoutes = remember {
-        setOf(HomeScreen, ExploreScreen, EvaluationScreen, QuizScreen, ProfilScreen)
-    }
-    val navigator = rememberNavigator(
-        startRoute = HomeScreen,
-        topLevelRoutes = topLevelRoutes,
-    )
     val listParent = listOf<Parent>(
-        Parent(1, stringResource(Res.string.house), icon = Res.drawable.house, route = HomeScreen),
-        Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore, route = ExploreScreen),
-        Parent(3,stringResource(Res.string.session), icon = Res.drawable.evaluation, route = EvaluationScreen),
-        Parent(4,stringResource(Res.string.quiz), icon = Res.drawable.quiz, route = QuizScreen),
-        Parent(5,stringResource(Res.string.profil), icon = Res.drawable.profil_user, route = ProfilScreen),
+        Parent(1, stringResource(Res.string.house), icon = Res.drawable.house),
+        Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore),
+        Parent(3,stringResource(Res.string.session), icon = Res.drawable.evaluation),
+        Parent(4,stringResource(Res.string.quiz), icon = Res.drawable.quiz),
+        Parent(5,stringResource(Res.string.profil), icon = Res.drawable.profil_user),
     )
-    val currentRoute = navigator.state.currentBackstack.lastOrNull()
-    val topBarScrollState = when (currentRoute) {
-        ExploreScreen -> exploreScrollState
-        is ExploreDetailScreen -> exploreDetailScrollState
-        EvaluationScreen -> evaluationScrollState
-        EvaluationCreateScreen -> evaluationCreateScrollState
-        is EvaluationDetailScreen -> evaluationDetailScrollState
-        QuizScreen -> quizScrollState
-        ProfilScreen -> profileScrollState
-        SettingScreen -> settingsScrollState
-        else -> homeScrollState
-    }
-    val evaluations = Constants.evaluations + createdEvaluations
+    val state = remember { mutableIntStateOf(0) }
     MaterialTheme {
         Scaffold(
 //            contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 //CompositionLocalProvider(LocalRippleConfiguration provides null){
                 //Color(0xFF242D2C)
-//                modifier = Modifier.background(
-//                    Color.White.copy(alpha = 0.5f)
-//                )
                 Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),) {
+                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
+                            Color.White.copy(alpha = 0.5f)
+                        )) {
                         listParent.forEachIndexed { i, parent ->
                             NavigationBarItem(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -149,9 +104,12 @@ fun App() {
                                     unselectedIconColor = Color.Black.copy(0.6f),
                                     unselectedTextColor = Color.Black.copy(0.6f),
                                 ),
-                                selected = parent.route == navigator.state.topLevelRoute,
+                                selected = i == state.intValue,
                                 onClick = {
-                                    navigator.activate(parent.route)
+                                    state.intValue = i
+                                    selectedBlog.value = null
+                                    selectedEvaluation.value = null
+                                    isCreatingEvaluation.value = false
                                 },
                                 icon = {
                                     Icon(
@@ -168,12 +126,7 @@ fun App() {
 
                 //}
             },
-            topBar = {
-                TopBarCustom(
-                    scrollState = topBarScrollState,
-                    onActionClick = { navigator.add(SettingScreen) }
-                )
-            }
+            topBar = {TopBarCustom(scrollVertical)}
 //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
         ) {
 
@@ -203,91 +156,80 @@ fun App() {
                         )
                 )
                 Column {
-                    NavHost(navigator) { route ->
-                        when (route) {
-                            HomeScreen -> HomePage(
-                                Modifier.padding(bottom = it.calculateBottomPadding())
-                            )
-
-                            ExploreScreen -> ExplorePage(
-                                modifier = Modifier.padding(top = it.calculateTopPadding()),
-                                scrollVertical = exploreScrollState,
-                                onBlogClick = { blog ->
-                                    navigator.add(ExploreDetailScreen(blog.id))
-                                }
-                            )
-
-                            is ExploreDetailScreen -> {
-                                val blog = Constants.blog.firstOrNull { blog ->
-                                    blog.id == route.blogId
-                                }
-                                if (blog == null) {
-                                    LaunchedEffect(route) { navigator.goBack() }
-                                } else {
-                                    ExploreDetailPage(
-                                        blog = blog,
-                                        modifier = Modifier.padding(top = it.calculateTopPadding()),
-                                        onBack = { navigator.goBack() },
-                                        scrollVertical = exploreDetailScrollState
-                                    )
-                                }
+                    when (state.intValue) {
+                        0 -> HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
+                        1 -> {
+                            val blog = selectedBlog.value
+                            if (blog == null) {
+                                ExplorePage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding(),
+                                    ),
+                                    scrollVertical = scrollVertical,
+                                    onBlogClick = { selectedBlog.value = it }
+                                )
+                            } else {
+                                ExploreDetailPage(
+                                    blog = blog,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding()
+                                    ),
+                                    onBack = { selectedBlog.value = null },
+                                    scrollVertical
+                                )
                             }
-
-                            EvaluationScreen -> EvaluationPage(
-                                evaluations = evaluations,
-                                modifier = Modifier.padding(top = it.calculateTopPadding()),
-                                onEvaluationClick = { evaluation ->
-                                    navigator.add(EvaluationDetailScreen(evaluation.id))
-                                },
-                                onCreateClick = { navigator.add(EvaluationCreateScreen) },
-                                scrollVertical = evaluationScrollState
-                            )
-
-                            EvaluationCreateScreen -> EvaluationCreatePage(
-                                modifier = Modifier.padding(top = it.calculateTopPadding()),
-                                onBack = { navigator.goBack() },
-                                onSave = { evaluation ->
-                                    createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
-                                    navigator.goBack()
-                                },
-                                scrollVertical = evaluationCreateScrollState
-                            )
-
-                            is EvaluationDetailScreen -> {
-                                val evaluation = evaluations.firstOrNull { evaluation ->
-                                    evaluation.id == route.evaluationId
-                                }
-                                if (evaluation == null) {
-                                    LaunchedEffect(route) { navigator.goBack() }
-                                } else {
-                                    EvaluationDetailPage(
-                                        evaluation = evaluation,
-                                        modifier = Modifier.padding(top = it.calculateTopPadding()),
-                                        onBack = { navigator.goBack() },
-                                        onStartQuiz = {
-                                            navigator.activate(EvaluationScreen)
-                                            navigator.activate(QuizScreen)
-                                        },
-                                        scrollVertical = evaluationDetailScrollState
-                                    )
-                                }
-                            }
-
-                            QuizScreen -> QuizPage(
-                                Modifier.padding(top = it.calculateTopPadding()),
-                                quizScrollState
-                            )
-
-                            ProfilScreen -> ProfilPage(
-                                Modifier.padding(top = it.calculateTopPadding()),
-                                profileScrollState
-                            )
-
-                            SettingScreen -> SettingPage()
-                            AuthLoginScreen -> LoginPage()
-                            AuthForgotPasswordScreen -> RecoveryAccountPage()
-                            AuthRegisterScreen -> RegisterPage()
                         }
+                        2 -> {
+                            val evaluation = selectedEvaluation.value
+                            if (isCreatingEvaluation.value) {
+                                EvaluationCreatePage(
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding()
+                                    ),
+                                    onBack = { isCreatingEvaluation.value = false },
+                                    onSave = { evaluation ->
+                                        createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
+                                        isCreatingEvaluation.value = false
+                                    },
+                                    scrollVertical
+                                )
+                            } else if (evaluation == null) {
+                                EvaluationPage(
+                                    evaluations = Constants.evaluations + createdEvaluations,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding()
+                                    ),
+                                    onEvaluationClick = { selectedEvaluation.value = it },
+                                    onCreateClick = { isCreatingEvaluation.value = true },
+                                    scrollVertical = scrollVertical
+                                )
+                            } else {
+                                EvaluationDetailPage(
+                                    evaluation = evaluation,
+                                    modifier = Modifier.padding(
+                                        top = it.calculateTopPadding()
+                                    ),
+                                    onBack = { selectedEvaluation.value = null },
+                                    onStartQuiz = {
+                                        selectedEvaluation.value = null
+                                        state.intValue = 3
+                                    },
+                                    scrollVertical
+                                )
+                            }
+                        }
+                        3 -> QuizPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding()
+                            ),
+                            scrollVertical
+                        )
+                        4 -> ProfilPage(
+                            Modifier.padding(
+                                top = it.calculateTopPadding()
+                            ),
+                            scrollVertical
+                        )
                     }
                 }
             }
