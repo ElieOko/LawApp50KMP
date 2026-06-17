@@ -5,7 +5,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -476,7 +475,7 @@ fun App() {
                     contentPadding = it,
                     state = appState,
                 )
-                Column {
+                Box(Modifier.matchParentSize()) {
                     CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
                         topLevelDestinations.forEach { destination ->
                             key(destination.kind) {
