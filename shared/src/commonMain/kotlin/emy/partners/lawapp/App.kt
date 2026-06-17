@@ -5,9 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomAppBar
@@ -28,9 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
-import emy.partners.lawapp.domain.models.Blog
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
@@ -60,182 +67,265 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 
-data class Parent(
-    val id : Int,
-    val name : String,
-    var isActive : Boolean = false,
-    val icon : DrawableResource
+private data class TopLevelDestination(
+    val screen: LawAppScreen,
+    val name: String,
+    val icon: DrawableResource,
 )
+
+private class LawAppNavigationContext(
+    val contentPadding: PaddingValues,
+    val scrollVertical: ScrollState,
+    val createdEvaluations: SnapshotStateList<EvaluationSession>,
+) {
+    val evaluations: List<EvaluationSession>
+        get() = Constants.evaluations + createdEvaluations
+}
+
+private val LocalLawAppNavigationContext = staticCompositionLocalOf<LawAppNavigationContext> {
+    error("No LawAppNavigationContext provided")
+}
+
+private sealed interface LawAppScreen : Screen {
+    val topLevelScreen: LawAppScreen
+}
+
+private data object HomeScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = this
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        HomePage(Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()))
+    }
+}
+
+private data object ExploreScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = this
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+
+        ExplorePage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            scrollVertical = context.scrollVertical,
+            onBlogClick = { navigator.push(ExploreDetailScreen(it.id)) },
+        )
+    }
+}
+
+private data class ExploreDetailScreen(val blogId: Long) : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = ExploreScreen
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val blog = Constants.blog.firstOrNull { it.id == blogId }
+
+        if (blog == null) {
+            ExploreScreen.Content()
+            return
+        }
+
+        ExploreDetailPage(
+            blog = blog,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
+private data object EvaluationScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = this
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+
+        EvaluationPage(
+            evaluations = context.evaluations,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
+            onCreateClick = { navigator.push(EvaluationCreateScreen) },
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
+private data class EvaluationDetailScreen(val evaluationId: Long) : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = EvaluationScreen
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val evaluation = context.evaluations.firstOrNull { it.id == evaluationId }
+
+        if (evaluation == null) {
+            EvaluationScreen.Content()
+            return
+        }
+
+        EvaluationDetailPage(
+            evaluation = evaluation,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onStartQuiz = { navigator.replaceAll(QuizScreen) },
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
+private data object EvaluationCreateScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = EvaluationScreen
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+
+        EvaluationCreatePage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onSave = { evaluation ->
+                context.createdEvaluations.add(evaluation.toSession(context.createdEvaluations.size))
+                navigator.pop()
+            },
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
+private data object QuizScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = this
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+
+        QuizPage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
+private data object ProfileScreen : LawAppScreen {
+    override val topLevelScreen: LawAppScreen = this
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+
+        ProfilPage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            scrollVertical = context.scrollVertical,
+        )
+    }
+}
+
 @Composable
 @Preview(showBackground = true)
 fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
     val scrollVertical = rememberScrollState()
-    val selectedBlog = remember { mutableStateOf<Blog?>(null) }
-    val selectedEvaluation = remember { mutableStateOf<EvaluationSession?>(null) }
-    val isCreatingEvaluation = remember { mutableStateOf(false) }
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
-    val listParent = listOf<Parent>(
-        Parent(1, stringResource(Res.string.house), icon = Res.drawable.house),
-        Parent(2,stringResource(Res.string.discovery), icon = Res.drawable.explore),
-        Parent(3,stringResource(Res.string.session), icon = Res.drawable.evaluation),
-        Parent(4,stringResource(Res.string.quiz), icon = Res.drawable.quiz),
-        Parent(5,stringResource(Res.string.profil), icon = Res.drawable.profil_user),
+    val topLevelDestinations = listOf(
+        TopLevelDestination(HomeScreen, stringResource(Res.string.house), Res.drawable.house),
+        TopLevelDestination(ExploreScreen, stringResource(Res.string.discovery), Res.drawable.explore),
+        TopLevelDestination(EvaluationScreen, stringResource(Res.string.session), Res.drawable.evaluation),
+        TopLevelDestination(QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
+        TopLevelDestination(ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
     )
-    val state = remember { mutableIntStateOf(0) }
     MaterialTheme {
-        Scaffold(
-//            contentWindowInsets = WindowInsets(0),
-            bottomBar = {
-                //CompositionLocalProvider(LocalRippleConfiguration provides null){
-                //Color(0xFF242D2C)
-                Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                    BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                            Color.White.copy(alpha = 0.5f)
-                        )) {
-                        listParent.forEachIndexed { i, parent ->
-                            NavigationBarItem(
-                                interactionSource = remember { MutableInteractionSource() },
-                                colors =  NavigationBarItemDefaults.colors(
-                                    indicatorColor =  Color.White.copy(alpha = 0.65f),
-                                    selectedTextColor = Color(0xFf2563EB),
-                                    selectedIconColor = Color(0xFf2563EB),
-                                    unselectedIconColor = Color.Black.copy(0.6f),
-                                    unselectedTextColor = Color.Black.copy(0.6f),
-                                ),
-                                selected = i == state.intValue,
-                                onClick = {
-                                    state.intValue = i
-                                    selectedBlog.value = null
-                                    selectedEvaluation.value = null
-                                    isCreatingEvaluation.value = false
-                                },
-                                icon = {
-                                    Icon(
-                                        painter = painterResource(parent.icon),null, modifier = Modifier.size(28.dp),
-                                    )
-                                },
-                                label = {
-                                    Text(parent.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                }
-                            )
+        Navigator(HomeScreen) { navigator ->
+            Scaffold(
+    //            contentWindowInsets = WindowInsets(0),
+                bottomBar = {
+                    //CompositionLocalProvider(LocalRippleConfiguration provides null){
+                    //Color(0xFF242D2C)
+                    val selectedTopLevel = (navigator.lastItem as? LawAppScreen)?.topLevelScreen ?: HomeScreen
+                    Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
+                        BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
+                                Color.White.copy(alpha = 0.5f)
+                            )) {
+                            topLevelDestinations.forEach { destination ->
+                                NavigationBarItem(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    colors =  NavigationBarItemDefaults.colors(
+                                        indicatorColor =  Color.White.copy(alpha = 0.65f),
+                                        selectedTextColor = Color(0xFf2563EB),
+                                        selectedIconColor = Color(0xFf2563EB),
+                                        unselectedIconColor = Color.Black.copy(0.6f),
+                                        unselectedTextColor = Color.Black.copy(0.6f),
+                                    ),
+                                    selected = destination.screen == selectedTopLevel,
+                                    onClick = { navigator.replaceAll(destination.screen) },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
+                                        )
+                                    },
+                                    label = {
+                                        Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                )
+                            }
                         }
                     }
-                }
 
-                //}
-            },
-            topBar = {TopBarCustom(scrollVertical)}
-//            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .liquefiable(liquidState)
+                    //}
+                },
+                topBar = {TopBarCustom(scrollVertical)}
+    //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
             ) {
-                Image(
-                    painter = painterResource(Res.drawable.justice),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                    colorFilter = ColorFilter.colorMatrix(
-                        ColorMatrix().apply {
-                            setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
-                        }
-                    )
-                )
 
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .liquid(liquidState)
-                        .background(
-                            Color.White.copy(alpha = 0.15f)
-                        )
-                )
-                Column {
-                    when (state.intValue) {
-                        0 -> HomePage(Modifier.padding(bottom = it.calculateBottomPadding()))
-                        1 -> {
-                            val blog = selectedBlog.value
-                            if (blog == null) {
-                                ExplorePage(
-                                    modifier = Modifier.padding(
-                                        top = it.calculateTopPadding(),
-                                    ),
-                                    scrollVertical = scrollVertical,
-                                    onBlogClick = { selectedBlog.value = it }
-                                )
-                            } else {
-                                ExploreDetailPage(
-                                    blog = blog,
-                                    modifier = Modifier.padding(
-                                        top = it.calculateTopPadding()
-                                    ),
-                                    onBack = { selectedBlog.value = null },
-                                    scrollVertical
-                                )
+                        .fillMaxSize()
+                        .liquefiable(liquidState)
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.justice),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize(),
+                        colorFilter = ColorFilter.colorMatrix(
+                            ColorMatrix().apply {
+                                setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
                             }
-                        }
-                        2 -> {
-                            val evaluation = selectedEvaluation.value
-                            if (isCreatingEvaluation.value) {
-                                EvaluationCreatePage(
-                                    modifier = Modifier.padding(
-                                        top = it.calculateTopPadding()
-                                    ),
-                                    onBack = { isCreatingEvaluation.value = false },
-                                    onSave = { evaluation ->
-                                        createdEvaluations.add(evaluation.toSession(createdEvaluations.size))
-                                        isCreatingEvaluation.value = false
-                                    },
-                                    scrollVertical
-                                )
-                            } else if (evaluation == null) {
-                                EvaluationPage(
-                                    evaluations = Constants.evaluations + createdEvaluations,
-                                    modifier = Modifier.padding(
-                                        top = it.calculateTopPadding()
-                                    ),
-                                    onEvaluationClick = { selectedEvaluation.value = it },
-                                    onCreateClick = { isCreatingEvaluation.value = true },
-                                    scrollVertical = scrollVertical
-                                )
-                            } else {
-                                EvaluationDetailPage(
-                                    evaluation = evaluation,
-                                    modifier = Modifier.padding(
-                                        top = it.calculateTopPadding()
-                                    ),
-                                    onBack = { selectedEvaluation.value = null },
-                                    onStartQuiz = {
-                                        selectedEvaluation.value = null
-                                        state.intValue = 3
-                                    },
-                                    scrollVertical
-                                )
-                            }
-                        }
-                        3 -> QuizPage(
-                            Modifier.padding(
-                                top = it.calculateTopPadding()
-                            ),
-                            scrollVertical
                         )
-                        4 -> ProfilPage(
-                            Modifier.padding(
-                                top = it.calculateTopPadding()
-                            ),
-                            scrollVertical
-                        )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .liquid(liquidState)
+                            .background(
+                                Color.White.copy(alpha = 0.15f)
+                            )
+                    )
+                    val navigationContext = LawAppNavigationContext(
+                        contentPadding = it,
+                        scrollVertical = scrollVertical,
+                        createdEvaluations = createdEvaluations,
+                    )
+                    Column {
+                        CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
+                            CurrentScreen()
+                        }
                     }
                 }
+
+
+
             }
-
-
-
         }
     }
 }
