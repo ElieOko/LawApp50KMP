@@ -10,6 +10,7 @@ import emy.partners.lawapp.domain.navigation.Navigator
 import emy.partners.lawapp.domain.navigation.QuizScreen
 import emy.partners.lawapp.domain.navigation.SettingScreen
 import emy.partners.lawapp.domain.navigation.TopLevelRoute
+import emy.partners.lawapp.domain.navigation.saveableKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -57,6 +58,13 @@ class SharedCommonTest {
         navigator.add(SettingScreen)
 
         assertEquals(listOf(HomeScreen, SettingScreen), navigator.state.currentBackstack.toList())
+    }
+
+    @Test
+    fun navigationRoutesExposeBundleSafeSaveableKeys() {
+        assertEquals("home", HomeScreen.saveableKey())
+        assertEquals("explore/detail/3", ExploreDetailScreen(blogId = 3).saveableKey())
+        assertEquals("settings", SettingScreen.saveableKey())
     }
 
     private fun testNavigator(startRoute: TopLevelRoute): Navigator {
