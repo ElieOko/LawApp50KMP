@@ -431,9 +431,20 @@ private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
     status = EvaluationStatus.InProgress,
     progress = 0f,
     score = null,
-    questionCount = compteur?.toInt() ?: 0,
+    questionCount = (option?.size ?: 0) + (ouverte?.size ?: 0) + (caseStudy?.size ?: 0),
     completedQuestions = 0,
-    duration = "A definir",
+    duration = compteur?.let(::formatDurationFromMinutes) ?: "A definir",
     updatedAt = "Cree maintenant",
     level = "Personnalise"
 )
+
+private fun formatDurationFromMinutes(totalMinutes: Long): String {
+    val safeMinutes = totalMinutes.coerceAtLeast(0L)
+    val hours = safeMinutes / 60
+    val minutes = safeMinutes % 60
+    return if (hours > 0) {
+        "${hours}h ${minutes.toString().padStart(2, '0')}m"
+    } else {
+        "${minutes} min"
+    }
+}
