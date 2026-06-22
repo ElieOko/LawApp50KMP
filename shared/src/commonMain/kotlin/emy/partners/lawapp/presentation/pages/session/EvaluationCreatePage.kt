@@ -58,6 +58,7 @@ import emy.partners.lawapp.domain.models.QuestionOuverte
 import emy.partners.lawapp.domain.models.QuestionOuverteDAO
 import emy.partners.lawapp.presentation.components.basics.InputFieldCompose
 import emy.partners.lawapp.presentation.components.basics.SelectInputField
+import emy.partners.lawapp.presentation.components.basics.StepPager
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 import lawapp.shared.generated.resources.Res
@@ -170,6 +171,10 @@ fun EvaluationCreateBuild(
                 }
             }
             Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                StepPager()
+            }
+            Spacer(Modifier.height(16.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -194,8 +199,9 @@ fun EvaluationCreateBuild(
                     CreationSection("Instructions pour les etudiants", size = 16)
                     CreationField("Description", description, { description = it }, minHeight = 96, placeHolder = "Consignes optionnelles")
 
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                    Row(Modifier.fillMaxWidth()) {
                         CreationSection("Date debut", size = 16)
+                        Spacer(Modifier.width(80.dp))
                         CreationSection("Date de fin", size = 16)
                     }
                     Row(Modifier.fillMaxWidth()) {
