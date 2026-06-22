@@ -63,6 +63,7 @@ import emy.partners.lawapp.domain.models.QuestionOptionDAO
 import emy.partners.lawapp.domain.models.QuestionOuverte
 import emy.partners.lawapp.domain.models.QuestionOuverteDAO
 import emy.partners.lawapp.presentation.components.basics.InputFieldCompose
+import emy.partners.lawapp.presentation.components.basics.PdfFullscreenOverlay
 import emy.partners.lawapp.presentation.components.basics.PickedFile
 import emy.partners.lawapp.presentation.components.basics.PlatformPdfViewer
 import emy.partners.lawapp.presentation.components.basics.StepPager
@@ -114,6 +115,7 @@ fun EvaluationCreateBuild(
     var caseResolution by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
     var previewFile by remember { mutableStateOf<PickedFile?>(null) }
+    var fullScreenPdfFile by remember { mutableStateOf<PickedFile?>(null) }
     val correctIndex = remember { mutableIntStateOf(0) }
     val optionValues = remember { mutableStateListOf("", "", "", "") }
     val optionQuestions = remember { mutableStateListOf<QuestionOptionDAO>() }
@@ -802,12 +804,23 @@ fun EvaluationCreateBuild(
                                         .background(Color(0xFFF1F5F9))
                                 )
                             } else if (file.isPdfLike()) {
-                                PlatformPdfViewer(
-                                    uri = file.uri,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(220.dp)
-                                )
+                                Column {
+                                    PlatformPdfViewer(
+                                        uri = file.uri,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(220.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { fullScreenPdfFile = file },
+                                        modifier = Modifier.fillMaxWidth().height(36.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                                    ) {
+                                        Text("Plein ecran", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                }
                             } else {
                                 Box(
                                     Modifier
@@ -835,6 +848,13 @@ fun EvaluationCreateBuild(
                         }
                     }
                 }
+            }
+            fullScreenPdfFile?.let { file ->
+                PdfFullscreenOverlay(
+                    uri = file.uri,
+                    fileName = file.name,
+                    onClose = { fullScreenPdfFile = null }
+                )
             }
         }
     }

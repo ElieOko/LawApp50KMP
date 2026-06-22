@@ -4,19 +4,25 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,8 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +48,9 @@ actual fun PlatformPdfViewer(
     var holder by remember(uri) { mutableStateOf<PdfHolder?>(null) }
     var errorMessage by remember(uri) { mutableStateOf<String?>(null) }
     var pageIndex by remember(uri) { mutableIntStateOf(0) }
+    var scale by remember(uri) { mutableFloatStateOf(1f) }
+    var offsetX by remember(uri) { mutableFloatStateOf(0f) }
+    var offsetY by remember(uri) { mutableFloatStateOf(0f) }
 
     DisposableEffect(uri) {
         try {
@@ -87,6 +98,11 @@ actual fun PlatformPdfViewer(
             if (pageIndex >= pageCount) {
                 pageIndex = pageCount - 1
             }
+            LaunchedEffect(pageIndex) {
+                scale = 1f
+                offsetX = 0f
+                offsetY = 0f
+            }
             val bitmap = remember(pdf.renderer, pageIndex) {
                 renderPdfPage(pdf.renderer, pageIndex)
             }
@@ -94,16 +110,51 @@ actual fun PlatformPdfViewer(
                 modifier = modifier,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Apercu PDF",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White)
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .padding(6.dp)
+                ) {
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Apercu PDF",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer(
+                                    scaleX = scale,
+                                    scaleY = scale,
+                                    translationX = offsetX,
+                                    translationY = offsetY
+                                )
+                                .pointerInput(pageIndex) {
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        val newScale = (scale * zoom).coerceIn(1f, 5f)
+                                        if (newScale <= 1f) {
+                                            offsetX = 0f
+                                            offsetY = 0f
+                                        } else {
+                                            offsetX += pan.x
+                                            offsetY += pan.y
+                                        }
+                                        scale = newScale
+                                    }
+                                }
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .size(120.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Page introuvable", color = Color(0xFF64748B), fontSize = 12.sp)
+                        }
+                    }
                 }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -127,6 +178,38 @@ actual fun PlatformPdfViewer(
                         enabled = pageIndex < pageCount - 1
                     ) {
                         Text("Page +")
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { scale = (scale - 0.25f).coerceAtLeast(1f) }
+                    ) {
+                        Text("Zoom -")
+                    }
+                    Text(
+                        text = "Zoom ${(scale * 100).toInt()}%",
+                        color = Color(0xFF334155),
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            scale = 1f
+                            offsetX = 0f
+                            offsetY = 0f
+                        }
+                    ) {
+                        Text("Reset")
+                    }
+                    OutlinedButton(
+                        onClick = { scale = (scale + 0.25f).coerceAtMost(5f) }
+                    ) {
+                        Text("Zoom +")
                     }
                 }
             }

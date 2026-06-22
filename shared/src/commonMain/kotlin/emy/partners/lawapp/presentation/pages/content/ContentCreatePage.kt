@@ -45,6 +45,7 @@ import coil3.request.crossfade
 import emy.partners.lawapp.domain.models.ContentAttachment
 import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
+import emy.partners.lawapp.presentation.components.basics.PdfFullscreenOverlay
 import emy.partners.lawapp.presentation.components.basics.PickedFile
 import emy.partners.lawapp.presentation.components.basics.PlatformPdfViewer
 import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
@@ -69,6 +70,7 @@ fun ContentCreatePage(
     var author by remember { mutableStateOf("Moi") }
     var link by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
+    var fullScreenPdfFile by remember { mutableStateOf<PickedFile?>(null) }
     val selectedFiles = remember { mutableStateListOf<PickedFile>() }
     val selectedFile = selectedFiles.firstOrNull()
     val canPublish = title.isNotBlank() && description.isNotBlank() && author.isNotBlank()
@@ -214,7 +216,8 @@ fun ContentCreatePage(
                 description = description.ifBlank { "Le texte du contenu apparaitra ici." },
                 author = author.ifBlank { "Auteur" },
                 destination = destination,
-                file = selectedFile
+                file = selectedFile,
+                onOpenPdfFullscreen = { fullScreenPdfFile = it }
             )
             savedMessage?.let {
                 Spacer(Modifier.height(8.dp))
@@ -268,6 +271,13 @@ fun ContentCreatePage(
                     )
                 }
             }
+        }
+        fullScreenPdfFile?.let { file ->
+            PdfFullscreenOverlay(
+                uri = file.uri,
+                fileName = file.name,
+                onClose = { fullScreenPdfFile = null }
+            )
         }
         Spacer(Modifier.height(80.dp))
     }
@@ -391,7 +401,8 @@ private fun PreviewCard(
     description: String,
     author: String,
     destination: ContentDestination,
-    file: PickedFile?
+    file: PickedFile?,
+    onOpenPdfFullscreen: (PickedFile) -> Unit
 ) {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -427,12 +438,23 @@ private fun PreviewCard(
                             .background(Color(0xFFF8FAFC))
                     )
                 } else if (file.isPdfLike()) {
-                    PlatformPdfViewer(
-                        uri = file.uri,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(220.dp)
-                    )
+                    Column {
+                        PlatformPdfViewer(
+                            uri = file.uri,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { onOpenPdfFullscreen(file) },
+                            modifier = Modifier.fillMaxWidth().height(38.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                        ) {
+                            Text("Plein ecran", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
                 } else {
                     Box(
                         modifier = Modifier
