@@ -59,7 +59,9 @@ import emy.partners.lawapp.domain.models.QuestionOptionDAO
 import emy.partners.lawapp.domain.models.QuestionOuverte
 import emy.partners.lawapp.domain.models.QuestionOuverteDAO
 import emy.partners.lawapp.presentation.components.basics.InputFieldCompose
+import emy.partners.lawapp.presentation.components.basics.PickedFile
 import emy.partners.lawapp.presentation.components.basics.StepPager
+import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 import lawapp.shared.generated.resources.Res
@@ -97,8 +99,9 @@ fun EvaluationCreateBuild(
     var matiere by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var instructions by remember { mutableStateOf("") }
-    var fileContent by remember { mutableStateOf("") }
-    var compteur by remember { mutableStateOf("") }
+    var externalLink by remember { mutableStateOf("") }
+    var durationHours by remember { mutableIntStateOf(0) }
+    var durationMinutes by remember { mutableIntStateOf(30) }
     var selectedQuestionType by remember { mutableStateOf(CreationQuestionType.Option) }
     var questionTitle by remember { mutableStateOf("") }
     var openExpectedAnswer by remember { mutableStateOf("") }
@@ -110,8 +113,10 @@ fun EvaluationCreateBuild(
     val optionQuestions = remember { mutableStateListOf<QuestionOptionDAO>() }
     val openQuestions = remember { mutableStateListOf<QuestionOuverteDAO>() }
     val caseStudyQuestions = remember { mutableStateListOf<QuestionCaseStudyDAO>() }
+    val attachedFiles = remember { mutableStateListOf<PickedFile>() }
     val totalQuestions = optionQuestions.size + openQuestions.size + caseStudyQuestions.size
-    val effectiveCounter = compteur.toLongOrNull() ?: totalQuestions.toLong()
+    val durationTotalMinutes = (durationHours * 60) + durationMinutes
+    val durationLabel = formatDuration(durationTotalMinutes)
     val datePickerState = rememberDatePickerState()
     val datePickerState2 = rememberDatePickerState()
     var startDate by remember {
@@ -120,9 +125,21 @@ fun EvaluationCreateBuild(
     var endDate by remember {
         mutableStateOf(convertMillisToDate(Clock.System.now().toEpochMilliseconds()))
     }
-    val canContinueFromInfo = title.isNotBlank() && matiere.isNotBlank() && typeEvaluation.isNotBlank()
+    val canContinueFromInfo = title.isNotBlank() &&
+        matiere.isNotBlank() &&
+        typeEvaluation.isNotBlank() &&
+        durationTotalMinutes > 0
     val canContinueFromQuestions = totalQuestions > 0
     val canSave = canContinueFromInfo && canContinueFromQuestions
+    val launchFilePicker = rememberFilePickerLauncher { files ->
+        if (files.isEmpty()) {
+            savedMessage = "Aucun fichier selectionne."
+            return@rememberFilePickerLauncher
+        }
+        val newFiles = files.filterNot { picked -> attachedFiles.any { it.uri == picked.uri } }
+        attachedFiles.addAll(newFiles)
+        savedMessage = "${newFiles.size} fichier(s) ajoute(s)"
+    }
     val canGoNext = when (currentStep) {
         0 -> canContinueFromInfo
         1 -> canContinueFromQuestions
@@ -177,9 +194,9 @@ fun EvaluationCreateBuild(
                     )
                     Spacer(Modifier.height(18.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CreationMetric("Compteur", effectiveCounter.toString(), Modifier.weight(1f))
-                        CreationMetric("Options", optionQuestions.size.toString(), Modifier.weight(1f))
-                        CreationMetric("Ouvertes", openQuestions.size.toString(), Modifier.weight(1f))
+                        CreationMetric("Chrono", durationLabel, Modifier.weight(1f))
+                        CreationMetric("Questions", totalQuestions.toString(), Modifier.weight(1f))
+                        CreationMetric("Fichiers", attachedFiles.size.toString(), Modifier.weight(1f))
                     }
                 }
             }
@@ -261,23 +278,66 @@ fun EvaluationCreateBuild(
                                 placeHolder = "Consignes optionnelles"
                             )
 
-                            CreationSection("Compteur manuel (optionnel)", size = 16)
-                            CreationField(
-                                "Compteur",
-                                compteur,
-                                { compteur = it.filter { char -> char.isDigit() } },
-                                singleLine = true,
-                                placeHolder = "Laisse vide pour auto"
+                            CreationSection("Chrono (heure + minute) *", size = 16)
+                            DurationSelector(
+                                hours = durationHours,
+                                minutes = durationMinutes,
+                                onHourChange = { durationHours = it.coerceIn(0, 12) },
+                                onMinuteChange = { durationMinutes = it.coerceIn(0, 59) }
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "Duree selectionnee : $durationLabel",
+                                color = Color(0xFF1E293B),
+                                fontWeight = FontWeight.Bold
                             )
 
-                            CreationSection("Lien ou contenu de support (optionnel)", size = 16)
+                            Spacer(Modifier.height(12.dp))
+                            CreationSection("Lien externe (optionnel)", size = 16)
                             CreationField(
-                                "Contenu",
-                                fileContent,
-                                { fileContent = it },
-                                minHeight = 78,
-                                placeHolder = "URL, texte de reference, etc."
+                                "Lien",
+                                externalLink,
+                                { externalLink = it },
+                                minHeight = 56,
+                                placeHolder = "https://..."
                             )
+
+                            CreationSection("Pieces jointes (image, pdf, document...)", size = 16)
+                            OutlinedCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(
+                                        "Ajoute des fichiers pour accompagner l'evaluation.",
+                                        color = Color(0xFF475569)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Button(
+                                        onClick = launchFilePicker,
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                                    ) {
+                                        Text("Uploader des fichiers", fontWeight = FontWeight.Bold)
+                                    }
+                                    if (attachedFiles.isNotEmpty()) {
+                                        Spacer(Modifier.height(12.dp))
+                                        attachedFiles.forEach { pickedFile ->
+                                            AttachedFileRow(
+                                                file = pickedFile,
+                                                onRemove = { attachedFiles.remove(pickedFile) }
+                                            )
+                                        }
+                                    } else {
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            "Aucun fichier ajoute pour le moment.",
+                                            color = Color(0xFF64748B),
+                                            fontSize = 13.sp
+                                        )
+                                    }
+                                }
+                            }
 
                             Row(Modifier.fillMaxWidth()) {
                                 Column(Modifier.weight(1f)) {
@@ -498,7 +558,9 @@ fun EvaluationCreateBuild(
                             DraftSummaryRow("Type", typeEvaluation.ifBlank { "-" })
                             DraftSummaryRow("Date debut", startDate)
                             DraftSummaryRow("Date de fin", endDate)
-                            DraftSummaryRow("Compteur final", effectiveCounter.toString())
+                            DraftSummaryRow("Chrono", durationLabel)
+                            DraftSummaryRow("Lien externe", externalLink.ifBlank { "-" })
+                            DraftSummaryRow("Pieces jointes", attachedFiles.size.toString())
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 "Repartition des questions",
@@ -567,7 +629,7 @@ fun EvaluationCreateBuild(
                                 currentStep += 1
                             } else {
                                 savedMessage = when (currentStep) {
-                                    0 -> "Completer titre, matiere et type pour continuer."
+                                    0 -> "Completer titre, matiere, type et chrono pour continuer."
                                     1 -> "Ajoute au moins une question pour continuer."
                                     else -> "Verifie les informations avant de continuer."
                                 }
@@ -578,11 +640,25 @@ fun EvaluationCreateBuild(
                             } else {
                                 description
                             }
+                            val filesAsText = attachedFiles.joinToString(separator = "\n") { picked ->
+                                "${picked.name}|${picked.mimeType ?: "inconnu"}|${picked.uri}"
+                            }
+                            val mergedContent = buildString {
+                                if (externalLink.isNotBlank()) {
+                                    append("lien:")
+                                    append(externalLink.trim())
+                                }
+                                if (filesAsText.isNotBlank()) {
+                                    if (isNotBlank()) append("\n\n")
+                                    append("pieces_jointes:\n")
+                                    append(filesAsText)
+                                }
+                            }.takeIf { it.isNotBlank() }
                             val dao = EvaluationDAO(
                                 title = title.ifBlank { "Nouvelle evaluation" },
                                 description = finalDescription,
-                                compteur = effectiveCounter,
-                                fileContent = fileContent.takeIf { it.isNotBlank() },
+                                compteur = durationTotalMinutes.toLong(),
+                                fileContent = mergedContent,
                                 startDate = startDate,
                                 endDate = endDate,
                                 option = optionQuestions.toList(),
@@ -590,7 +666,7 @@ fun EvaluationCreateBuild(
                                 caseStudy = caseStudyQuestions.toList()
                             )
                             onSave(dao)
-                            savedMessage = "Evaluation enregistree avec $effectiveCounter question(s)"
+                            savedMessage = "Evaluation enregistree avec $totalQuestions question(s) - chrono $durationLabel"
                         }
                     },
                     modifier = Modifier
@@ -795,6 +871,111 @@ private fun DraftSummaryRow(label: String, value: String) {
     ) {
         Text(label, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
         Text(value, color = Color(0xFF0F172A), fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+@Composable
+private fun DurationSelector(
+    hours: Int,
+    minutes: Int,
+    onHourChange: (Int) -> Unit,
+    onMinuteChange: (Int) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        DurationUnitSelector(
+            label = "Heures",
+            value = hours,
+            min = 0,
+            max = 12,
+            onValueChange = onHourChange,
+            modifier = Modifier.weight(1f)
+        )
+        DurationUnitSelector(
+            label = "Minutes",
+            value = minutes,
+            min = 0,
+            max = 59,
+            onValueChange = onMinuteChange,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun DurationUnitSelector(
+    label: String,
+    value: Int,
+    min: Int,
+    max: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedCard(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, color = Color(0xFF64748B), fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                value.toString().padStart(2, '0'),
+                color = Color(0xFF0F172A),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { onValueChange((value - 1).coerceAtLeast(min)) },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("-")
+                }
+                OutlinedButton(
+                    onClick = { onValueChange((value + 1).coerceAtMost(max)) },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("+")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttachedFileRow(
+    file: PickedFile,
+    onRemove: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFFF8FAFC))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(file.name, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(file.mimeType ?: "type inconnu", color = Color(0xFF64748B), fontSize = 11.sp)
+        }
+        OutlinedButton(
+            onClick = onRemove,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Retirer")
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+}
+
+private fun formatDuration(totalMinutes: Int): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return when {
+        hours > 0 -> "${hours}h ${minutes.toString().padStart(2, '0')}m"
+        else -> "${minutes}m"
     }
 }
 
