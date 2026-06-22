@@ -39,11 +39,15 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import emy.partners.lawapp.data.Constants
-import emy.partners.lawapp.presentation.components.basics.TopBarCustom
+import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
+import emy.partners.lawapp.domain.models.UserGeneratedContent
+import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
+import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.presentation.pages.ProfilPage
+import emy.partners.lawapp.presentation.pages.content.ContentCreatePage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
 import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
@@ -91,6 +95,8 @@ private class LawAppNavigationContext(
 ) {
     val evaluations: List<EvaluationSession>
         get() = Constants.evaluations + state.createdEvaluations
+    val createdContents: List<UserGeneratedContent>
+        get() = state.createdContents
 }
 
 private val LocalLawAppNavigationContext = staticCompositionLocalOf<LawAppNavigationContext> {
@@ -99,6 +105,7 @@ private val LocalLawAppNavigationContext = staticCompositionLocalOf<LawAppNaviga
 
 private class LawAppState(
     val createdEvaluations: SnapshotStateList<EvaluationSession>,
+    val createdContents: SnapshotStateList<UserGeneratedContent>,
 ) {
     private val pageScrollStates = mutableStateMapOf<String, ScrollState>()
 
@@ -131,7 +138,10 @@ private class HomeScreen : UniqueLawAppScreen() {
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
         rememberPageScrollState(pageStateKey, topLevelDestinationKind)
-        HomePage(Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()))
+        HomePage(
+            modifier = Modifier.padding(bottom = context.contentPadding.calculateBottomPadding()),
+            createdContents = context.createdContents
+        )
     }
 }
 
@@ -142,6 +152,39 @@ private class ExploreScreen : UniqueLawAppScreen() {
     @Composable
     override fun Content() {
         ExploreRootContent(pageStateKey)
+    }
+}
+
+private data class ContentCreateScreen(
+    val initialDestination: ContentDestination
+) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind =
+        if (initialDestination == ContentDestination.Home) {
+            TopLevelDestinationKind.Home
+        } else {
+            TopLevelDestinationKind.Explore
+        }
+    override val pageStateKey: String = "content/create/${initialDestination.name.lowercase()}"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+
+        ContentCreatePage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            initialDestination = initialDestination,
+            onBack = { navigator.pop() },
+            onPublish = { draft ->
+                context.state.createdContents.add(
+                    draft.toContent(index = context.state.createdContents.size)
+                )
+                navigator.replaceAll(
+                    if (draft.destination == ContentDestination.Home) HomeScreen() else ExploreScreen()
+                )
+            }
+        )
     }
 }
 
@@ -271,6 +314,7 @@ private fun ExploreRootContent(pageStateKey: String) {
     ExplorePage(
         modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
         scrollVertical = scrollVertical,
+        createdContents = context.createdContents,
         onBlogClick = { navigator.push(ExploreDetailScreen(it.id)) },
     )
 }
@@ -322,7 +366,10 @@ fun App() {
     val liquidState = rememberLiquidState()
     val liquidState2 = rememberLiquidState()
     val createdEvaluations = remember { mutableStateListOf<EvaluationSession>() }
-    val appState = remember(createdEvaluations) { LawAppState(createdEvaluations) }
+    val createdContents = remember { mutableStateListOf<UserGeneratedContent>() }
+    val appState = remember(createdEvaluations, createdContents) {
+        LawAppState(createdEvaluations, createdContents)
+    }
     val defaultTopBarScrollState = rememberScrollState()
     val topLevelDestinations = listOf(
         TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
@@ -334,14 +381,14 @@ fun App() {
     MaterialTheme(typography = tekoTypography()) {
         Navigator(HomeScreen()) { navigator ->
             val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
+            val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
+                ?.topLevelDestinationKind
+                ?: TopLevelDestinationKind.Home
             Scaffold(
                 //            contentWindowInsets = WindowInsets(0),
                 bottomBar = {
                     //CompositionLocalProvider(LocalRippleConfiguration provides null){
                     //Color(0xFF242D2C)
-                    val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
-                        ?.topLevelDestinationKind
-                        ?: TopLevelDestinationKind.Home
                     Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
                         BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
                             Color.White.copy(alpha = 0.5f)
@@ -373,7 +420,18 @@ fun App() {
 
                     //}
                 },
-                topBar = {TopBarCustom(topBarScrollState)}
+                topBar = {
+                    TopBarCustom(
+                        scrollState = topBarScrollState,
+                        onActionClick = {
+                            navigator.push(
+                                ContentCreateScreen(
+                                    initialDestination = selectedTopLevel.toDestination()
+                                )
+                            )
+                        }
+                    )
+                }
                 //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
             ) {
 
@@ -448,3 +506,21 @@ private fun formatDurationFromMinutes(totalMinutes: Long): String {
         "${minutes} min"
     }
 }
+
+private fun TopLevelDestinationKind.toDestination(): ContentDestination =
+    if (this == TopLevelDestinationKind.Explore) {
+        ContentDestination.Explore
+    } else {
+        ContentDestination.Home
+    }
+
+private fun UserGeneratedContentDraft.toContent(index: Int): UserGeneratedContent = UserGeneratedContent(
+    id = 20_000L + index,
+    destination = destination,
+    title = title,
+    description = description,
+    author = author,
+    link = link,
+    attachment = attachment,
+    createdAt = "Maintenant"
+)
