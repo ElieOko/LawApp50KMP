@@ -3,6 +3,7 @@ package emy.partners.lawapp.presentation.pages.session
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -57,7 +59,6 @@ import emy.partners.lawapp.domain.models.QuestionOptionDAO
 import emy.partners.lawapp.domain.models.QuestionOuverte
 import emy.partners.lawapp.domain.models.QuestionOuverteDAO
 import emy.partners.lawapp.presentation.components.basics.InputFieldCompose
-import emy.partners.lawapp.presentation.components.basics.SelectInputField
 import emy.partners.lawapp.presentation.components.basics.StepPager
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
@@ -76,7 +77,7 @@ fun EvaluationCreatePage(
         modifier = modifier,
         onBack = onBack,
         onSave = onSave,
-                scrollVertical
+        scrollVertical = scrollVertical
     )
 }
 
@@ -87,12 +88,15 @@ fun EvaluationCreateBuild(
     onSave: (EvaluationDAO) -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
+    val stepLabels = listOf("Informations", "Questions", "Validation")
+    var currentStep by remember { mutableIntStateOf(0) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showDatePicker2 by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var typeEvaluation by remember { mutableStateOf("") }
     var matiere by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var instructions by remember { mutableStateOf("") }
     var fileContent by remember { mutableStateOf("") }
     var compteur by remember { mutableStateOf("") }
     var selectedQuestionType by remember { mutableStateOf(CreationQuestionType.Option) }
@@ -110,12 +114,21 @@ fun EvaluationCreateBuild(
     val effectiveCounter = compteur.toLongOrNull() ?: totalQuestions.toLong()
     val datePickerState = rememberDatePickerState()
     val datePickerState2 = rememberDatePickerState()
-    var startDate = datePickerState.selectedDateMillis?.let {
-        convertMillisToDate(it)
-    } ?: convertMillisToDate(Clock.System.now().toEpochMilliseconds())
-    var endDate = datePickerState2.selectedDateMillis?.let {
-        convertMillisToDate(it)
-    } ?: convertMillisToDate(Clock.System.now().toEpochMilliseconds())
+    var startDate by remember {
+        mutableStateOf(convertMillisToDate(Clock.System.now().toEpochMilliseconds()))
+    }
+    var endDate by remember {
+        mutableStateOf(convertMillisToDate(Clock.System.now().toEpochMilliseconds()))
+    }
+    val canContinueFromInfo = title.isNotBlank() && matiere.isNotBlank() && typeEvaluation.isNotBlank()
+    val canContinueFromQuestions = totalQuestions > 0
+    val canSave = canContinueFromInfo && canContinueFromQuestions
+    val canGoNext = when (currentStep) {
+        0 -> canContinueFromInfo
+        1 -> canContinueFromQuestions
+        else -> canSave
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -158,7 +171,7 @@ fun EvaluationCreateBuild(
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Compose ton evaluation avec des questions a choix, ouvertes et cas pratiques.",
+                        "Organise la creation en etapes pour un flux clair, moderne et rapide.",
                         color = Color.White.copy(alpha = 0.74f),
                         lineHeight = 20.sp
                     )
@@ -171,8 +184,11 @@ fun EvaluationCreateBuild(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                StepPager()
+            Row(Modifier.fillMaxWidth()) {
+                StepPager(
+                    steps = stepLabels,
+                    currentStep = currentStep
+                )
             }
             Spacer(Modifier.height(16.dp))
             Box(
@@ -182,253 +198,417 @@ fun EvaluationCreateBuild(
                     .background(
                         Color.White
                     )
-                    .padding(10.dp)
+                    .padding(16.dp)
             ) {
                 Column {
-                    CreationSection("Informations generales")
-                    CreationSection("Titre *", size = 16)
-                    CreationField("Titre", title, { title = it }, singleLine = true, placeHolder = "Interro 3, chapitre 5")
-                    CreationSection("Description", size = 16)
-                    CreationField("Description", description, { description = it }, minHeight = 96, placeHolder = "Description optionnelle")
-                    CreationSection("Matiere *", size = 16)
-                    CreationField("Matiere", matiere, { matiere = it }, singleLine = true, placeHolder = "Mathematique")
-                    CreationSection("Type d'evaluation *", size = 16)
-                    SelectInputField(itemList = typeEvaluationItems, textValueIn = typeEvaluation)
-//                    CreationSection("Duree *", size = 16)
-//                    CreationField("", matiere, { matiere = it }, singleLine = true, placeHolder = "30")
-                    CreationSection("Instructions pour les etudiants", size = 16)
-                    CreationField("Description", description, { description = it }, minHeight = 96, placeHolder = "Consignes optionnelles")
-
-                    Row(Modifier.fillMaxWidth()) {
-                        CreationSection("Date debut", size = 16)
-                        Spacer(Modifier.width(80.dp))
-                        CreationSection("Date de fin", size = 16)
-                    }
-                    Row(Modifier.fillMaxWidth()) {
-                        InputFieldCompose(
-                            modifier = Modifier.width(150.dp),
-                            value = startDate,
-                            onValueChange = { dataValue ->
-                                startDate = dataValue },
-                            onclickLastIcon = {
-                                showDatePicker = !showDatePicker },
-                            isSingle = false,
-                            iconLast = Res.drawable.date
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        InputFieldCompose(
-                            modifier = Modifier.width(150.dp),
-                            value = endDate,
-                            onValueChange = { dataValue ->
-                                endDate = dataValue },
-                            onclickLastIcon = {
-                                showDatePicker2 = !showDatePicker2 },
-                            isSingle = false,
-                            iconLast = Res.drawable.date
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-
-                        },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                    ) {
-                        Text("Suivant", fontWeight = FontWeight.Bold)
-                    }
-
-
-//                    CreationField(
-//                        label = "Compteur manuel (optionnel)",
-//                        value = compteur,
-//                        onValueChange = { compteur = it.filter { char -> char.isDigit() } },
-//                        singleLine = true
-//                    )
-//                    CreationField("Contenu fichier / lien", fileContent, { fileContent = it }, minHeight = 78)
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-            CreationSection("Questions")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuestionTypeChip(
-                    label = "Option",
-                    selected = selectedQuestionType == CreationQuestionType.Option,
-                    onClick = { selectedQuestionType = CreationQuestionType.Option }
-                )
-                QuestionTypeChip(
-                    label = "Ouverte",
-                    selected = selectedQuestionType == CreationQuestionType.Open,
-                    onClick = { selectedQuestionType = CreationQuestionType.Open }
-                )
-                QuestionTypeChip(
-                    label = "Cas",
-                    selected = selectedQuestionType == CreationQuestionType.CaseStudy,
-                    onClick = { selectedQuestionType = CreationQuestionType.CaseStudy }
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                Color(0xFF2563EB).copy(alpha = 0.94f),
-                                BlueDarkEffect.copy(alpha = 0.92f)
+                    when (currentStep) {
+                        0 -> {
+                            CreationSection("Informations generales")
+                            CreationSection("Titre *", size = 16)
+                            CreationField(
+                                "Titre",
+                                title,
+                                { title = it },
+                                singleLine = true,
+                                placeHolder = "Interro 3, chapitre 5"
                             )
-                        )
-                    )
-                    .padding(20.dp)
-            ) {
-                Column {
-                    CreationField("Question", questionTitle, { questionTitle = it }, minHeight = 76)
-                    when (selectedQuestionType) {
-                        CreationQuestionType.Option -> {
-                            optionValues.forEachIndexed { index, option ->
-                                CreationField(
-                                    label = "Option ${index + 1}",
-                                    value = option,
-                                    onValueChange = { optionValues[index] = it },
-                                    singleLine = true
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                optionValues.forEachIndexed { index, _ ->
+
+                            CreationSection("Matiere *", size = 16)
+                            CreationField(
+                                "Matiere",
+                                matiere,
+                                { matiere = it },
+                                singleLine = true,
+                                placeHolder = "Droit civil"
+                            )
+
+                            CreationSection("Type d'evaluation *", size = 16)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                typeEvaluationItems.forEach { item ->
                                     QuestionTypeChip(
-                                        label = "Bonne ${index + 1}",
-                                        selected = correctIndex.intValue == index,
-                                        onClick = { correctIndex.intValue = index }
+                                        label = item.name,
+                                        selected = typeEvaluation == item.name,
+                                        onClick = { typeEvaluation = item.name },
+                                        selectedContainer = Color(0xFF2563EB),
+                                        selectedText = Color.White,
+                                        unselectedContainer = Color(0xFFF1F5F9),
+                                        unselectedText = Color(0xFF1E293B)
                                     )
                                 }
                             }
+                            Spacer(Modifier.height(14.dp))
+
+                            CreationSection("Description", size = 16)
+                            CreationField(
+                                "Description",
+                                description,
+                                { description = it },
+                                minHeight = 96,
+                                placeHolder = "Description de l'evaluation"
+                            )
+
+                            CreationSection("Instructions pour les etudiants", size = 16)
+                            CreationField(
+                                "Instructions",
+                                instructions,
+                                { instructions = it },
+                                minHeight = 96,
+                                placeHolder = "Consignes optionnelles"
+                            )
+
+                            CreationSection("Compteur manuel (optionnel)", size = 16)
+                            CreationField(
+                                "Compteur",
+                                compteur,
+                                { compteur = it.filter { char -> char.isDigit() } },
+                                singleLine = true,
+                                placeHolder = "Laisse vide pour auto"
+                            )
+
+                            CreationSection("Lien ou contenu de support (optionnel)", size = 16)
+                            CreationField(
+                                "Contenu",
+                                fileContent,
+                                { fileContent = it },
+                                minHeight = 78,
+                                placeHolder = "URL, texte de reference, etc."
+                            )
+
+                            Row(Modifier.fillMaxWidth()) {
+                                Column(Modifier.weight(1f)) {
+                                    CreationSection("Date debut", size = 16)
+                                    InputFieldCompose(
+                                        value = startDate,
+                                        onValueChange = { startDate = it },
+                                        onclickLastIcon = { showDatePicker = !showDatePicker },
+                                        isSingle = true,
+                                        iconLast = Res.drawable.date
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    CreationSection("Date de fin", size = 16)
+                                    InputFieldCompose(
+                                        value = endDate,
+                                        onValueChange = { endDate = it },
+                                        onclickLastIcon = { showDatePicker2 = !showDatePicker2 },
+                                        isSingle = true,
+                                        iconLast = Res.drawable.date
+                                    )
+                                }
+                            }
+                        }
+
+                        1 -> {
+                            CreationSection("Banque de questions")
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                CreationMetric("Options", optionQuestions.size.toString(), Modifier.weight(1f))
+                                CreationMetric("Ouvertes", openQuestions.size.toString(), Modifier.weight(1f))
+                                CreationMetric("Cas", caseStudyQuestions.size.toString(), Modifier.weight(1f))
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Ajoute au moins une question pour continuer.",
+                                color = Color(0xFF475569),
+                                fontSize = 14.sp
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                QuestionTypeChip(
+                                    label = "Option",
+                                    selected = selectedQuestionType == CreationQuestionType.Option,
+                                    onClick = { selectedQuestionType = CreationQuestionType.Option },
+                                    selectedContainer = Color(0xFF2563EB),
+                                    selectedText = Color.White,
+                                    unselectedContainer = Color(0xFFF1F5F9),
+                                    unselectedText = Color(0xFF1E293B)
+                                )
+                                QuestionTypeChip(
+                                    label = "Ouverte",
+                                    selected = selectedQuestionType == CreationQuestionType.Open,
+                                    onClick = { selectedQuestionType = CreationQuestionType.Open },
+                                    selectedContainer = Color(0xFF2563EB),
+                                    selectedText = Color.White,
+                                    unselectedContainer = Color(0xFFF1F5F9),
+                                    unselectedText = Color(0xFF1E293B)
+                                )
+                                QuestionTypeChip(
+                                    label = "Cas",
+                                    selected = selectedQuestionType == CreationQuestionType.CaseStudy,
+                                    onClick = { selectedQuestionType = CreationQuestionType.CaseStudy },
+                                    selectedContainer = Color(0xFF2563EB),
+                                    selectedText = Color.White,
+                                    unselectedContainer = Color(0xFFF1F5F9),
+                                    unselectedText = Color(0xFF1E293B)
+                                )
+                            }
                             Spacer(Modifier.height(10.dp))
-                            Button(
-                                onClick = {
-                                    val answers = optionValues
-                                        .mapIndexedNotNull { index, option ->
-                                            option.takeIf { it.isNotBlank() }?.let {
-                                                QuestionOption(title = it, isCorrect = index == correctIndex.intValue)
+                            OutlinedCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Column(Modifier.padding(14.dp)) {
+                                    CreationField("Question", questionTitle, { questionTitle = it }, minHeight = 76)
+                                    when (selectedQuestionType) {
+                                        CreationQuestionType.Option -> {
+                                            optionValues.forEachIndexed { index, option ->
+                                                CreationField(
+                                                    label = "Option ${index + 1}",
+                                                    value = option,
+                                                    onValueChange = { optionValues[index] = it },
+                                                    singleLine = true
+                                                )
+                                            }
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                optionValues.forEachIndexed { index, _ ->
+                                                    QuestionTypeChip(
+                                                        label = "Bonne ${index + 1}",
+                                                        selected = correctIndex.intValue == index,
+                                                        onClick = { correctIndex.intValue = index },
+                                                        selectedContainer = Color(0xFF0F172A),
+                                                        selectedText = Color.White,
+                                                        unselectedContainer = Color(0xFFE2E8F0),
+                                                        unselectedText = Color(0xFF334155)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(Modifier.height(10.dp))
+                                            Button(
+                                                onClick = {
+                                                    val answers = optionValues
+                                                        .mapIndexedNotNull { index, option ->
+                                                            option.takeIf { it.isNotBlank() }?.let {
+                                                                QuestionOption(
+                                                                    title = it,
+                                                                    isCorrect = index == correctIndex.intValue
+                                                                )
+                                                            }
+                                                        }
+                                                    if (questionTitle.isNotBlank() && answers.isNotEmpty()) {
+                                                        optionQuestions.add(
+                                                            QuestionOptionDAO(
+                                                                question = Question(title = questionTitle),
+                                                                questionOption = answers
+                                                            )
+                                                        )
+                                                        questionTitle = ""
+                                                        optionValues.indices.forEach { optionValues[it] = "" }
+                                                        savedMessage = "Question option ajoutee"
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(52.dp),
+                                                shape = RoundedCornerShape(18.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                                            ) {
+                                                Text("Ajouter la question option", fontWeight = FontWeight.Bold)
                                             }
                                         }
-                                    if (questionTitle.isNotBlank() && answers.isNotEmpty()) {
-                                        optionQuestions.add(
-                                            QuestionOptionDAO(
-                                                question = Question(title = questionTitle),
-                                                questionOption = answers
+
+                                        CreationQuestionType.Open -> {
+                                            CreationField(
+                                                "Reponse attendue",
+                                                openExpectedAnswer,
+                                                { openExpectedAnswer = it },
+                                                minHeight = 90
                                             )
-                                        )
-                                        questionTitle = ""
-                                        optionValues.indices.forEach { optionValues[it] = "" }
-                                        savedMessage = "Question option ajoutee"
+                                            Button(
+                                                onClick = {
+                                                    if (questionTitle.isNotBlank() && openExpectedAnswer.isNotBlank()) {
+                                                        openQuestions.add(
+                                                            QuestionOuverteDAO(
+                                                                question = Question(title = questionTitle),
+                                                                questionOuverte = listOf(
+                                                                    QuestionOuverte(expectedAnswer = openExpectedAnswer)
+                                                                )
+                                                            )
+                                                        )
+                                                        questionTitle = ""
+                                                        openExpectedAnswer = ""
+                                                        savedMessage = "Question ouverte ajoutee"
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(52.dp),
+                                                shape = RoundedCornerShape(18.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                                            ) {
+                                                Text("Ajouter la question ouverte", fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+
+                                        CreationQuestionType.CaseStudy -> {
+                                            CreationField(
+                                                "Enonce du cas",
+                                                caseContent,
+                                                { caseContent = it },
+                                                minHeight = 92
+                                            )
+                                            CreationField(
+                                                "Resolution attendue",
+                                                caseResolution,
+                                                { caseResolution = it },
+                                                minHeight = 92
+                                            )
+                                            Button(
+                                                onClick = {
+                                                    if (questionTitle.isNotBlank() && caseContent.isNotBlank() && caseResolution.isNotBlank()) {
+                                                        caseStudyQuestions.add(
+                                                            QuestionCaseStudyDAO(
+                                                                question = Question(title = questionTitle),
+                                                                questionCaseStudy = listOf(
+                                                                    QuestionCaseStudy(
+                                                                        caseContent = caseContent,
+                                                                        expectedResolution = caseResolution
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                        questionTitle = ""
+                                                        caseContent = ""
+                                                        caseResolution = ""
+                                                        savedMessage = "Cas pratique ajoute"
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(52.dp),
+                                                shape = RoundedCornerShape(18.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                                            ) {
+                                                Text("Ajouter le cas pratique", fontWeight = FontWeight.Bold)
+                                            }
+                                        }
                                     }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                shape = RoundedCornerShape(18.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                            ) {
-                                Text("Ajouter la question option", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
-                        CreationQuestionType.Open -> {
-                            CreationField("Reponse attendue", openExpectedAnswer, { openExpectedAnswer = it }, minHeight = 90)
-                            Button(
-                                onClick = {
-                                    if (questionTitle.isNotBlank() && openExpectedAnswer.isNotBlank()) {
-                                        openQuestions.add(
-                                            QuestionOuverteDAO(
-                                                question = Question(title = questionTitle),
-                                                questionOuverte = listOf(QuestionOuverte(expectedAnswer = openExpectedAnswer))
-                                            )
-                                        )
-                                        questionTitle = ""
-                                        openExpectedAnswer = ""
-                                        savedMessage = "Question ouverte ajoutee"
-                                    }
+
+                        2 -> {
+                            CreationSection("Apercu avant publication")
+                            DraftSummaryRow("Titre", title.ifBlank { "-" })
+                            DraftSummaryRow("Matiere", matiere.ifBlank { "-" })
+                            DraftSummaryRow("Type", typeEvaluation.ifBlank { "-" })
+                            DraftSummaryRow("Date debut", startDate)
+                            DraftSummaryRow("Date de fin", endDate)
+                            DraftSummaryRow("Compteur final", effectiveCounter.toString())
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Repartition des questions",
+                                color = Color(0xFF0F172A),
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            DraftCounterRow("Questions a choix", optionQuestions.size, darkMode = false)
+                            DraftCounterRow("Questions ouvertes", openQuestions.size, darkMode = false)
+                            DraftCounterRow("Cas pratiques", caseStudyQuestions.size, darkMode = false)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                if (canSave) {
+                                    "Ton evaluation est complete. Tu peux maintenant enregistrer."
+                                } else {
+                                    "Complete les etapes precedentes pour activer l'enregistrement."
                                 },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                shape = RoundedCornerShape(18.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                            ) {
-                                Text("Ajouter la question ouverte", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        CreationQuestionType.CaseStudy -> {
-                            CreationField("Enonce du cas", caseContent, { caseContent = it }, minHeight = 92)
-                            CreationField("Resolution attendue", caseResolution, { caseResolution = it }, minHeight = 92)
-                            Button(
-                                onClick = {
-                                    if (questionTitle.isNotBlank() && caseContent.isNotBlank() && caseResolution.isNotBlank()) {
-                                        caseStudyQuestions.add(
-                                            QuestionCaseStudyDAO(
-                                                question = Question(title = questionTitle),
-                                                questionCaseStudy = listOf(
-                                                    QuestionCaseStudy(
-                                                        caseContent = caseContent,
-                                                        expectedResolution = caseResolution
-                                                    )
-                                                )
-                                            )
-                                        )
-                                        questionTitle = ""
-                                        caseContent = ""
-                                        caseResolution = ""
-                                        savedMessage = "Cas pratique ajoute"
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                shape = RoundedCornerShape(18.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
-                            ) {
-                                Text("Ajouter le cas pratique", fontWeight = FontWeight.Bold)
-                            }
+                                color = if (canSave) Color(0xFF166534) else Color(0xFFB91C1C),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
             }
 
-            savedMessage?.let {
+            Spacer(Modifier.height(10.dp))
+            if (savedMessage != null) {
+                Text(
+                    savedMessage ?: "",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.16f))
+                        .padding(12.dp)
+                )
                 Spacer(Modifier.height(10.dp))
-                Text(it, color = Color.White, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(16.dp))
-            CreationSection("Apercu du brouillon")
-            DraftCounterRow("Questions a choix", optionQuestions.size)
-            DraftCounterRow("Questions ouvertes", openQuestions.size)
-            DraftCounterRow("Cas pratiques", caseStudyQuestions.size)
-            Spacer(Modifier.height(14.dp))
+
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.weight(1f).height(52.dp),
+                    onClick = {
+                        if (currentStep == 0) {
+                            onBack()
+                        } else {
+                            currentStep -= 1
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape = RoundedCornerShape(18.dp)
                 ) {
-                    Text("Annuler", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (currentStep == 0) "Annuler" else "Precedent",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Button(
                     onClick = {
-                        val dao = EvaluationDAO(
-                            title = title.ifBlank { "Nouvelle evaluation" },
-                            description = description,
-                            compteur = effectiveCounter,
-                            fileContent = fileContent.takeIf { it.isNotBlank() },
-                            startDate = startDate,
-                            endDate = endDate,
-                            option = optionQuestions.toList(),
-                            ouverte = openQuestions.toList(),
-                            caseStudy = caseStudyQuestions.toList()
-                        )
-                        onSave(dao)
-                        savedMessage = "Evaluation prete avec $effectiveCounter question(s)"
+                        if (currentStep < stepLabels.lastIndex) {
+                            if (canGoNext) {
+                                currentStep += 1
+                            } else {
+                                savedMessage = when (currentStep) {
+                                    0 -> "Completer titre, matiere et type pour continuer."
+                                    1 -> "Ajoute au moins une question pour continuer."
+                                    else -> "Verifie les informations avant de continuer."
+                                }
+                            }
+                        } else {
+                            val finalDescription = if (instructions.isNotBlank()) {
+                                "$description\n\nInstructions:\n$instructions".trim()
+                            } else {
+                                description
+                            }
+                            val dao = EvaluationDAO(
+                                title = title.ifBlank { "Nouvelle evaluation" },
+                                description = finalDescription,
+                                compteur = effectiveCounter,
+                                fileContent = fileContent.takeIf { it.isNotBlank() },
+                                startDate = startDate,
+                                endDate = endDate,
+                                option = optionQuestions.toList(),
+                                ouverte = openQuestions.toList(),
+                                caseStudy = caseStudyQuestions.toList()
+                            )
+                            onSave(dao)
+                            savedMessage = "Evaluation enregistree avec $effectiveCounter question(s)"
+                        }
                     },
-                    modifier = Modifier.weight(1f).height(52.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
                     shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
+                    enabled = canGoNext,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = BlueDark,
+                        disabledContainerColor = Color.White.copy(alpha = 0.45f),
+                        disabledContentColor = BlueDark.copy(alpha = 0.56f)
+                    )
                 ) {
-                    Text("Enregistrer", fontWeight = FontWeight.Bold)
+                    Text(
+                        if (currentStep == stepLabels.lastIndex) "Enregistrer" else "Suivant",
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
             Spacer(Modifier.height(90.dp))
@@ -449,14 +629,19 @@ fun EvaluationCreateBuild(
                             state = datePickerState,
                             showModeToggle = false,
                             headline = {
-                                Button(onClick = {
-                                    showDatePicker = false
-                                }, modifier = Modifier.padding(10.dp)) {
+                                Button(
+                                    onClick = {
+                                        datePickerState.selectedDateMillis?.let {
+                                            startDate = convertMillisToDate(it)
+                                        }
+                                        showDatePicker = false
+                                    },
+                                    modifier = Modifier.padding(10.dp)
+                                ) {
                                     Text("Valider")
                                 }
                             }
                         )
-
                     }
                 }
             }
@@ -477,14 +662,19 @@ fun EvaluationCreateBuild(
                             state = datePickerState2,
                             showModeToggle = false,
                             headline = {
-                                Button(onClick = {
-                                    showDatePicker2 = false
-                                }, modifier = Modifier.padding(10.dp)) {
+                                Button(
+                                    onClick = {
+                                        datePickerState2.selectedDateMillis?.let {
+                                            endDate = convertMillisToDate(it)
+                                        }
+                                        showDatePicker2 = false
+                                    },
+                                    modifier = Modifier.padding(10.dp)
+                                ) {
                                     Text("Valider")
                                 }
                             }
                         )
-
                     }
                 }
             }
@@ -493,8 +683,8 @@ fun EvaluationCreateBuild(
 }
 
 @Composable
-private fun CreationSection(title: String, size : Int = 21) {
-    Text(title, color = Color.Black, fontWeight = FontWeight.ExtraBold, fontSize = size.sp)
+private fun CreationSection(title: String, size: Int = 21) {
+    Text(title, color = Color(0xFF0F172A), fontWeight = FontWeight.ExtraBold, fontSize = size.sp)
     Spacer(Modifier.height(10.dp))
 }
 
@@ -503,12 +693,12 @@ private fun CreationMetric(label: String, value: String, modifier: Modifier = Mo
     Column(
         modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.14f))
+            .background(Color(0xFFF1F5F9))
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
-        Text(label, color = Color.White.copy(alpha = 0.68f), fontSize = 11.sp)
+        Text(value, color = Color(0xFF0F172A), fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
+        Text(label, color = Color(0xFF64748B), fontSize = 11.sp)
     }
 }
 
@@ -520,15 +710,17 @@ private fun CreationField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     minHeight: Int = 56,
-    placeHolder : String = ""
+    placeHolder: String = ""
 ) {
     OutlinedTextField(
         value = value,
-        placeholder = {Text(placeHolder)},
+        label = { if (label.isNotBlank()) Text(label) },
+        placeholder = { Text(placeHolder) },
         onValueChange = onValueChange,
-        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Black.copy(0.4f), focusedBorderColor = Color.Blue.copy(alpha = 0.6f),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = Color.Black.copy(0.2f),
+            focusedBorderColor = Color(0xFF2563EB).copy(alpha = 0.7f)
         ),
-//        label = { Text(label, color = Color.White) },
         singleLine = singleLine,
         modifier = modifier
             .fillMaxWidth()
@@ -542,46 +734,68 @@ private fun CreationField(
 private fun QuestionTypeChip(
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    selectedContainer: Color,
+    selectedText: Color,
+    unselectedContainer: Color,
+    unselectedText: Color
 ) {
     Text(
         text = label,
-        color = if (selected) BlueDark else Color.White,
+        color = if (selected) selectedText else unselectedText,
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
         modifier = Modifier
             .clip(RoundedCornerShape(40.dp))
-            .background(if (selected) Color.White else Color.White.copy(alpha = 0.16f))
+            .background(if (selected) selectedContainer else unselectedContainer)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     )
 }
 
 @Composable
-private fun DraftCounterRow(label: String, count: Int) {
+private fun DraftCounterRow(label: String, count: Int, darkMode: Boolean = true) {
+    val rowBackground = if (darkMode) Color.White.copy(alpha = 0.16f) else Color(0xFFF8FAFC)
+    val labelColor = if (darkMode) Color.White else Color(0xFF334155)
+    val countBackground = if (darkMode) Color.White else Color(0xFFE2E8F0)
+    val countColor = if (darkMode) BlueDark else Color(0xFF0F172A)
+
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.16f))
+            .background(rowBackground)
             .padding(14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Color.White, fontWeight = FontWeight.Bold)
+        Text(label, color = labelColor, fontWeight = FontWeight.Bold)
         Text(
             count.toString(),
-            color = BlueDark,
+            color = countColor,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(50.dp))
-                .background(Color.White)
+                .background(countBackground)
                 .padding(top = 6.dp),
             fontSize = 14.sp
         )
     }
     Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun DraftSummaryRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
+        Text(value, color = Color(0xFF0F172A), fontWeight = FontWeight.ExtraBold)
+    }
 }
 
 private enum class CreationQuestionType {
