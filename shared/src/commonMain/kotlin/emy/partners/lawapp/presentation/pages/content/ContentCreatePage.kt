@@ -46,6 +46,7 @@ import emy.partners.lawapp.domain.models.ContentAttachment
 import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
 import emy.partners.lawapp.presentation.components.basics.PickedFile
+import emy.partners.lawapp.presentation.components.basics.PlatformPdfViewer
 import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
@@ -425,6 +426,13 @@ private fun PreviewCard(
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFFF8FAFC))
                     )
+                } else if (file.isPdfLike()) {
+                    PlatformPdfViewer(
+                        uri = file.uri,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp)
+                    )
                 } else {
                     Box(
                         modifier = Modifier
@@ -454,6 +462,12 @@ private fun PickedFile.isImageLike(): Boolean {
         uriValue.endsWith(".jpg") ||
         uriValue.endsWith(".jpeg") ||
         uriValue.endsWith(".webp")
+}
+
+private fun PickedFile.isPdfLike(): Boolean {
+    val mime = mimeType.orEmpty().lowercase()
+    val uriValue = uri.lowercase()
+    return mime == "application/pdf" || uriValue.endsWith(".pdf")
 }
 
 private fun PickedFile.toAttachment() = ContentAttachment(
