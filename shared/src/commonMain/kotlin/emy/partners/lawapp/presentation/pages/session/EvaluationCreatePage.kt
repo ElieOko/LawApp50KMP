@@ -48,6 +48,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import emy.partners.lawapp.convertMillisToDate
 import emy.partners.lawapp.data.Constants.typeEvaluationItems
 import emy.partners.lawapp.domain.models.EvaluationDAO
@@ -108,6 +112,7 @@ fun EvaluationCreateBuild(
     var caseContent by remember { mutableStateOf("") }
     var caseResolution by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
+    var previewFile by remember { mutableStateOf<PickedFile?>(null) }
     val correctIndex = remember { mutableIntStateOf(0) }
     val optionValues = remember { mutableStateListOf("", "", "", "") }
     val optionQuestions = remember { mutableStateListOf<QuestionOptionDAO>() }
@@ -305,35 +310,38 @@ fun EvaluationCreateBuild(
                             CreationSection("Pieces jointes (image, pdf, document...)", size = 16)
                             OutlinedCard(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(18.dp)
+                                shape = RoundedCornerShape(14.dp)
                             ) {
-                                Column(Modifier.padding(12.dp)) {
+                                Column(Modifier.padding(10.dp)) {
                                     Text(
                                         "Ajoute des fichiers pour accompagner l'evaluation.",
-                                        color = Color(0xFF475569)
+                                        color = Color(0xFF475569),
+                                        fontSize = 12.sp
                                     )
-                                    Spacer(Modifier.height(8.dp))
+                                    Spacer(Modifier.height(6.dp))
                                     Button(
                                         onClick = launchFilePicker,
-                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.height(38.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
                                     ) {
-                                        Text("Uploader des fichiers", fontWeight = FontWeight.Bold)
+                                        Text("Uploader", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     }
                                     if (attachedFiles.isNotEmpty()) {
-                                        Spacer(Modifier.height(12.dp))
+                                        Spacer(Modifier.height(8.dp))
                                         attachedFiles.forEach { pickedFile ->
                                             AttachedFileRow(
                                                 file = pickedFile,
+                                                onPreview = { previewFile = pickedFile },
                                                 onRemove = { attachedFiles.remove(pickedFile) }
                                             )
                                         }
                                     } else {
-                                        Spacer(Modifier.height(8.dp))
+                                        Spacer(Modifier.height(6.dp))
                                         Text(
                                             "Aucun fichier ajoute pour le moment.",
                                             color = Color(0xFF64748B),
-                                            fontSize = 13.sp
+                                            fontSize = 12.sp
                                         )
                                     }
                                 }
@@ -754,6 +762,72 @@ fun EvaluationCreateBuild(
                     }
                 }
             }
+            previewFile?.let { file ->
+                Popup(
+                    onDismissRequest = { previewFile = null },
+                    alignment = Alignment.Center
+                ) {
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Column(
+                            Modifier
+                                .background(Color.White)
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                "Preview fichier",
+                                color = Color(0xFF0F172A),
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(file.name, color = Color(0xFF334155), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(file.mimeType ?: "type inconnu", color = Color(0xFF64748B), fontSize = 11.sp)
+                            Spacer(Modifier.height(8.dp))
+                            if (file.isImageLike()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalPlatformContext.current)
+                                        .data(file.uri)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFFF1F5F9))
+                                )
+                            } else {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFFF8FAFC))
+                                        .padding(10.dp)
+                                ) {
+                                    Text(
+                                        "Apercu non visuel disponible pour ce type de fichier.\nUri: ${file.uri}",
+                                        color = Color(0xFF475569),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Button(
+                                onClick = { previewFile = null },
+                                modifier = Modifier.fillMaxWidth().height(38.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
+                            ) {
+                                Text("Fermer", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -912,30 +986,32 @@ private fun DurationUnitSelector(
 ) {
     OutlinedCard(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
-        Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(label, color = Color(0xFF64748B), fontSize = 12.sp)
-            Spacer(Modifier.height(8.dp))
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, color = Color(0xFF64748B), fontSize = 11.sp)
+            Spacer(Modifier.height(5.dp))
             Text(
                 value.toString().padStart(2, '0'),
                 color = Color(0xFF0F172A),
-                fontSize = 24.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.ExtraBold
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(5.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = { onValueChange((value - 1).coerceAtLeast(min)) },
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(30.dp)
                 ) {
-                    Text("-")
+                    Text("-", fontSize = 12.sp)
                 }
                 OutlinedButton(
                     onClick = { onValueChange((value + 1).coerceAtMost(max)) },
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(30.dp)
                 ) {
-                    Text("+")
+                    Text("+", fontSize = 12.sp)
                 }
             }
         }
@@ -945,29 +1021,50 @@ private fun DurationUnitSelector(
 @Composable
 private fun AttachedFileRow(
     file: PickedFile,
+    onPreview: () -> Unit,
     onRemove: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF8FAFC))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(file.name, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text(file.mimeType ?: "type inconnu", color = Color(0xFF64748B), fontSize = 11.sp)
+            Text(file.name, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(file.mimeType ?: "type inconnu", color = Color(0xFF64748B), fontSize = 10.sp)
         }
-        OutlinedButton(
-            onClick = onRemove,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Retirer")
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedButton(
+                onClick = onPreview,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(30.dp)
+            ) {
+                Text("Preview", fontSize = 11.sp)
+            }
+            OutlinedButton(
+                onClick = onRemove,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(30.dp)
+            ) {
+                Text("Retirer", fontSize = 11.sp)
+            }
         }
     }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(6.dp))
+}
+
+private fun PickedFile.isImageLike(): Boolean {
+    val mime = mimeType.orEmpty().lowercase()
+    val uriValue = uri.lowercase()
+    return mime.startsWith("image/") ||
+        uriValue.endsWith(".png") ||
+        uriValue.endsWith(".jpg") ||
+        uriValue.endsWith(".jpeg") ||
+        uriValue.endsWith(".webp")
 }
 
 private fun formatDuration(totalMinutes: Int): String {
