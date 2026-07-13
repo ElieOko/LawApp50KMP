@@ -3,42 +3,41 @@ package emy.partners.lawapp.presentation.pages.auth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun RegisterPage() {
-    RegisterBuild()
+fun RegisterPage(
+    onLoginClick: () -> Unit = {},
+    onGoogleClick: () -> Unit = {},
+    onRegisterClick: () -> Unit = {},
+) {
+    RegisterBuild(
+        onLoginClick = onLoginClick,
+        onGoogleClick = onGoogleClick,
+        onRegisterClick = onRegisterClick,
+    )
 }
 
 @Composable
-fun RegisterBuild() {
+fun RegisterBuild(
+    onLoginClick: () -> Unit = {},
+    onGoogleClick: () -> Unit = {},
+    onRegisterClick: () -> Unit = {},
+) {
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -50,146 +49,92 @@ fun RegisterBuild() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF020617), Color(0xFF1E3A8A), Color(0xFF38BDF8))
-                )
-            )
+            .background(AuthColors.Black)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 22.dp),
-        verticalArrangement = Arrangement.Center
+            .padding(horizontal = 28.dp, vertical = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.96f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(Modifier.padding(20.dp)) {
-                Text(
-                    text = "Inscription",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Creez un compte en quelques secondes.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF475569)
-                )
-                Spacer(Modifier.height(16.dp))
+        AuthBrandMark()
+        Spacer(Modifier.height(28.dp))
+        AuthHeroTitle(
+            title = "Rejoignez\nLawApp50",
+            subtitle = "Créez votre compte en une minute."
+        )
 
-                OutlinedTextField(
-                    value = nom,
-                    onValueChange = { nom = it },
-                    label = { Text("Nom") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = prenom,
-                    onValueChange = { prenom = it },
-                    label = { Text("Prenom") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = pseudo,
-                    onValueChange = { pseudo = it },
-                    label = { Text("Pseudo") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = telephone,
-                    onValueChange = { telephone = it },
-                    label = { Text("Telephone") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
+        Spacer(Modifier.height(28.dp))
+        GoogleSignInButton(
+            text = "S'inscrire avec Google",
+            onClick = onGoogleClick
+        )
+        Spacer(Modifier.height(16.dp))
+        AuthOrDivider()
+        Spacer(Modifier.height(16.dp))
 
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    text = "Gender",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                SelectionRow(
-                    options = listOf("Masculin", "Feminin"),
-                    selected = gender,
-                    onSelected = { gender = it }
-                )
+        AuthTextField(
+            value = nom,
+            onValueChange = { nom = it },
+            label = "Nom"
+        )
+        Spacer(Modifier.height(12.dp))
+        AuthTextField(
+            value = prenom,
+            onValueChange = { prenom = it },
+            label = "Prénom"
+        )
+        Spacer(Modifier.height(12.dp))
+        AuthTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = "Email",
+            keyboardType = KeyboardType.Email
+        )
+        Spacer(Modifier.height(12.dp))
+        AuthTextField(
+            value = pseudo,
+            onValueChange = { pseudo = it },
+            label = "Pseudo"
+        )
+        Spacer(Modifier.height(12.dp))
+        AuthTextField(
+            value = telephone,
+            onValueChange = { telephone = it },
+            label = "Téléphone",
+            keyboardType = KeyboardType.Phone
+        )
 
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = "Type de compte",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                SelectionRow(
-                    options = listOf("Enseignant", "Etudiant"),
-                    selected = typeCompte,
-                    onSelected = { typeCompte = it }
-                )
+        Spacer(Modifier.height(18.dp))
+        AuthChoiceChips(
+            label = "Genre",
+            options = listOf("Masculin", "Féminin"),
+            selected = gender,
+            onSelected = { gender = it }
+        )
+        Spacer(Modifier.height(14.dp))
+        AuthChoiceChips(
+            label = "Type de compte",
+            options = listOf("Enseignant", "Etudiant"),
+            selected = typeCompte,
+            onSelected = { typeCompte = it }
+        )
 
-                Spacer(Modifier.height(18.dp))
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Creer mon compte", style = MaterialTheme.typography.titleMedium)
-                }
-
-                TextButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
-                    Text("Deja inscrit ? Se connecter")
-                }
-            }
-        }
+        Spacer(Modifier.height(24.dp))
+        AuthPrimaryButton(
+            text = "Créer mon compte",
+            onClick = onRegisterClick,
+            filled = true
+        )
+        Spacer(Modifier.height(18.dp))
+        AuthFooterLink(
+            prefix = "Vous avez déjà un compte ?",
+            action = "Se connecter",
+            onClick = onLoginClick
+        )
+        Spacer(Modifier.height(12.dp))
     }
 }
 
 @Composable
-private fun SelectionRow(
-    options: List<String>,
-    selected: String,
-    onSelected: (String) -> Unit
-) {
-    Column {
-        options.forEach { option ->
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                RadioButton(
-                    selected = selected == option,
-                    onClick = { onSelected(option) }
-                )
-                Text(option, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-    }
-}
-
-@Composable
-@Preview(showBackground = true)
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
 fun RegisterPreview() {
     RegisterBuild()
 }

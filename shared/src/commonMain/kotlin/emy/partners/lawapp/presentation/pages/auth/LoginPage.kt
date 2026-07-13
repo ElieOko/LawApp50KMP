@@ -5,118 +5,108 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LoginPage() {
-    LoginBuild()
+fun LoginPage(
+    onRegisterClick: () -> Unit = {},
+    onGoogleClick: () -> Unit = {},
+    onLoginClick: () -> Unit = {},
+) {
+    LoginBuild(
+        onRegisterClick = onRegisterClick,
+        onGoogleClick = onGoogleClick,
+        onLoginClick = onLoginClick,
+    )
 }
 
 @Composable
-fun LoginBuild() {
+fun LoginBuild(
+    onRegisterClick: () -> Unit = {},
+    onGoogleClick: () -> Unit = {},
+    onLoginClick: () -> Unit = {},
+) {
     var email by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF0F172A), Color(0xFF1D4ED8), Color(0xFF60A5FA))
-                )
-            )
-            .padding(horizontal = 20.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.Center
+            .background(AuthColors.Black)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 28.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.96f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(modifier = Modifier.padding(22.dp)) {
-                Text(
-                    text = "Connexion",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Accedez a votre espace enseignant ou etudiant.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF475569)
-                )
+        Column {
+            AuthBrandMark()
+            Spacer(Modifier.height(36.dp))
+            AuthHeroTitle(
+                title = "Ça se passe\nmaintenant",
+                subtitle = "Connectez-vous pour continuer sur LawApp50."
+            )
+        }
 
-                Spacer(Modifier.height(18.dp))
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = motDePasse,
-                    onValueChange = { motDePasse = it },
-                    label = { Text("Mot de passe") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
+        Column {
+            GoogleSignInButton(
+                text = "Continuer avec Google",
+                onClick = onGoogleClick
+            )
+            Spacer(Modifier.height(18.dp))
+            AuthOrDivider()
+            Spacer(Modifier.height(18.dp))
 
-                Spacer(Modifier.height(18.dp))
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Se connecter", style = MaterialTheme.typography.titleMedium)
-                }
+            AuthTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email",
+                keyboardType = KeyboardType.Email
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthTextField(
+                value = motDePasse,
+                onValueChange = { motDePasse = it },
+                label = "Mot de passe",
+                isPassword = true
+            )
+            Spacer(Modifier.height(20.dp))
+            AuthPrimaryButton(
+                text = "Se connecter",
+                onClick = onLoginClick,
+                filled = true
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthPrimaryButton(
+                text = "Mot de passe oublié ?",
+                onClick = {},
+                filled = false
+            )
+        }
 
-                TextButton(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Pas encore de compte ? Inscrivez-vous",
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+        Column {
+            Spacer(Modifier.height(28.dp))
+            AuthFooterLink(
+                prefix = "Pas encore de compte ?",
+                action = "S'inscrire",
+                onClick = onRegisterClick
+            )
         }
     }
 }
 
 @Composable
-@Preview(showBackground = true)
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
 fun LoginPreview() {
     LoginBuild()
 }
