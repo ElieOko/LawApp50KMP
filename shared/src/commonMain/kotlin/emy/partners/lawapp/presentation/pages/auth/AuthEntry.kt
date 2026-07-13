@@ -16,6 +16,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 enum class AuthDestination {
     Login,
     Register,
+    Recovery,
+    Otp,
 }
 
 /**
@@ -28,10 +30,16 @@ data class AuthActions(
 
 val LocalAuthActions = staticCompositionLocalOf { AuthActions() }
 
+private data class AuthFlowState(
+    val destination: AuthDestination = AuthDestination.Login,
+    val recoveryContactType: RecoveryContactType = RecoveryContactType.Email,
+    val recoveryContactValue: String = "",
+)
+
 /**
  * Point d'entree public des pages auth.
  * Utilisable en dehors de [emy.partners.lawapp.App] tout en conservant
- * la structure de [LoginPage] et [RegisterPage].
+ * la structure des pages Login, Register, Recovery et OTP.
  */
 @Composable
 fun AuthEntry(
@@ -40,24 +48,47 @@ fun AuthEntry(
     onAuthenticated: () -> Unit = {},
     onDismiss: (() -> Unit)? = null,
 ) {
-    var destination by remember(initialDestination) {
-        mutableStateOf(initialDestination)
+    var state by remember(initialDestination) {
+        mutableStateOf(AuthFlowState(destination = initialDestination))
     }
 
-    when (destination) {
+    when (state.destination) {
         AuthDestination.Login -> LoginPage(
             modifier = modifier,
             onBack = { onDismiss?.invoke() },
-            onRegisterClick = { destination = AuthDestination.Register },
+            onRegisterClick = {
+                state = state.copy(destination = AuthDestination.Register)
+            },
+            onForgotPasswordClick = {
+                state = state.copy(destination = AuthDestination.Recovery)
+            },
             onGoogleClick = onAuthenticated,
             onLoginClick = onAuthenticated,
         )
         AuthDestination.Register -> RegisterPage(
             modifier = modifier,
-            onBack = { destination = AuthDestination.Login },
-            onLoginClick = { destination = AuthDestination.Login },
+            onBack = { state = state.copy(destination = AuthDestination.Login) },
+            onLoginClick = { state = state.copy(destination = AuthDestination.Login) },
             onGoogleClick = onAuthenticated,
             onRegisterClick = onAuthenticated,
+        )
+        AuthDestination.Recovery -> RecoveryAccountPage(
+            modifier = modifier,
+            onBack = { state = state.copy(destination = AuthDestination.Login) },
+            onContinueClick = { contactType, value ->
+                state = state.copy(
+                    destination = AuthDestination.Otp,
+                    recoveryContactType = contactType,
+                    recoveryContactValue = value,
+                )
+            },
+        )
+        AuthDestination.Otp -> OtpVerificationPage(
+            modifier = modifier,
+            destinationLabel = state.recoveryContactValue.ifBlank { "votre contact" },
+            onBack = { state = state.copy(destination = AuthDestination.Recovery) },
+            onResendClick = {},
+            onVerifyClick = { onAuthenticated() },
         )
     }
 }

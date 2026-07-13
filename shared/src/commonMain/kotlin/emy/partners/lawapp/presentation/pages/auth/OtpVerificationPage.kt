@@ -20,41 +20,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginPage(
+fun OtpVerificationPage(
     modifier: Modifier = Modifier,
+    destinationLabel: String = "votre contact",
     onBack: () -> Unit = {},
-    onRegisterClick: () -> Unit = {},
-    onForgotPasswordClick: () -> Unit = {},
-    onGoogleClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onResendClick: () -> Unit = {},
+    onVerifyClick: (otp: String) -> Unit = {},
 ) {
-    LoginBuild(
+    OtpVerificationBuild(
         modifier = modifier,
+        destinationLabel = destinationLabel,
         onBack = onBack,
-        onRegisterClick = onRegisterClick,
-        onForgotPasswordClick = onForgotPasswordClick,
-        onGoogleClick = onGoogleClick,
-        onLoginClick = onLoginClick,
+        onResendClick = onResendClick,
+        onVerifyClick = onVerifyClick,
     )
 }
 
 @Composable
-fun LoginBuild(
+fun OtpVerificationBuild(
     modifier: Modifier = Modifier,
+    destinationLabel: String = "votre contact",
     onBack: () -> Unit = {},
-    onRegisterClick: () -> Unit = {},
-    onForgotPasswordClick: () -> Unit = {},
-    onGoogleClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onResendClick: () -> Unit = {},
+    onVerifyClick: (otp: String) -> Unit = {},
 ) {
-    var email by remember { mutableStateOf("") }
-    var motDePasse by remember { mutableStateOf("") }
+    var otp by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -65,53 +60,44 @@ fun LoginBuild(
             .padding(top = 36.dp, bottom = 24.dp)
     ) {
         AuthBrandHeader(
-            title = "Connexion",
-            subtitle = "Accedez a vos evaluations, quiz et contenus juridiques pedagogiques.",
+            title = "Verification OTP",
+            subtitle = "Entrez le code a 6 caracteres envoye a $destinationLabel.",
             onBack = onBack,
         )
         Spacer(Modifier.height(18.dp))
         AuthFormPanel {
-            GoogleSignInButton(
-                text = "Continuer avec Google",
-                onClick = onGoogleClick
-            )
-            Spacer(Modifier.height(14.dp))
-            AuthOrDivider()
-            Spacer(Modifier.height(14.dp))
-            AuthTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email",
-                keyboardType = KeyboardType.Email
+            Text(
+                text = "Code de verification",
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
             )
             Spacer(Modifier.height(12.dp))
-            AuthTextField(
-                value = motDePasse,
-                onValueChange = { motDePasse = it },
-                label = "Mot de passe",
-                isPassword = true
+            AuthOtpInput(
+                value = otp,
+                onValueChange = { otp = it },
+                length = 6
             )
+            Spacer(Modifier.height(8.dp))
             TextButton(
-                onClick = onForgotPasswordClick,
-                modifier = Modifier.align(Alignment.End)
+                onClick = onResendClick,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    text = "Mot de passe oublie ?",
+                    text = "Renvoyer le code",
                     color = AuthColors.AccentBright,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             AuthPrimaryButton(
-                text = "Se connecter",
-                onClick = onLoginClick
-            )
-            Spacer(Modifier.height(14.dp))
-            AuthFooterLink(
-                prefix = "Pas encore de compte ?",
-                action = "S'inscrire",
-                onClick = onRegisterClick
+                text = "Verifier le code",
+                onClick = {
+                    if (otp.length == 6) {
+                        onVerifyClick(otp)
+                    }
+                }
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -120,8 +106,11 @@ fun LoginBuild(
 
 @Composable
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
-fun LoginPreview() {
+fun OtpVerificationPreview() {
     MaterialTheme {
-        LoginBuild(onBack = {})
+        OtpVerificationBuild(
+            onBack = {},
+            destinationLabel = "email@lawapp50.com"
+        )
     }
 }
