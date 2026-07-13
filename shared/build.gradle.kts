@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -39,7 +40,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.foundation.pager)
-            implementation("io.ktor:ktor-client-okhttp:3.0.0")
+            implementation(libs.ktor.client.okhttp)
             implementation("androidx.media3:media3-exoplayer:1.4.1")
             implementation("androidx.media3:media3-ui:1.4.1")
             implementation(libs.androidx.media3.exoplayer)
@@ -55,6 +56,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.voyager.navigator)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
            // implementation("io.coil-kt:coil-compose:3.0.0")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
             implementation("io.coil-kt.coil3:coil-compose:3.0.0")

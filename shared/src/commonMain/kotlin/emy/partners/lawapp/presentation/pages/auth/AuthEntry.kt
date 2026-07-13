@@ -63,14 +63,16 @@ fun AuthEntry(
                 state = state.copy(destination = AuthDestination.Recovery)
             },
             onGoogleClick = onAuthenticated,
-            onLoginClick = onAuthenticated,
+            onLoginSuccess = onAuthenticated,
         )
         AuthDestination.Register -> RegisterPage(
             modifier = modifier,
             onBack = { state = state.copy(destination = AuthDestination.Login) },
             onLoginClick = { state = state.copy(destination = AuthDestination.Login) },
             onGoogleClick = onAuthenticated,
-            onRegisterClick = onAuthenticated,
+            onRegisterSuccess = {
+                state = state.copy(destination = AuthDestination.Login)
+            },
         )
         AuthDestination.Recovery -> RecoveryAccountPage(
             modifier = modifier,
