@@ -330,7 +330,7 @@ private class LoginScreen : UniqueLawAppScreen() {
             onRegisterClick = { navigator.push(RegisterScreen()) },
             onForgotPasswordClick = { navigator.push(RecoveryAccountScreen()) },
             onGoogleClick = { navigator.pop() },
-            onLoginClick = { navigator.pop() },
+            onLoginSuccess = { navigator.pop() },
         )
     }
 }
@@ -351,8 +351,8 @@ private class RegisterScreen : UniqueLawAppScreen() {
             onGoogleClick = {
                 navigator.popUntil { it is ProfileScreen }
             },
-            onRegisterClick = {
-                navigator.popUntil { it is ProfileScreen }
+            onRegisterSuccess = {
+                navigator.popUntil { it is LoginScreen || it is ProfileScreen }
             },
         )
     }

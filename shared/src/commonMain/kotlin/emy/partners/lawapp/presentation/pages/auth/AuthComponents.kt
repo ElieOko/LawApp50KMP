@@ -207,21 +207,37 @@ internal fun AuthOrDivider() {
 internal fun AuthPrimaryButton(
     text: String,
     onClick: () -> Unit = {},
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = AuthColors.AccentBright,
-            contentColor = Color.White
+            contentColor = Color.White,
+            disabledContainerColor = AuthColors.AccentBright.copy(alpha = 0.45f),
+            disabledContentColor = Color.White.copy(alpha = 0.9f),
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
         Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
+}
+
+@Composable
+internal fun AuthErrorText(message: String?) {
+    if (message.isNullOrBlank()) return
+    Text(
+        text = message,
+        color = Color(0xFFB91C1C),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable

@@ -13,12 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import emy.partners.lawapp.data.remote.auth.AuthRepository
+import emy.partners.lawapp.data.remote.auth.UserRegisterRequest
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterPage(
@@ -26,14 +30,14 @@ fun RegisterPage(
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onRegisterClick: () -> Unit = {},
+    onRegisterSuccess: () -> Unit = {},
 ) {
     RegisterBuild(
         modifier = modifier,
         onBack = onBack,
         onLoginClick = onLoginClick,
         onGoogleClick = onGoogleClick,
-        onRegisterClick = onRegisterClick,
+        onRegisterSuccess = onRegisterSuccess,
     )
 }
 
@@ -43,15 +47,21 @@ fun RegisterBuild(
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onRegisterClick: () -> Unit = {},
+    onRegisterSuccess: () -> Unit = {},
 ) {
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var pseudo by remember { mutableStateOf("") }
     var telephone by remember { mutableStateOf("") }
+    var ville by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("Masculin") }
     var typeCompte by remember { mutableStateOf("Etudiant") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -76,24 +86,44 @@ fun RegisterBuild(
             AuthOrDivider()
             Spacer(Modifier.height(14.dp))
 
-            AuthTextField(value = nom, onValueChange = { nom = it }, label = "Nom")
+            AuthTextField(value = nom, onValueChange = { nom = it; errorMessage = null }, label = "Nom")
             Spacer(Modifier.height(12.dp))
-            AuthTextField(value = prenom, onValueChange = { prenom = it }, label = "Prenom")
+            AuthTextField(value = prenom, onValueChange = { prenom = it; errorMessage = null }, label = "Prenom")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it; errorMessage = null },
                 label = "Email",
                 keyboardType = KeyboardType.Email
             )
             Spacer(Modifier.height(12.dp))
-            AuthTextField(value = pseudo, onValueChange = { pseudo = it }, label = "Pseudo")
+            AuthTextField(value = pseudo, onValueChange = { pseudo = it; errorMessage = null }, label = "Pseudo")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = telephone,
-                onValueChange = { telephone = it },
+                onValueChange = { telephone = it; errorMessage = null },
                 label = "Telephone",
                 keyboardType = KeyboardType.Phone
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthTextField(
+                value = ville,
+                onValueChange = { ville = it; errorMessage = null },
+                label = "Ville"
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthTextField(
+                value = password,
+                onValueChange = { password = it; errorMessage = null },
+                label = "Mot de passe",
+                isPassword = true
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it; errorMessage = null },
+                label = "Confirmer le mot de passe",
+                isPassword = true
             )
             Spacer(Modifier.height(16.dp))
             AuthChoiceChips(
@@ -109,10 +139,44 @@ fun RegisterBuild(
                 selected = typeCompte,
                 onSelected = { typeCompte = it }
             )
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(12.dp))
+            AuthErrorText(errorMessage)
+            Spacer(Modifier.height(8.dp))
             AuthPrimaryButton(
-                text = "Creer mon compte",
-                onClick = onRegisterClick
+                text = if (isLoading) "Creation..." else "Creer mon compte",
+                enabled = !isLoading,
+                onClick = {
+                    when {
+                        nom.isBlank() || prenom.isBlank() -> errorMessage = "Nom et prenom requis"
+                        email.isBlank() -> errorMessage = "Email requis"
+                        ville.isBlank() -> errorMessage = "Ville requise"
+                        password.length < 6 -> errorMessage = "Mot de passe: 6 caracteres minimum"
+                        password != confirmPassword -> errorMessage = "Les mots de passe ne correspondent pas"
+                        else -> {
+                            isLoading = true
+                            errorMessage = null
+                            scope.launch {
+                                val result = AuthRepository.register(
+                                    UserRegisterRequest(
+                                        email = email.trim(),
+                                        password = password,
+                                        confirmPassword = confirmPassword,
+                                        firstName = prenom.trim(),
+                                        lastName = nom.trim(),
+                                        city = ville.trim(),
+                                        pseudo = pseudo.trim().ifBlank { null },
+                                        phone = telephone.trim().ifBlank { null },
+                                    )
+                                )
+                                isLoading = false
+                                result.onSuccess { onRegisterSuccess() }
+                                    .onFailure { error ->
+                                        errorMessage = error.message ?: "Inscription impossible"
+                                    }
+                            }
+                        }
+                    }
+                }
             )
             Spacer(Modifier.height(14.dp))
             AuthFooterLink(

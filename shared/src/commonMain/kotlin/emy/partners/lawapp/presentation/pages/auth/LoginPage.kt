@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import emy.partners.lawapp.data.remote.auth.AuthRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginPage(
@@ -32,7 +35,7 @@ fun LoginPage(
     onRegisterClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onLoginSuccess: () -> Unit = {},
 ) {
     LoginBuild(
         modifier = modifier,
@@ -40,7 +43,7 @@ fun LoginPage(
         onRegisterClick = onRegisterClick,
         onForgotPasswordClick = onForgotPasswordClick,
         onGoogleClick = onGoogleClick,
-        onLoginClick = onLoginClick,
+        onLoginSuccess = onLoginSuccess,
     )
 }
 
@@ -51,10 +54,13 @@ fun LoginBuild(
     onRegisterClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onLoginSuccess: () -> Unit = {},
 ) {
-    var email by remember { mutableStateOf("") }
+    var identifiant by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -79,15 +85,21 @@ fun LoginBuild(
             AuthOrDivider()
             Spacer(Modifier.height(14.dp))
             AuthTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email",
+                value = identifiant,
+                onValueChange = {
+                    identifiant = it
+                    errorMessage = null
+                },
+                label = "Email ou pseudo",
                 keyboardType = KeyboardType.Email
             )
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = motDePasse,
-                onValueChange = { motDePasse = it },
+                onValueChange = {
+                    motDePasse = it
+                    errorMessage = null
+                },
                 label = "Mot de passe",
                 isPassword = true
             )
@@ -102,10 +114,36 @@ fun LoginBuild(
                     fontSize = 13.sp
                 )
             }
+            AuthErrorText(errorMessage)
             Spacer(Modifier.height(8.dp))
             AuthPrimaryButton(
-                text = "Se connecter",
-                onClick = onLoginClick
+                text = if (isLoading) "Connexion..." else "Se connecter",
+                enabled = !isLoading,
+                onClick = {
+                    when {
+                        identifiant.trim().length < 4 -> {
+                            errorMessage = "Identifiant trop court"
+                        }
+                        motDePasse.length < 4 -> {
+                            errorMessage = "Mot de passe trop court"
+                        }
+                        else -> {
+                            isLoading = true
+                            errorMessage = null
+                            scope.launch {
+                                val result = AuthRepository.login(
+                                    identifiant = identifiant,
+                                    password = motDePasse,
+                                )
+                                isLoading = false
+                                result.onSuccess { onLoginSuccess() }
+                                    .onFailure { error ->
+                                        errorMessage = error.message ?: "Connexion impossible"
+                                    }
+                            }
+                        }
+                    }
+                }
             )
             Spacer(Modifier.height(14.dp))
             AuthFooterLink(
