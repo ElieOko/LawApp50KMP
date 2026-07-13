@@ -59,7 +59,7 @@ fun RegisterBuild(
             .background(Color(0xFFE8EEF7))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 14.dp, vertical = 12.dp)
-            .padding(bottom = 90.dp)
+            .padding(bottom = 24.dp)
     ) {
         AuthBrandHeader(
             title = "Inscription",
