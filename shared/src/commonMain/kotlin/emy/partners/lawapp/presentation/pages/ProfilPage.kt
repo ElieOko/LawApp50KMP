@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.Constants
+import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 import lawapp.shared.generated.resources.Res
@@ -99,8 +100,18 @@ fun ProfilBuild(
                 )
             }
             Spacer(Modifier.height(12.dp))
-            Text("Emy Mayumbi", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
-            Text("@lawapp_member", color = Color.White.copy(alpha = 0.65f), fontWeight = FontWeight.Bold)
+            val savedProfile = AuthRepository.currentSession?.profile
+            Text(
+                savedProfile?.displayName ?: "Emy Mayumbi",
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 26.sp
+            )
+            Text(
+                savedProfile?.displayHandle ?: "@lawapp_member",
+                color = Color.White.copy(alpha = 0.65f),
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ProfileMetric("Evaluations", evaluations.size.toString(), Modifier.weight(1f))

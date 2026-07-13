@@ -241,6 +241,68 @@ internal fun AuthErrorText(message: String?) {
 }
 
 @Composable
+internal fun AuthLoadingDialog(
+    visible: Boolean,
+    message: String = "Envoi en cours...",
+) {
+    if (!visible) return
+    androidx.compose.ui.window.Dialog(onDismissRequest = {}) {
+        Column(
+            modifier = Modifier
+                .clip(PanelShape)
+                .background(Color.White)
+                .padding(horizontal = 28.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(color = AuthColors.AccentBright)
+            Text(
+                text = message,
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+        }
+    }
+}
+
+@Composable
+internal fun AuthMessageDialog(
+    title: String,
+    message: String,
+    confirmLabel: String = "OK",
+    onConfirm: () -> Unit,
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onConfirm) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(PanelShape)
+                .background(Color.White)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = title,
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp
+            )
+            Text(
+                text = message,
+                color = AuthColors.TextSecondary,
+                fontSize = 14.sp,
+                lineHeight = 19.sp
+            )
+            AuthPrimaryButton(
+                text = confirmLabel,
+                onClick = onConfirm
+            )
+        }
+    }
+}
+
+@Composable
 internal fun AuthTextField(
     value: String,
     onValueChange: (String) -> Unit,

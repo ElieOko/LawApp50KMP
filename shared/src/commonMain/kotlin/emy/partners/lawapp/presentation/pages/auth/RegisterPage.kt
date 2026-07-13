@@ -24,6 +24,12 @@ import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.auth.UserRegisterRequest
 import kotlinx.coroutines.launch
 
+private data class RegisterPopup(
+    val title: String,
+    val message: String,
+    val isSuccess: Boolean = false,
+)
+
 @Composable
 fun RegisterPage(
     modifier: Modifier = Modifier,
@@ -60,8 +66,21 @@ fun RegisterBuild(
     var gender by remember { mutableStateOf("Masculin") }
     var typeCompte by remember { mutableStateOf("Etudiant") }
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var popup by remember { mutableStateOf<RegisterPopup?>(null) }
     val scope = rememberCoroutineScope()
+
+    AuthLoadingDialog(visible = isLoading, message = "Creation du compte...")
+    popup?.let { dialog ->
+        AuthMessageDialog(
+            title = dialog.title,
+            message = dialog.message,
+            onConfirm = {
+                val success = dialog.isSuccess
+                popup = null
+                if (success) onRegisterSuccess()
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -86,42 +105,42 @@ fun RegisterBuild(
             AuthOrDivider()
             Spacer(Modifier.height(14.dp))
 
-            AuthTextField(value = nom, onValueChange = { nom = it; errorMessage = null }, label = "Nom")
+            AuthTextField(value = nom, onValueChange = { nom = it }, label = "Nom")
             Spacer(Modifier.height(12.dp))
-            AuthTextField(value = prenom, onValueChange = { prenom = it; errorMessage = null }, label = "Prenom")
+            AuthTextField(value = prenom, onValueChange = { prenom = it }, label = "Prenom")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = email,
-                onValueChange = { email = it; errorMessage = null },
+                onValueChange = { email = it },
                 label = "Email",
                 keyboardType = KeyboardType.Email
             )
             Spacer(Modifier.height(12.dp))
-            AuthTextField(value = pseudo, onValueChange = { pseudo = it; errorMessage = null }, label = "Pseudo")
+            AuthTextField(value = pseudo, onValueChange = { pseudo = it }, label = "Pseudo")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = telephone,
-                onValueChange = { telephone = it; errorMessage = null },
+                onValueChange = { telephone = it },
                 label = "Telephone",
                 keyboardType = KeyboardType.Phone
             )
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = ville,
-                onValueChange = { ville = it; errorMessage = null },
+                onValueChange = { ville = it },
                 label = "Ville"
             )
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = password,
-                onValueChange = { password = it; errorMessage = null },
+                onValueChange = { password = it },
                 label = "Mot de passe",
                 isPassword = true
             )
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it; errorMessage = null },
+                onValueChange = { confirmPassword = it },
                 label = "Confirmer le mot de passe",
                 isPassword = true
             )
@@ -139,22 +158,27 @@ fun RegisterBuild(
                 selected = typeCompte,
                 onSelected = { typeCompte = it }
             )
-            Spacer(Modifier.height(12.dp))
-            AuthErrorText(errorMessage)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             AuthPrimaryButton(
-                text = if (isLoading) "Creation..." else "Creer mon compte",
+                text = "Creer mon compte",
                 enabled = !isLoading,
                 onClick = {
                     when {
-                        nom.isBlank() || prenom.isBlank() -> errorMessage = "Nom et prenom requis"
-                        email.isBlank() -> errorMessage = "Email requis"
-                        ville.isBlank() -> errorMessage = "Ville requise"
-                        password.length < 6 -> errorMessage = "Mot de passe: 6 caracteres minimum"
-                        password != confirmPassword -> errorMessage = "Les mots de passe ne correspondent pas"
+                        nom.isBlank() || prenom.isBlank() || email.isBlank() || ville.isBlank() ||
+                            password.isBlank() || confirmPassword.isBlank() -> {
+                            popup = RegisterPopup(
+                                title = "Champs requis",
+                                message = "Merci de remplir tous les champs obligatoires."
+                            )
+                        }
+                        password != confirmPassword -> {
+                            popup = RegisterPopup(
+                                title = "Mot de passe",
+                                message = "Les mots de passe ne correspondent pas."
+                            )
+                        }
                         else -> {
                             isLoading = true
-                            errorMessage = null
                             scope.launch {
                                 val result = AuthRepository.register(
                                     UserRegisterRequest(
@@ -169,10 +193,18 @@ fun RegisterBuild(
                                     )
                                 )
                                 isLoading = false
-                                result.onSuccess { onRegisterSuccess() }
-                                    .onFailure { error ->
-                                        errorMessage = error.message ?: "Inscription impossible"
-                                    }
+                                result.onSuccess {
+                                    popup = RegisterPopup(
+                                        title = "Compte cree",
+                                        message = "Votre compte a ete cree avec succes.",
+                                        isSuccess = true,
+                                    )
+                                }.onFailure { error ->
+                                    popup = RegisterPopup(
+                                        title = "Echec d'inscription",
+                                        message = error.message ?: "Inscription impossible"
+                                    )
+                                }
                             }
                         }
                     }

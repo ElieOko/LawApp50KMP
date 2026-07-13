@@ -31,8 +31,42 @@ data class ApiMessage(
     val message: String? = null,
 )
 
+@Serializable
+data class AuthUserProfile(
+    val userId: Long? = null,
+    val email: String? = null,
+    val username: String? = null,
+    val phone: String? = null,
+    val city: String? = null,
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val premium: Boolean? = null,
+    val certified: Boolean? = null,
+) {
+    val displayName: String
+        get() {
+            val full = listOfNotNull(firstName?.takeIf { it.isNotBlank() }, lastName?.takeIf { it.isNotBlank() })
+                .joinToString(" ")
+            return when {
+                full.isNotBlank() -> full
+                !username.isNullOrBlank() -> username
+                !email.isNullOrBlank() -> email
+                else -> "Utilisateur LawApp"
+            }
+        }
+
+    val displayHandle: String
+        get() = when {
+            !username.isNullOrBlank() -> "@$username"
+            !email.isNullOrBlank() -> email
+            else -> "@lawapp_member"
+        }
+}
+
+@Serializable
 data class AuthSession(
     val accessToken: String,
     val refreshToken: String? = null,
+    val profile: AuthUserProfile? = null,
     val rawResponse: String = "",
 )

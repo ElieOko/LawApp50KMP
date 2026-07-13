@@ -1,8 +1,9 @@
 package emy.partners.lawapp.data.remote.auth
 
+import emy.partners.lawapp.data.local.LocalStore
+import emy.partners.lawapp.data.local.createLocalStore
 import emy.partners.lawapp.data.remote.createHttpClient
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -28,7 +29,7 @@ class AuthApi(
             if (!response.status.isSuccess()) {
                 throw AuthApiException(extractMessage(bodyText) ?: "Connexion impossible (${response.status.value})")
             }
-            parseSession(bodyText)
+            parseSession(bodyText, fallbackIdentifiant = identifiant.trim())
         }
     }
 
@@ -41,49 +42,89 @@ class AuthApi(
             if (!response.status.isSuccess()) {
                 throw AuthApiException(extractMessage(bodyText) ?: "Inscription impossible (${response.status.value})")
             }
-            // Some backends return a message-only body on register; treat as success without tokens.
-            parseSessionOrEmpty(bodyText)
+            parseSessionOrEmpty(
+                bodyText = bodyText,
+                fallbackProfile = AuthUserProfile(
+                    email = request.email,
+                    username = request.pseudo,
+                    phone = request.phone,
+                    city = request.city,
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                )
+            )
         }
     }
 
-    private fun parseSession(bodyText: String): AuthSession {
-        val session = parseSessionOrEmpty(bodyText)
+    private fun parseSession(bodyText: String, fallbackIdentifiant: String): AuthSession {
+        val session = parseSessionOrEmpty(
+            bodyText = bodyText,
+            fallbackProfile = AuthUserProfile(
+                email = fallbackIdentifiant.takeIf { it.contains("@") },
+                username = fallbackIdentifiant.takeUnless { it.contains("@") },
+            )
+        )
         if (session.accessToken.isBlank()) {
             throw AuthApiException(extractMessage(bodyText) ?: "Reponse de connexion invalide")
         }
         return session
     }
 
-    private fun parseSessionOrEmpty(bodyText: String): AuthSession {
+    private fun parseSessionOrEmpty(
+        bodyText: String,
+        fallbackProfile: AuthUserProfile? = null,
+    ): AuthSession {
         if (bodyText.isBlank()) {
-            return AuthSession(accessToken = "", rawResponse = bodyText)
+            return AuthSession(accessToken = "", profile = fallbackProfile, rawResponse = bodyText)
         }
+
         runCatching {
             val tokenPair = json.decodeFromString(TokenPair.serializer(), bodyText)
             if (!tokenPair.accessToken.isNullOrBlank()) {
                 return AuthSession(
                     accessToken = tokenPair.accessToken,
                     refreshToken = tokenPair.refreshToken,
+                    profile = fallbackProfile,
                     rawResponse = bodyText,
                 )
             }
         }
+
         runCatching {
             val root = json.parseToJsonElement(bodyText).jsonObject
+            val dataObject = root["data"]?.jsonObject
             val access = root["accessToken"]?.jsonPrimitive?.content
                 ?: root["token"]?.jsonPrimitive?.content
-                ?: root["data"]?.jsonObject?.get("accessToken")?.jsonPrimitive?.content
+                ?: dataObject?.get("accessToken")?.jsonPrimitive?.content
             val refresh = root["refreshToken"]?.jsonPrimitive?.content
-                ?: root["data"]?.jsonObject?.get("refreshToken")?.jsonPrimitive?.content
+                ?: dataObject?.get("refreshToken")?.jsonPrimitive?.content
+
+            val profile = runCatching {
+                val profileElement = root["user"]
+                    ?: root["profile"]
+                    ?: dataObject?.get("user")
+                    ?: dataObject?.get("profile")
+                    ?: dataObject
+                profileElement?.let {
+                    json.decodeFromJsonElement(AuthUserProfile.serializer(), it)
+                }
+            }.getOrNull() ?: fallbackProfile
+
             if (!access.isNullOrBlank()) {
                 return AuthSession(
                     accessToken = access,
                     refreshToken = refresh,
+                    profile = profile,
                     rawResponse = bodyText,
                 )
             }
         }
-        return AuthSession(accessToken = "", rawResponse = bodyText)
+
+        return AuthSession(
+            accessToken = "",
+            profile = fallbackProfile,
+            rawResponse = bodyText,
+        )
     }
 
     private fun extractMessage(bodyText: String): String? {
@@ -99,23 +140,55 @@ class AuthApi(
 class AuthApiException(message: String) : Exception(message)
 
 object AuthRepository {
+    private const val KEY_SESSION = "lawapp_auth_session"
+
     private val api = AuthApi()
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        explicitNulls = false
+    }
+
+    private val store: LocalStore by lazy { createLocalStore() }
+
     var currentSession: AuthSession? = null
         private set
 
+    init {
+        currentSession = loadSession()
+    }
+
     suspend fun login(identifiant: String, password: String): Result<AuthSession> {
-        return api.login(identifiant, password).onSuccess { currentSession = it }
+        return api.login(identifiant, password).onSuccess { session ->
+            persistSession(session)
+        }
     }
 
     suspend fun register(request: UserRegisterRequest): Result<AuthSession> {
         return api.register(request).onSuccess { session ->
             if (session.accessToken.isNotBlank()) {
-                currentSession = session
+                persistSession(session)
+            } else if (session.profile != null) {
+                // Keep profile even if backend returns no token yet.
+                persistSession(session.copy(accessToken = currentSession?.accessToken.orEmpty()))
             }
         }
     }
 
     fun clearSession() {
         currentSession = null
+        store.remove(KEY_SESSION)
+    }
+
+    private fun persistSession(session: AuthSession) {
+        currentSession = session
+        store.putString(KEY_SESSION, json.encodeToString(AuthSession.serializer(), session))
+    }
+
+    private fun loadSession(): AuthSession? {
+        val raw = store.getString(KEY_SESSION) ?: return null
+        return runCatching {
+            json.decodeFromString(AuthSession.serializer(), raw)
+        }.getOrNull()
     }
 }
