@@ -331,8 +331,8 @@ private class LoginScreen : UniqueLawAppScreen() {
             onBack = { navigator.pop() },
             onRegisterClick = { navigator.push(RegisterScreen()) },
             onForgotPasswordClick = { navigator.push(RecoveryAccountScreen()) },
-            onGoogleClick = { navigator.pop() },
-            onLoginSuccess = { navigator.pop() },
+            onGoogleClick = { navigator.replaceAll(HomeScreen()) },
+            onLoginSuccess = { navigator.replaceAll(HomeScreen()) },
         )
     }
 }
