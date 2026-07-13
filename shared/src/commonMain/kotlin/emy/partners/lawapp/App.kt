@@ -47,8 +47,6 @@ import emy.partners.lawapp.domain.models.UserGeneratedContent
 import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.presentation.pages.ProfilPage
-import emy.partners.lawapp.presentation.pages.auth.LoginPage
-import emy.partners.lawapp.presentation.pages.auth.RegisterPage
 import emy.partners.lawapp.presentation.pages.content.ContentCreatePage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
 import emy.partners.lawapp.presentation.pages.explore.ExplorePage
@@ -298,57 +296,11 @@ private class ProfileScreen : UniqueLawAppScreen() {
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ProfilPage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             scrollVertical = scrollVertical,
-            onConnectClick = { navigator.push(LoginScreen()) },
-        )
-    }
-}
-
-private class LoginScreen : UniqueLawAppScreen() {
-    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
-    override val pageStateKey: String = "auth/login"
-
-    @Composable
-    override fun Content() {
-        val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
-        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
-
-        LoginPage(
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            onBack = { navigator.pop() },
-            onRegisterClick = { navigator.push(RegisterScreen()) },
-            onGoogleClick = { navigator.pop() },
-            onLoginClick = { navigator.pop() },
-        )
-    }
-}
-
-private class RegisterScreen : UniqueLawAppScreen() {
-    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
-    override val pageStateKey: String = "auth/register"
-
-    @Composable
-    override fun Content() {
-        val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
-        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
-
-        RegisterPage(
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            onBack = { navigator.pop() },
-            onLoginClick = { navigator.pop() },
-            onGoogleClick = {
-                navigator.popUntil { it is ProfileScreen }
-            },
-            onRegisterClick = {
-                navigator.popUntil { it is ProfileScreen }
-            },
         )
     }
 }
