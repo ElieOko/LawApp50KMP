@@ -72,6 +72,7 @@ import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 import lawapp.shared.generated.resources.Res
 import lawapp.shared.generated.resources.date
+import org.jetbrains.compose.resources.DrawableResource
 import kotlin.time.Clock
 
 @Composable
@@ -881,14 +882,16 @@ private fun CreationMetric(label: String, value: String, modifier: Modifier = Mo
 }
 
 @Composable
-private fun CreationField(
+fun CreationField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     minHeight: Int = 56,
-    placeHolder: String = ""
+    placeHolder: String = "",
+    iconLast: DrawableResource? = null,
+    iconFirst: DrawableResource? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -899,6 +902,7 @@ private fun CreationField(
             unfocusedBorderColor = Color.Black.copy(0.2f),
             focusedBorderColor = Color(0xFF2563EB).copy(alpha = 0.7f)
         ),
+
         singleLine = singleLine,
         modifier = modifier
             .fillMaxWidth()

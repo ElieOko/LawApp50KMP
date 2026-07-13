@@ -6,4 +6,6 @@
     <string name="status">Status</string>
     <string name="evaluation">Session</string>
     <string name="quiz">Quiz</string>
+    <string name="app_name">LawApp50</string>
+    <string name="login_title">Welcome back</string>
 </resources>
