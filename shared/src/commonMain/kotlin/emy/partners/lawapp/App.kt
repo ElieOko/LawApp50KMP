@@ -50,6 +50,9 @@ import emy.partners.lawapp.presentation.pages.ProfilPage
 import emy.partners.lawapp.presentation.pages.auth.AuthActions
 import emy.partners.lawapp.presentation.pages.auth.LocalAuthActions
 import emy.partners.lawapp.presentation.pages.auth.LoginPage
+import emy.partners.lawapp.presentation.pages.auth.OtpVerificationPage
+import emy.partners.lawapp.presentation.pages.auth.RecoveryAccountPage
+import emy.partners.lawapp.presentation.pages.auth.RecoveryContactType
 import emy.partners.lawapp.presentation.pages.auth.RegisterPage
 import emy.partners.lawapp.presentation.pages.content.ContentCreatePage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
@@ -325,6 +328,7 @@ private class LoginScreen : UniqueLawAppScreen() {
         LoginPage(
             onBack = { navigator.pop() },
             onRegisterClick = { navigator.push(RegisterScreen()) },
+            onForgotPasswordClick = { navigator.push(RecoveryAccountScreen()) },
             onGoogleClick = { navigator.pop() },
             onLoginClick = { navigator.pop() },
         )
@@ -349,6 +353,58 @@ private class RegisterScreen : UniqueLawAppScreen() {
             },
             onRegisterClick = {
                 navigator.popUntil { it is ProfileScreen }
+            },
+        )
+    }
+}
+
+private class RecoveryAccountScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
+    override val pageStateKey: String = "auth/recovery"
+    override val showsAppChrome: Boolean = false
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+
+        RecoveryAccountPage(
+            onBack = { navigator.pop() },
+            onContinueClick = { contactType, value ->
+                navigator.push(
+                    OtpVerificationScreen(
+                        contactType = contactType,
+                        contactValue = value,
+                    )
+                )
+            },
+        )
+    }
+}
+
+private data class OtpVerificationScreen(
+    val contactType: RecoveryContactType,
+    val contactValue: String,
+) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
+    override val pageStateKey: String = "auth/otp/${contactType.name.lowercase()}"
+    override val showsAppChrome: Boolean = false
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        val destinationLabel = when (contactType) {
+            RecoveryContactType.Email -> contactValue
+            RecoveryContactType.Telephone -> contactValue
+        }
+
+        OtpVerificationPage(
+            destinationLabel = destinationLabel,
+            onBack = { navigator.pop() },
+            onResendClick = {},
+            onVerifyClick = {
+                navigator.popUntil { it is LoginScreen || it is ProfileScreen }
             },
         )
     }

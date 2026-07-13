@@ -24,6 +24,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -229,18 +233,38 @@ internal fun AuthTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     isPassword: Boolean = false,
 ) {
+    var passwordVisible by remember { mutableStateOf(false) }
+    val showPassword = isPassword && passwordVisible
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
         shape = FieldShape,
-        visualTransformation = if (isPassword) {
+        visualTransformation = if (isPassword && !showPassword) {
             PasswordVisualTransformation()
         } else {
             VisualTransformation.None
         },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (isPassword) KeyboardType.Password else keyboardType
+        ),
+        trailingIcon = if (isPassword) {
+            {
+                Text(
+                    text = if (passwordVisible) "Cacher" else "Voir",
+                    color = AuthColors.AccentBright,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clickable { passwordVisible = !passwordVisible }
+                        .padding(horizontal = 8.dp)
+                )
+            }
+        } else {
+            null
+        },
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = AuthColors.TextPrimary,
             unfocusedTextColor = AuthColors.TextPrimary,
@@ -323,6 +347,68 @@ internal fun AuthFooterLink(
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.clickable(onClick = onClick)
+        )
+    }
+}
+
+@Composable
+internal fun AuthOtpInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    length: Int = 6,
+) {
+    val digits = value.filter { it.isDigit() }.take(length)
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(length) { index ->
+                val digit = digits.getOrNull(index)?.toString().orEmpty()
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp)
+                        .clip(FieldShape)
+                        .background(AuthColors.Field)
+                        .border(
+                            width = 1.dp,
+                            color = if (digit.isNotEmpty()) AuthColors.AccentBright else AuthColors.Border,
+                            shape = FieldShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = digit,
+                        color = AuthColors.TextPrimary,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        OutlinedTextField(
+            value = digits,
+            onValueChange = { incoming ->
+                onValueChange(incoming.filter { it.isDigit() }.take(length))
+            },
+            label = { Text("Code OTP") },
+            singleLine = true,
+            shape = FieldShape,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = AuthColors.TextPrimary,
+                unfocusedTextColor = AuthColors.TextPrimary,
+                focusedBorderColor = AuthColors.AccentBright,
+                unfocusedBorderColor = AuthColors.Border,
+                cursorColor = AuthColors.AccentBright,
+                focusedLabelColor = AuthColors.AccentBright,
+                unfocusedLabelColor = AuthColors.TextSecondary,
+                focusedContainerColor = AuthColors.Field,
+                unfocusedContainerColor = AuthColors.Field,
+            ),
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
