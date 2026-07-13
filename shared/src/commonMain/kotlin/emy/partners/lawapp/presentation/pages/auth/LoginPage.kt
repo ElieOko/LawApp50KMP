@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +23,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LoginPage(
     modifier: Modifier = Modifier,
-    nestedInParentScroll: Boolean = false,
     onBack: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
@@ -32,7 +30,6 @@ fun LoginPage(
 ) {
     LoginBuild(
         modifier = modifier,
-        nestedInParentScroll = nestedInParentScroll,
         onBack = onBack,
         onRegisterClick = onRegisterClick,
         onGoogleClick = onGoogleClick,
@@ -43,7 +40,6 @@ fun LoginPage(
 @Composable
 fun LoginBuild(
     modifier: Modifier = Modifier,
-    nestedInParentScroll: Boolean = false,
     onBack: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
@@ -52,21 +48,14 @@ fun LoginBuild(
     var email by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
 
-    val containerModifier = if (nestedInParentScroll) {
-        modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp)
-            .padding(bottom = 24.dp)
-    } else {
-        modifier
+    Column(
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFE8EEF7))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 14.dp, vertical = 12.dp)
             .padding(bottom = 90.dp)
-    }
-
-    Column(modifier = containerModifier) {
+    ) {
         AuthBrandHeader(
             title = "Connexion",
             subtitle = "Accedez a vos evaluations, quiz et contenus juridiques pedagogiques.",
