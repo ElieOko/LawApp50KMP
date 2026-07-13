@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import emy.partners.lawapp.presentation.themes.BlueDark
 import lawapp.shared.generated.resources.Res
 import lawapp.shared.generated.resources.app_name
 import lawapp.shared.generated.resources.google_g
@@ -45,81 +47,157 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 internal object AuthColors {
-    val BackgroundTop = Color(0xFF07111F)
-    val BackgroundBottom = Color(0xFF10243F)
-    val Surface = Color(0xFF152238)
-    val Border = Color(0xFF2A3D5C)
-    val Muted = Color(0xFF93A4BD)
-    val White = Color(0xFFF8FAFC)
-    val Accent = Color(0xFF2F6FED)
-    val AccentSoft = Color(0xFF1E4EAD)
+    val Panel = Color.White.copy(alpha = 0.92f)
+    val SoftPanel = Color.White.copy(alpha = 0.18f)
+    val TextPrimary = Color(0xFF0F172A)
+    val TextSecondary = Color(0xFF475569)
+    val Field = Color.White
+    val Border = Color(0xFFCBD5E1)
+    val Accent = BlueDark
+    val AccentBright = Color(0xFF2563EB)
 }
 
-private val ButtonShape = RoundedCornerShape(16.dp)
-private val FieldShape = RoundedCornerShape(14.dp)
-private val ChipShape = RoundedCornerShape(14.dp)
+private val ButtonShape = RoundedCornerShape(18.dp)
+private val FieldShape = RoundedCornerShape(16.dp)
+private val ChipShape = RoundedCornerShape(16.dp)
+private val PanelShape = RoundedCornerShape(28.dp)
 
 @Composable
-internal fun AuthBrandMark(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+internal fun AuthBrandHeader(
+    title: String,
+    subtitle: String,
+    onBack: (() -> Unit)? = null,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(PanelShape)
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        BlueDark.copy(alpha = 0.95f),
+                        Color(0xFF08092B).copy(alpha = 0.92f)
+                    )
+                )
+            )
+            .padding(18.dp)
     ) {
-        Image(
-            painter = painterResource(Res.drawable.logo_app),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-        )
+        if (onBack != null) {
+            Text(
+                text = "Retour",
+                color = Color.White.copy(alpha = 0.85f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White.copy(alpha = 0.14f))
+                    .clickable(onClick = onBack)
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.logo_app),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+            )
+            Column {
+                Text(
+                    text = stringResource(Res.string.app_name),
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "Evaluation et contenus juridiques",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = stringResource(Res.string.app_name),
-            color = AuthColors.White,
+            text = title,
+            color = Color.White,
             fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = subtitle,
+            color = Color.White.copy(alpha = 0.72f),
+            fontSize = 14.sp,
+            lineHeight = 19.sp
         )
     }
 }
 
 @Composable
-internal fun AuthScreenBackground(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(AuthColors.BackgroundTop, AuthColors.BackgroundBottom)
-            )
-        )
-    )
-}
-
-@Composable
-internal fun AuthHeroTitle(
-    title: String,
-    subtitle: String,
-) {
-    Column {
-        Text(
-            text = title,
-            color = AuthColors.White,
-            fontSize = 28.sp,
-            lineHeight = 34.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = subtitle,
-            color = AuthColors.Muted,
-            fontSize = 15.sp,
-            lineHeight = 21.sp
-        )
+internal fun AuthFormPanel(content: @Composable () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(PanelShape)
+            .background(AuthColors.Panel)
+            .padding(18.dp)
+    ) {
+        content()
     }
 }
 
 @Composable
 internal fun GoogleSignInButton(
     text: String = "Continuer avec Google",
+    onClick: () -> Unit = {},
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = ButtonShape,
+        border = BorderStroke(1.dp, AuthColors.Border),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = Color.White,
+            contentColor = AuthColors.TextPrimary
+        )
+    ) {
+        Icon(
+            painter = painterResource(Res.drawable.google_g),
+            contentDescription = null,
+            tint = Color.Unspecified,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+internal fun AuthOrDivider() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        HorizontalDivider(modifier = Modifier.weight(1f), color = AuthColors.Border)
+        Text("ou", color = AuthColors.TextSecondary, fontSize = 13.sp)
+        HorizontalDivider(modifier = Modifier.weight(1f), color = AuthColors.Border)
+    }
+}
+
+@Composable
+internal fun AuthPrimaryButton(
+    text: String,
     onClick: () -> Unit = {},
 ) {
     Button(
@@ -129,88 +207,12 @@ internal fun GoogleSignInButton(
             .height(52.dp),
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = AuthColors.White,
-            contentColor = Color(0xFF0F172A)
+            containerColor = AuthColors.AccentBright,
+            contentColor = Color.White
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
-        Icon(
-            painter = painterResource(Res.drawable.google_g),
-            contentDescription = null,
-            tint = Color.Unspecified,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = text,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
-internal fun AuthOrDivider() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = AuthColors.Border
-        )
-        Text(
-            text = "ou",
-            color = AuthColors.Muted,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = AuthColors.Border
-        )
-    }
-}
-
-@Composable
-internal fun AuthPrimaryButton(
-    text: String,
-    onClick: () -> Unit = {},
-    filled: Boolean = true,
-) {
-    if (filled) {
-        Button(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = ButtonShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AuthColors.Accent,
-                contentColor = AuthColors.White
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-        ) {
-            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        }
-    } else {
-        OutlinedButton(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = ButtonShape,
-            border = BorderStroke(1.dp, AuthColors.Border),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.Transparent,
-                contentColor = AuthColors.White
-            )
-        ) {
-            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        }
+        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -236,15 +238,15 @@ internal fun AuthTextField(
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = AuthColors.White,
-            unfocusedTextColor = AuthColors.White,
-            focusedBorderColor = AuthColors.Accent,
+            focusedTextColor = AuthColors.TextPrimary,
+            unfocusedTextColor = AuthColors.TextPrimary,
+            focusedBorderColor = AuthColors.AccentBright,
             unfocusedBorderColor = AuthColors.Border,
-            cursorColor = AuthColors.Accent,
-            focusedLabelColor = AuthColors.Accent,
-            unfocusedLabelColor = AuthColors.Muted,
-            focusedContainerColor = AuthColors.Surface,
-            unfocusedContainerColor = AuthColors.Surface,
+            cursorColor = AuthColors.AccentBright,
+            focusedLabelColor = AuthColors.AccentBright,
+            unfocusedLabelColor = AuthColors.TextSecondary,
+            focusedContainerColor = AuthColors.Field,
+            unfocusedContainerColor = AuthColors.Field,
         ),
         modifier = modifier.fillMaxWidth()
     )
@@ -260,7 +262,7 @@ internal fun AuthChoiceChips(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             text = label,
-            color = AuthColors.Muted,
+            color = AuthColors.TextSecondary,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -276,12 +278,12 @@ internal fun AuthChoiceChips(
                         .height(44.dp)
                         .clip(ChipShape)
                         .background(
-                            if (isSelected) AuthColors.Accent.copy(alpha = 0.22f)
-                            else AuthColors.Surface
+                            if (isSelected) AuthColors.AccentBright.copy(alpha = 0.12f)
+                            else Color(0xFFF8FAFC)
                         )
                         .border(
                             width = 1.dp,
-                            color = if (isSelected) AuthColors.Accent else AuthColors.Border,
+                            color = if (isSelected) AuthColors.AccentBright else AuthColors.Border,
                             shape = ChipShape
                         )
                         .clickable { onSelected(option) },
@@ -289,9 +291,9 @@ internal fun AuthChoiceChips(
                 ) {
                     Text(
                         text = option,
-                        color = if (isSelected) AuthColors.White else AuthColors.Muted,
+                        color = if (isSelected) AuthColors.AccentBright else AuthColors.TextSecondary,
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -309,13 +311,13 @@ internal fun AuthFooterLink(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
     ) {
-        Text(text = prefix, color = AuthColors.Muted, fontSize = 14.sp)
+        Text(text = prefix, color = AuthColors.TextSecondary, fontSize = 14.sp)
         Spacer(Modifier.width(4.dp))
         Text(
             text = action,
-            color = AuthColors.Accent,
+            color = AuthColors.AccentBright,
             fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier.clickable(onClick = onClick)
         )
     }
