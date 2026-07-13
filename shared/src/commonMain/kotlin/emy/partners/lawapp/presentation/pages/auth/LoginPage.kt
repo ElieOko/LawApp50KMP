@@ -1,7 +1,5 @@
 package emy.partners.lawapp.presentation.pages.auth
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,11 +19,15 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun LoginPage(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
     onLoginClick: () -> Unit = {},
 ) {
     LoginBuild(
+        modifier = modifier,
+        onBack = onBack,
         onRegisterClick = onRegisterClick,
         onGoogleClick = onGoogleClick,
         onLoginClick = onLoginClick,
@@ -34,6 +36,8 @@ fun LoginPage(
 
 @Composable
 fun LoginBuild(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
     onLoginClick: () -> Unit = {},
@@ -41,75 +45,57 @@ fun LoginBuild(
     var email by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AuthScreenBackground(Modifier.fillMaxSize())
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                AuthBrandMark()
-                Spacer(Modifier.height(28.dp))
-                AuthHeroTitle(
-                    title = "Bon retour",
-                    subtitle = "Accédez à votre espace LawApp50."
-                )
-            }
-
-            Column {
-                GoogleSignInButton(
-                    text = "Continuer avec Google",
-                    onClick = onGoogleClick
-                )
-                Spacer(Modifier.height(16.dp))
-                AuthOrDivider()
-                Spacer(Modifier.height(16.dp))
-
-                AuthTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = "Email",
-                    keyboardType = KeyboardType.Email
-                )
-                Spacer(Modifier.height(12.dp))
-                AuthTextField(
-                    value = motDePasse,
-                    onValueChange = { motDePasse = it },
-                    label = "Mot de passe",
-                    isPassword = true
-                )
-                Spacer(Modifier.height(20.dp))
-                AuthPrimaryButton(
-                    text = "Se connecter",
-                    onClick = onLoginClick,
-                    filled = true
-                )
-                Spacer(Modifier.height(10.dp))
-                AuthPrimaryButton(
-                    text = "Mot de passe oublié ?",
-                    onClick = {},
-                    filled = false
-                )
-            }
-
-            Column {
-                Spacer(Modifier.height(24.dp))
-                AuthFooterLink(
-                    prefix = "Pas encore de compte ?",
-                    action = "S'inscrire",
-                    onClick = onRegisterClick
-                )
-            }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp)
+            .padding(bottom = 90.dp)
+    ) {
+        AuthBrandHeader(
+            title = "Connexion",
+            subtitle = "Accedez a vos evaluations, quiz et contenus juridiques pedagogiques.",
+            onBack = onBack,
+        )
+        Spacer(Modifier.height(14.dp))
+        AuthFormPanel {
+            GoogleSignInButton(
+                text = "Continuer avec Google",
+                onClick = onGoogleClick
+            )
+            Spacer(Modifier.height(14.dp))
+            AuthOrDivider()
+            Spacer(Modifier.height(14.dp))
+            AuthTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email",
+                keyboardType = KeyboardType.Email
+            )
+            Spacer(Modifier.height(12.dp))
+            AuthTextField(
+                value = motDePasse,
+                onValueChange = { motDePasse = it },
+                label = "Mot de passe",
+                isPassword = true
+            )
+            Spacer(Modifier.height(18.dp))
+            AuthPrimaryButton(
+                text = "Se connecter",
+                onClick = onLoginClick
+            )
+            Spacer(Modifier.height(14.dp))
+            AuthFooterLink(
+                prefix = "Pas encore de compte ?",
+                action = "S'inscrire",
+                onClick = onRegisterClick
+            )
         }
     }
 }
 
 @Composable
-@Preview(showBackground = true, backgroundColor = 0xFF07111F)
+@Preview(showBackground = true)
 fun LoginPreview() {
     LoginBuild()
 }

@@ -126,7 +126,6 @@ private data class LawAppPageState(
 private interface LawAppScreen : Screen {
     val topLevelDestinationKind: TopLevelDestinationKind
     val pageStateKey: String
-    val showsAppChrome: Boolean get() = true
 }
 
 private abstract class UniqueLawAppScreen : LawAppScreen {
@@ -313,16 +312,19 @@ private class ProfileScreen : UniqueLawAppScreen() {
 private class LoginScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
     override val pageStateKey: String = "auth/login"
-    override val showsAppChrome: Boolean = false
 
     @Composable
     override fun Content() {
+        val context = LocalLawAppNavigationContext.current
         val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         LoginPage(
-            onRegisterClick = { navigator.replace(RegisterScreen()) },
-            onGoogleClick = { navigator.replaceAll(ProfileScreen()) },
-            onLoginClick = { navigator.replaceAll(ProfileScreen()) },
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onRegisterClick = { navigator.push(RegisterScreen()) },
+            onGoogleClick = { navigator.pop() },
+            onLoginClick = { navigator.pop() },
         )
     }
 }
@@ -330,16 +332,23 @@ private class LoginScreen : UniqueLawAppScreen() {
 private class RegisterScreen : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
     override val pageStateKey: String = "auth/register"
-    override val showsAppChrome: Boolean = false
 
     @Composable
     override fun Content() {
+        val context = LocalLawAppNavigationContext.current
         val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         RegisterPage(
-            onLoginClick = { navigator.replace(LoginScreen()) },
-            onGoogleClick = { navigator.replaceAll(ProfileScreen()) },
-            onRegisterClick = { navigator.replaceAll(ProfileScreen()) },
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onLoginClick = { navigator.pop() },
+            onGoogleClick = {
+                navigator.popUntil { it is ProfileScreen }
+            },
+            onRegisterClick = {
+                navigator.popUntil { it is ProfileScreen }
+            },
         )
     }
 }
@@ -423,58 +432,53 @@ fun App() {
             val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
                 ?.topLevelDestinationKind
                 ?: TopLevelDestinationKind.Home
-            val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.showsAppChrome != false
             Scaffold(
                 //            contentWindowInsets = WindowInsets(0),
                 bottomBar = {
-                    if (showsAppChrome) {
-                        //CompositionLocalProvider(LocalRippleConfiguration provides null){
-                        //Color(0xFF242D2C)
-                        Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                            BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                                Color.White.copy(alpha = 0.5f)
-                            )) {
-                                topLevelDestinations.forEach { destination ->
-                                    NavigationBarItem(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        colors =  NavigationBarItemDefaults.colors(
-                                            indicatorColor =  Color.White.copy(alpha = 0.65f),
-                                            selectedTextColor = Color(0xFf2563EB),
-                                            selectedIconColor = Color(0xFf2563EB),
-                                            unselectedIconColor = Color.Black.copy(0.6f),
-                                            unselectedTextColor = Color.Black.copy(0.6f),
-                                        ),
-                                        selected = destination.kind == selectedTopLevel,
-                                        onClick = { navigator.replaceAll(destination.createScreen()) },
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
-                                            )
-                                        },
-                                        label = {
-                                            Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        //}
-                    }
-                },
-                topBar = {
-                    if (showsAppChrome) {
-                        TopBarCustom(
-                            scrollState = topBarScrollState,
-                            onActionClick = {
-                                navigator.push(
-                                    ContentCreateScreen(
-                                        initialDestination = selectedTopLevel.toDestination()
-                                    )
+                    //CompositionLocalProvider(LocalRippleConfiguration provides null){
+                    //Color(0xFF242D2C)
+                    Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
+                        BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
+                            Color.White.copy(alpha = 0.5f)
+                        )) {
+                            topLevelDestinations.forEach { destination ->
+                                NavigationBarItem(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    colors =  NavigationBarItemDefaults.colors(
+                                        indicatorColor =  Color.White.copy(alpha = 0.65f),
+                                        selectedTextColor = Color(0xFf2563EB),
+                                        selectedIconColor = Color(0xFf2563EB),
+                                        unselectedIconColor = Color.Black.copy(0.6f),
+                                        unselectedTextColor = Color.Black.copy(0.6f),
+                                    ),
+                                    selected = destination.kind == selectedTopLevel,
+                                    onClick = { navigator.replaceAll(destination.createScreen()) },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
+                                        )
+                                    },
+                                    label = {
+                                        Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
                                 )
                             }
-                        )
+                        }
                     }
+
+                    //}
+                },
+                topBar = {
+                    TopBarCustom(
+                        scrollState = topBarScrollState,
+                        onActionClick = {
+                            navigator.push(
+                                ContentCreateScreen(
+                                    initialDestination = selectedTopLevel.toDestination()
+                                )
+                            )
+                        }
+                    )
                 }
                 //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
             ) {

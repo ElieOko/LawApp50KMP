@@ -1,6 +1,5 @@
 package emy.partners.lawapp.presentation.pages.auth
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +19,15 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun RegisterPage(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
 ) {
     RegisterBuild(
+        modifier = modifier,
+        onBack = onBack,
         onLoginClick = onLoginClick,
         onGoogleClick = onGoogleClick,
         onRegisterClick = onRegisterClick,
@@ -33,6 +36,8 @@ fun RegisterPage(
 
 @Composable
 fun RegisterBuild(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
@@ -45,42 +50,31 @@ fun RegisterBuild(
     var gender by remember { mutableStateOf("Masculin") }
     var typeCompte by remember { mutableStateOf("Etudiant") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AuthScreenBackground(Modifier.fillMaxSize())
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 28.dp)
-        ) {
-            AuthBrandMark()
-            Spacer(Modifier.height(24.dp))
-            AuthHeroTitle(
-                title = "Créer un compte",
-                subtitle = "Renseignez vos informations pour commencer."
-            )
-
-            Spacer(Modifier.height(24.dp))
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp)
+            .padding(bottom = 90.dp)
+    ) {
+        AuthBrandHeader(
+            title = "Inscription",
+            subtitle = "Creez un compte enseignant ou etudiant pour suivre et diffuser des contenus juridiques.",
+            onBack = onBack,
+        )
+        Spacer(Modifier.height(14.dp))
+        AuthFormPanel {
             GoogleSignInButton(
                 text = "S'inscrire avec Google",
                 onClick = onGoogleClick
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
             AuthOrDivider()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
 
-            AuthTextField(
-                value = nom,
-                onValueChange = { nom = it },
-                label = "Nom"
-            )
+            AuthTextField(value = nom, onValueChange = { nom = it }, label = "Nom")
             Spacer(Modifier.height(12.dp))
-            AuthTextField(
-                value = prenom,
-                onValueChange = { prenom = it },
-                label = "Prénom"
-            )
+            AuthTextField(value = prenom, onValueChange = { prenom = it }, label = "Prenom")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = email,
@@ -89,23 +83,18 @@ fun RegisterBuild(
                 keyboardType = KeyboardType.Email
             )
             Spacer(Modifier.height(12.dp))
-            AuthTextField(
-                value = pseudo,
-                onValueChange = { pseudo = it },
-                label = "Pseudo"
-            )
+            AuthTextField(value = pseudo, onValueChange = { pseudo = it }, label = "Pseudo")
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = telephone,
                 onValueChange = { telephone = it },
-                label = "Téléphone",
+                label = "Telephone",
                 keyboardType = KeyboardType.Phone
             )
-
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(16.dp))
             AuthChoiceChips(
                 label = "Genre",
-                options = listOf("Masculin", "Féminin"),
+                options = listOf("Masculin", "Feminin"),
                 selected = gender,
                 onSelected = { gender = it }
             )
@@ -116,26 +105,23 @@ fun RegisterBuild(
                 selected = typeCompte,
                 onSelected = { typeCompte = it }
             )
-
-            Spacer(Modifier.height(24.dp))
-            AuthPrimaryButton(
-                text = "Créer mon compte",
-                onClick = onRegisterClick,
-                filled = true
-            )
             Spacer(Modifier.height(18.dp))
+            AuthPrimaryButton(
+                text = "Creer mon compte",
+                onClick = onRegisterClick
+            )
+            Spacer(Modifier.height(14.dp))
             AuthFooterLink(
-                prefix = "Vous avez déjà un compte ?",
+                prefix = "Deja un compte ?",
                 action = "Se connecter",
                 onClick = onLoginClick
             )
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
 
 @Composable
-@Preview(showBackground = true, backgroundColor = 0xFF07111F)
+@Preview(showBackground = true)
 fun RegisterPreview() {
     RegisterBuild()
 }
