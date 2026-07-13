@@ -202,11 +202,9 @@ object AuthRepository {
 
     suspend fun register(request: UserRegisterRequest): Result<AuthSession> {
         return api.register(request).onSuccess { session ->
+            // Ne pas considerer l'utilisateur connecte tant qu'il n'a pas de token.
             if (session.accessToken.isNotBlank()) {
                 persistSession(session)
-            } else if (session.profile != null) {
-                // Keep profile even if backend returns no token yet.
-                persistSession(session.copy(accessToken = currentSession?.accessToken.orEmpty()))
             }
         }
     }
