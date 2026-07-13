@@ -84,6 +84,8 @@ data class AuthUserProfile(
     val premium: Boolean? = null,
     @JsonNames("isCertified")
     val certified: Boolean? = null,
+    val accountId: Long? = null,
+    val accountName: String? = null,
 ) {
     val displayName: String
         get() {
@@ -109,7 +111,56 @@ data class AuthUserProfile(
             firstName?.takeIf { it.isNotBlank() },
             lastName?.takeIf { it.isNotBlank() },
         ).joinToString(" ").ifBlank { displayName }
+
+    val hasAccountType: Boolean
+        get() = accountId != null || !accountName.isNullOrBlank()
+
+    val accountTypeLabel: String
+        get() = when (accountName?.lowercase()) {
+            "student", "etudiant", "étudiant" -> "Etudiant"
+            "teacher", "enseignant" -> "Enseignant"
+            "defined" -> "Defini"
+            else -> accountName?.replaceFirstChar { it.uppercase() } ?: "—"
+        }
 }
+
+@Serializable
+data class TypeAccountDto(
+    val typeAccountId: Long? = null,
+    val name: String? = null,
+)
+
+@Serializable
+data class SelectableAccountDto(
+    val id: Long,
+    val name: String,
+    val typeAccount: TypeAccountDto? = null,
+) {
+    val displayLabel: String
+        get() = when (name.lowercase()) {
+            "student" -> "Etudiant"
+            "teacher" -> "Enseignant"
+            else -> name.replaceFirstChar { it.uppercase() }
+        }
+}
+
+@Serializable
+data class SelectableAccountsResponse(
+    val accounts: List<SelectableAccountDto> = emptyList(),
+)
+
+@Serializable
+data class SelectAccountRequest(
+    val userId: Long,
+    val accountId: Long,
+)
+
+@Serializable
+data class SelectedAccountLocal(
+    val userId: Long,
+    val accountId: Long,
+    val accountName: String,
+)
 
 @Serializable
 data class AuthSession(

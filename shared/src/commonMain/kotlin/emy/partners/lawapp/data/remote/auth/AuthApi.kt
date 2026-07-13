@@ -118,6 +118,38 @@ class AuthApi(
         }.getOrNull()
     }
 
+    suspend fun getSelectableAccounts(): Result<List<SelectableAccountDto>> {
+        return runCatching {
+            val response = client.get("/api/v1/public/accounts/selectable")
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw AuthApiException(extractMessage(bodyText) ?: "Impossible de charger les types de compte")
+            }
+            json.decodeFromString(SelectableAccountsResponse.serializer(), bodyText).accounts
+        }
+    }
+
+    suspend fun selectAccount(userId: Long, accountId: Long): Result<SelectAccountOutcome> {
+        return runCatching {
+            val response = client.post("/api/v1/public/accounts/selectable") {
+                setBody(SelectAccountRequest(userId = userId, accountId = accountId))
+            }
+            val bodyText = response.bodyAsText()
+            val message = extractMessage(bodyText).orEmpty()
+            val normalized = message.lowercase()
+            when {
+                !response.status.isSuccess() -> {
+                    throw AuthApiException(message.ifBlank { "Selection du compte impossible (${response.status.value})" })
+                }
+                normalized.contains("déjà sélectionné") || normalized.contains("deja selectionne") ->
+                    SelectAccountOutcome.AlreadySelectedOther
+                normalized.contains("déjà associé") || normalized.contains("deja associe") ->
+                    SelectAccountOutcome.AlreadySelectedSame
+                else -> SelectAccountOutcome.Created
+            }
+        }
+    }
+
     private suspend fun enrichSession(session: AuthSession): AuthSession {
         val jwtProfile = profileFromJwt(session.accessToken)
         var profile = mergeProfiles(session.profile, jwtProfile)
@@ -291,11 +323,18 @@ class AuthApi(
     }
 }
 
+enum class SelectAccountOutcome {
+    Created,
+    AlreadySelectedSame,
+    AlreadySelectedOther,
+}
+
 class AuthApiException(message: String) : Exception(message)
 
 object AuthRepository {
     private const val KEY_SESSION = "lawapp_auth_session"
     private const val KEY_PROFILE = "lawapp_auth_profile"
+    private const val KEY_SELECTED_ACCOUNT_PREFIX = "lawapp_selected_account_"
 
     private val api = AuthApi()
     private val json = Json {
@@ -346,10 +385,73 @@ object AuthRepository {
         return api.generateOtp(identifier)
     }
 
+    suspend fun getSelectableAccounts(): Result<List<SelectableAccountDto>> {
+        return api.getSelectableAccounts()
+    }
+
+    suspend fun selectAccountType(account: SelectableAccountDto): Result<AuthSession> {
+        val session = currentSession
+            ?: return Result.failure(AuthApiException("Connectez-vous pour choisir un type de compte"))
+        val userId = session.profile?.userId
+            ?: return Result.failure(AuthApiException("Identifiant utilisateur manquant"))
+
+        val existingLocal = loadSelectedAccount(userId)
+            ?: session.profile?.takeIf { it.hasAccountType }?.let { profile ->
+                SelectedAccountLocal(
+                    userId = userId,
+                    accountId = profile.accountId ?: 0L,
+                    accountName = profile.accountName ?: "defined",
+                )
+            }
+        if (existingLocal != null) {
+            return Result.success(applySelectedAccount(session, existingLocal))
+        }
+
+        return api.selectAccount(userId = userId, accountId = account.id).map { outcome ->
+            when (outcome) {
+                SelectAccountOutcome.Created,
+                SelectAccountOutcome.AlreadySelectedSame -> {
+                    applySelectedAccount(
+                        session,
+                        SelectedAccountLocal(
+                            userId = userId,
+                            accountId = account.id,
+                            accountName = account.name,
+                        )
+                    )
+                }
+                SelectAccountOutcome.AlreadySelectedOther -> {
+                    applySelectedAccount(
+                        session,
+                        SelectedAccountLocal(
+                            userId = userId,
+                            accountId = 0L,
+                            accountName = "defined",
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     fun clearSession() {
         currentSession = null
         store.remove(KEY_SESSION)
         store.remove(KEY_PROFILE)
+    }
+
+    private fun applySelectedAccount(
+        session: AuthSession,
+        selected: SelectedAccountLocal,
+    ): AuthSession {
+        persistSelectedAccount(selected)
+        val profile = (session.profile ?: AuthUserProfile(userId = selected.userId)).copy(
+            accountId = selected.accountId,
+            accountName = selected.accountName,
+        )
+        val updated = session.copy(profile = profile)
+        persistSession(updated)
+        return updated
     }
 
     private fun persistSession(session: AuthSession) {
@@ -363,7 +465,17 @@ object AuthRepository {
                 else -> true
             }
         }
-        val mergedProfile = mergeProfiles(previous, session.profile)
+        var mergedProfile = mergeProfiles(previous, session.profile)
+        val userId = mergedProfile?.userId
+        if (userId != null) {
+            val selected = loadSelectedAccount(userId)
+            if (selected != null) {
+                mergedProfile = (mergedProfile ?: AuthUserProfile(userId = userId)).copy(
+                    accountId = selected.accountId,
+                    accountName = selected.accountName,
+                )
+            }
+        }
         val toStore = session.copy(profile = mergedProfile)
         currentSession = toStore
         store.putString(KEY_SESSION, json.encodeToString(AuthSession.serializer(), toStore))
@@ -381,11 +493,35 @@ object AuthRepository {
         }.getOrNull()
     }
 
+    private fun persistSelectedAccount(selected: SelectedAccountLocal) {
+        store.putString(
+            KEY_SELECTED_ACCOUNT_PREFIX + selected.userId,
+            json.encodeToString(SelectedAccountLocal.serializer(), selected),
+        )
+    }
+
+    private fun loadSelectedAccount(userId: Long): SelectedAccountLocal? {
+        val raw = store.getString(KEY_SELECTED_ACCOUNT_PREFIX + userId) ?: return null
+        return runCatching {
+            json.decodeFromString(SelectedAccountLocal.serializer(), raw)
+        }.getOrNull()
+    }
+
     private fun loadSession(): AuthSession? {
         val raw = store.getString(KEY_SESSION) ?: return null
         return runCatching {
             val session = json.decodeFromString(AuthSession.serializer(), raw)
-            val profile = mergeProfiles(loadProfileOnly(), session.profile)
+            var profile = mergeProfiles(loadProfileOnly(), session.profile)
+            val userId = profile?.userId
+            if (userId != null) {
+                val selected = loadSelectedAccount(userId)
+                if (selected != null) {
+                    profile = (profile ?: AuthUserProfile(userId = userId)).copy(
+                        accountId = selected.accountId,
+                        accountName = selected.accountName,
+                    )
+                }
+            }
             session.copy(profile = profile)
         }.getOrNull()
     }
@@ -407,6 +543,8 @@ internal fun mergeProfiles(
         lastName = overlay.lastName?.takeIf { it.isNotBlank() } ?: base.lastName,
         premium = overlay.premium ?: base.premium,
         certified = overlay.certified ?: base.certified,
+        accountId = overlay.accountId ?: base.accountId,
+        accountName = overlay.accountName?.takeIf { it.isNotBlank() } ?: base.accountName,
     )
 }
 
@@ -419,7 +557,9 @@ private fun AuthUserProfile.isEmpty(): Boolean =
         firstName.isNullOrBlank() &&
         lastName.isNullOrBlank() &&
         premium == null &&
-        certified == null
+        certified == null &&
+        accountId == null &&
+        accountName.isNullOrBlank()
 
 private fun JsonObject.stringOrNull(key: String): String? =
     this[key]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
