@@ -92,9 +92,9 @@ fun ProfilBuild(
                 Spacer(Modifier.height(14.dp))
                 ProfileInfoRow(label = "Premium", value = if (profile?.premium == true) "Oui" else "Non")
                 ProfileInfoRow(label = "Email", value = profile?.email.orDash())
-                // Mapping API: firstName = nom, lastName = prenom, username = pseudo
-                ProfileInfoRow(label = "Nom", value = profile?.firstName.orDash())
-                ProfileInfoRow(label = "Prenom", value = profile?.lastName.orDash())
+                // API: firstName / lastName (+ username = pseudo)
+                ProfileInfoRow(label = "Nom", value = profile?.lastName.orDash())
+                ProfileInfoRow(label = "Prenom", value = profile?.firstName.orDash())
                 ProfileInfoRow(label = "Pseudo", value = profile?.username.orDash())
                 ProfileInfoRow(label = "Telephone", value = profile?.phone.orDash())
                 ProfileInfoRow(label = "Ville", value = profile?.city.orDash())
@@ -267,13 +267,12 @@ private fun ProfileInfoRow(
 }
 
 private fun profileInitials(profile: AuthUserProfile?): String {
-    // firstName = nom, lastName = prenom
-    val nom = profile?.firstName?.trim()?.firstOrNull()?.uppercaseChar()
-    val prenom = profile?.lastName?.trim()?.firstOrNull()?.uppercaseChar()
-    val username = profile?.username?.trim().orEmpty()
+    val prenom = profile?.firstName?.trim()?.firstOrNull()?.uppercaseChar()
+    val nom = profile?.lastName?.trim()?.firstOrNull()?.uppercaseChar()
+    val username = profile?.username?.trim()?.trimStart('@').orEmpty()
     return when {
-        nom != null && prenom != null -> "$nom$prenom"
-        nom != null -> "$nom"
+        prenom != null && nom != null -> "$prenom$nom"
+        prenom != null -> "$prenom"
         username.isNotBlank() -> username.take(2).uppercase()
         else -> "LA"
     }

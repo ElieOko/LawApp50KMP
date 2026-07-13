@@ -157,23 +157,38 @@ class AuthApi(
         var refresh: String? = null
         var profile: AuthUserProfile? = null
 
+        // Structure reelle login:
+        // { member: { user: {...}, profile }, token, refresh_token, message }
+        runCatching {
+            val login = json.decodeFromString(LoginResponsePayload.serializer(), bodyText)
+            access = login.token?.takeIf { it.isNotBlank() } ?: login.accessToken?.takeIf { it.isNotBlank() }
+            refresh = login.refreshToken?.takeIf { it.isNotBlank() }
+            profile = mergeProfiles(login.member?.user, login.member?.profile)
+        }
+
         runCatching {
             val tokenPair = json.decodeFromString(TokenPair.serializer(), bodyText)
-            access = tokenPair.accessToken
-            refresh = tokenPair.refreshToken
+            if (access.isNullOrBlank()) access = tokenPair.resolvedAccessToken
+            if (refresh.isNullOrBlank()) refresh = tokenPair.resolvedRefreshToken
         }
 
         runCatching {
             val root = json.parseToJsonElement(bodyText).jsonObject
             if (access.isNullOrBlank()) {
                 val dataObject = root["data"]?.jsonObject
-                access = root.stringOrNull("accessToken")
-                    ?: root.stringOrNull("token")
+                access = root.stringOrNull("token")
+                    ?: root.stringOrNull("accessToken")
+                    ?: dataObject?.stringOrNull("token")
                     ?: dataObject?.stringOrNull("accessToken")
-                refresh = root.stringOrNull("refreshToken")
+            }
+            if (refresh.isNullOrBlank()) {
+                val dataObject = root["data"]?.jsonObject
+                refresh = root.stringOrNull("refresh_token")
+                    ?: root.stringOrNull("refreshToken")
+                    ?: dataObject?.stringOrNull("refresh_token")
                     ?: dataObject?.stringOrNull("refreshToken")
             }
-            profile = parseProfileFromRoot(root)
+            profile = mergeProfiles(profile, parseProfileFromRoot(root))
         }
 
         return AuthSession(
@@ -196,11 +211,15 @@ class AuthApi(
 
     private fun parseProfileFromRoot(root: JsonObject): AuthUserProfile? {
         val dataObject = root["data"]?.jsonObject
+        val memberObject = root["member"]?.jsonObject
         val candidates = listOfNotNull(
+            memberObject?.get("user")?.jsonObject,
+            memberObject?.get("profile")?.jsonObject,
             root["user"]?.jsonObject,
             root["profile"]?.jsonObject,
             dataObject?.get("user")?.jsonObject,
             dataObject?.get("profile")?.jsonObject,
+            dataObject?.get("member")?.jsonObject?.get("user")?.jsonObject,
             dataObject,
             root.takeIf { it.containsKey("email") || it.containsKey("username") || it.containsKey("userId") },
         )
@@ -224,8 +243,8 @@ class AuthApi(
             city = obj.stringOrNull("city") ?: obj.stringOrNull("ville"),
             firstName = obj.stringOrNull("firstName") ?: obj.stringOrNull("nom"),
             lastName = obj.stringOrNull("lastName") ?: obj.stringOrNull("prenom"),
-            premium = obj.booleanOrNull("premium"),
-            certified = obj.booleanOrNull("certified"),
+            premium = obj.booleanOrNull("isPremium") ?: obj.booleanOrNull("premium"),
+            certified = obj.booleanOrNull("isCertified") ?: obj.booleanOrNull("certified"),
         )
         return profile.takeUnless { it.isEmpty() }
     }
@@ -244,18 +263,20 @@ class AuthApi(
                 }
             val decoded = Base64.decode(payload).decodeToString()
             val obj = json.parseToJsonElement(decoded).jsonObject
+            val sub = obj.stringOrNull("sub")
             AuthUserProfile(
                 userId = obj.longOrNull("userId")
                     ?: obj.longOrNull("id")
-                    ?: obj.stringOrNull("sub")?.toLongOrNull(),
+                    ?: sub?.toLongOrNull()
+                    ?: sub?.toLongOrNull(radix = 16),
                 email = obj.stringOrNull("email"),
                 username = obj.stringOrNull("username") ?: obj.stringOrNull("pseudo"),
                 phone = obj.stringOrNull("phone"),
                 city = obj.stringOrNull("city"),
                 firstName = obj.stringOrNull("firstName"),
                 lastName = obj.stringOrNull("lastName"),
-                premium = obj.booleanOrNull("premium"),
-                certified = obj.booleanOrNull("certified"),
+                premium = obj.booleanOrNull("isPremium") ?: obj.booleanOrNull("premium"),
+                certified = obj.booleanOrNull("isCertified") ?: obj.booleanOrNull("certified"),
             ).takeUnless { it.isEmpty() }
         }.getOrNull()
     }
