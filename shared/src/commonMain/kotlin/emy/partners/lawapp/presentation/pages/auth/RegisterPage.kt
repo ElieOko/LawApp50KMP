@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RegisterPage(
     modifier: Modifier = Modifier,
+    nestedInParentScroll: Boolean = false,
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
@@ -30,6 +32,7 @@ fun RegisterPage(
 ) {
     RegisterBuild(
         modifier = modifier,
+        nestedInParentScroll = nestedInParentScroll,
         onBack = onBack,
         onLoginClick = onLoginClick,
         onGoogleClick = onGoogleClick,
@@ -40,6 +43,7 @@ fun RegisterPage(
 @Composable
 fun RegisterBuild(
     modifier: Modifier = Modifier,
+    nestedInParentScroll: Boolean = false,
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
@@ -53,14 +57,21 @@ fun RegisterBuild(
     var gender by remember { mutableStateOf("Masculin") }
     var typeCompte by remember { mutableStateOf("Etudiant") }
 
-    Column(
-        modifier = modifier
+    val containerModifier = if (nestedInParentScroll) {
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+            .padding(bottom = 24.dp)
+    } else {
+        modifier
             .fillMaxSize()
             .background(Color(0xFFE8EEF7))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 14.dp, vertical = 12.dp)
             .padding(bottom = 90.dp)
-    ) {
+    }
+
+    Column(modifier = containerModifier) {
         AuthBrandHeader(
             title = "Inscription",
             subtitle = "Creez un compte enseignant ou etudiant pour suivre et diffuser des contenus juridiques.",
