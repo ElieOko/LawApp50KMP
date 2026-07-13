@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 private data class RegisterPopup(
     val title: String,
     val message: String,
-    val isSuccess: Boolean = false,
 )
 
 @Composable
@@ -36,7 +35,7 @@ fun RegisterPage(
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onRegisterSuccess: () -> Unit = {},
+    onRegisterSuccess: (email: String) -> Unit = {},
 ) {
     RegisterBuild(
         modifier = modifier,
@@ -53,7 +52,7 @@ fun RegisterBuild(
     onBack: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onRegisterSuccess: () -> Unit = {},
+    onRegisterSuccess: (email: String) -> Unit = {},
 ) {
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
@@ -74,11 +73,7 @@ fun RegisterBuild(
         AuthMessageDialog(
             title = dialog.title,
             message = dialog.message,
-            onConfirm = {
-                val success = dialog.isSuccess
-                popup = null
-                if (success) onRegisterSuccess()
-            }
+            onConfirm = { popup = null }
         )
     }
 
@@ -194,11 +189,7 @@ fun RegisterBuild(
                                 )
                                 isLoading = false
                                 result.onSuccess {
-                                    popup = RegisterPopup(
-                                        title = "Compte cree",
-                                        message = "Votre compte a ete cree avec succes.",
-                                        isSuccess = true,
-                                    )
+                                    onRegisterSuccess(email.trim())
                                 }.onFailure { error ->
                                     popup = RegisterPopup(
                                         title = "Echec d'inscription",

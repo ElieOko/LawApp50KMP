@@ -34,6 +34,7 @@ private data class AuthFlowState(
     val destination: AuthDestination = AuthDestination.Login,
     val recoveryContactType: RecoveryContactType = RecoveryContactType.Email,
     val recoveryContactValue: String = "",
+    val otpBackDestination: AuthDestination = AuthDestination.Recovery,
 )
 
 /**
@@ -70,8 +71,13 @@ fun AuthEntry(
             onBack = { state = state.copy(destination = AuthDestination.Login) },
             onLoginClick = { state = state.copy(destination = AuthDestination.Login) },
             onGoogleClick = onAuthenticated,
-            onRegisterSuccess = {
-                state = state.copy(destination = AuthDestination.Login)
+            onRegisterSuccess = { email ->
+                state = state.copy(
+                    destination = AuthDestination.Otp,
+                    recoveryContactType = RecoveryContactType.Email,
+                    recoveryContactValue = email,
+                    otpBackDestination = AuthDestination.Login,
+                )
             },
         )
         AuthDestination.Recovery -> RecoveryAccountPage(
@@ -82,15 +88,18 @@ fun AuthEntry(
                     destination = AuthDestination.Otp,
                     recoveryContactType = contactType,
                     recoveryContactValue = value,
+                    otpBackDestination = AuthDestination.Recovery,
                 )
             },
         )
         AuthDestination.Otp -> OtpVerificationPage(
             modifier = modifier,
-            destinationLabel = state.recoveryContactValue.ifBlank { "votre contact" },
-            onBack = { state = state.copy(destination = AuthDestination.Recovery) },
-            onResendClick = {},
-            onVerifyClick = { onAuthenticated() },
+            identifier = state.recoveryContactValue,
+            destinationLabel = state.recoveryContactValue.ifBlank { "votre email" },
+            onBack = { state = state.copy(destination = state.otpBackDestination) },
+            onVerifySuccess = {
+                state = state.copy(destination = AuthDestination.Login)
+            },
         )
     }
 }
