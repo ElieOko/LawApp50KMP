@@ -3,6 +3,7 @@ package emy.partners.lawapp.presentation.pages
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,12 +41,24 @@ import lawapp.shared.generated.resources.one
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun ProfilPage(modifier: Modifier = Modifier,scrollVertical: ScrollState = rememberScrollState()){
-    ProfilBuild(modifier,scrollVertical)
+fun ProfilPage(
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
+    onConnectClick: () -> Unit = {},
+) {
+    ProfilBuild(
+        modifier = modifier,
+        scrollVertical = scrollVertical,
+        onConnectClick = onConnectClick,
+    )
 }
 
 @Composable
-fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = rememberScrollState()){
+fun ProfilBuild(
+    modifier: Modifier = Modifier,
+    scrollVertical: ScrollState = rememberScrollState(),
+    onConnectClick: () -> Unit = {},
+) {
     val evaluations = Constants.evaluations
     val completedCount = evaluations.count { it.score != null }
     val averageScore = evaluations.mapNotNull { it.score }.average().takeIf { !it.isNaN() }?.toInt() ?: 0
@@ -94,6 +109,8 @@ fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = reme
             }
         }
         Spacer(Modifier.height(16.dp))
+        ProfileConnectCard(onConnectClick = onConnectClick)
+        Spacer(Modifier.height(16.dp))
         Column(
             Modifier
                 .fillMaxWidth()
@@ -129,10 +146,54 @@ fun ProfilBuild(modifier: Modifier = Modifier,scrollVertical: ScrollState = reme
         Spacer(Modifier.height(16.dp))
         Text("Raccourcis", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
         Spacer(Modifier.height(10.dp))
+        ProfileShortcut(
+            title = "Connectez-vous",
+            subtitle = "Ouvrir la page de connexion",
+            onClick = onConnectClick,
+        )
+        Spacer(Modifier.height(10.dp))
         ProfileShortcut("Badges et certificats", "Consulte tes preuves de progression")
         Spacer(Modifier.height(10.dp))
         ProfileShortcut("Parametres d'apprentissage", "Objectifs, rappels et preferences")
         Spacer(Modifier.height(90.dp))
+    }
+}
+
+@Composable
+private fun ProfileConnectCard(onConnectClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(Color.White.copy(alpha = 0.92f))
+            .padding(18.dp)
+    ) {
+        Text(
+            "Connectez-vous",
+            color = Color.Black.copy(alpha = 0.9f),
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 21.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Connectez-vous pour synchroniser votre progression, votre profil et vos evaluations.",
+            color = Color.Black.copy(alpha = 0.56f),
+            lineHeight = 19.sp
+        )
+        Spacer(Modifier.height(14.dp))
+        Button(
+            onClick = onConnectClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2F6FED),
+                contentColor = Color.White
+            )
+        ) {
+            Text("Se connecter", fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -156,17 +217,32 @@ private fun ProfileActivity(title: String, subtitle: String) {
 }
 
 @Composable
-private fun ProfileShortcut(title: String, subtitle: String) {
-    ProfileListItem(title = title, subtitle = subtitle, pill = "Ouvrir")
+private fun ProfileShortcut(
+    title: String,
+    subtitle: String,
+    onClick: (() -> Unit)? = null,
+) {
+    ProfileListItem(
+        title = title,
+        subtitle = subtitle,
+        pill = "Ouvrir",
+        onClick = onClick,
+    )
 }
 
 @Composable
-private fun ProfileListItem(title: String, subtitle: String, pill: String) {
+private fun ProfileListItem(
+    title: String,
+    subtitle: String,
+    pill: String,
+    onClick: (() -> Unit)? = null,
+) {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(Color.White.copy(alpha = 0.16f))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
