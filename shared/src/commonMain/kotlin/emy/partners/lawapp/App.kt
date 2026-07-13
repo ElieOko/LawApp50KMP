@@ -39,6 +39,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import emy.partners.lawapp.data.Constants
+import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
@@ -310,6 +311,7 @@ private class ProfileScreen : UniqueLawAppScreen() {
         ProfilPage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             scrollVertical = scrollVertical,
+            session = AuthRepository.currentSession,
             onConnectClick = authActions.openLogin,
         )
     }
@@ -351,8 +353,13 @@ private class RegisterScreen : UniqueLawAppScreen() {
             onGoogleClick = {
                 navigator.popUntil { it is ProfileScreen }
             },
-            onRegisterSuccess = {
-                navigator.popUntil { it is LoginScreen || it is ProfileScreen }
+            onRegisterSuccess = { email ->
+                navigator.replace(
+                    OtpVerificationScreen(
+                        contactType = RecoveryContactType.Email,
+                        contactValue = email,
+                    )
+                )
             },
         )
     }
@@ -400,10 +407,10 @@ private data class OtpVerificationScreen(
         }
 
         OtpVerificationPage(
+            identifier = contactValue,
             destinationLabel = destinationLabel,
             onBack = { navigator.pop() },
-            onResendClick = {},
-            onVerifyClick = {
+            onVerifySuccess = {
                 navigator.popUntil { it is LoginScreen || it is ProfileScreen }
             },
         )
@@ -550,24 +557,38 @@ fun App() {
                         .fillMaxSize()
                         .liquefiable(liquidState)
                 ) {
-                    Image(
-                        painter = painterResource(Res.drawable.justice),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize(),
-                        colorFilter = ColorFilter.colorMatrix(
-                            ColorMatrix().apply {
-                                setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
-                            }
+                    val hideJusticeBackground =
+                        !showsAppChrome || selectedTopLevel == TopLevelDestinationKind.Profile
+                    if (!hideJusticeBackground) {
+                        Image(
+                            painter = painterResource(Res.drawable.justice),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize(),
+                            colorFilter = ColorFilter.colorMatrix(
+                                ColorMatrix().apply {
+                                    setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
+                                }
+                            )
                         )
-                    )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color(0xFFE8EEF7))
+                        )
+                    }
 
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .liquid(liquidState)
                             .background(
-                                Color.White.copy(alpha = 0.15f)
+                                if (hideJusticeBackground) {
+                                    Color.Transparent
+                                } else {
+                                    Color.White.copy(alpha = 0.15f)
+                                }
                             )
                     )
                     val navigationContext = LawAppNavigationContext(

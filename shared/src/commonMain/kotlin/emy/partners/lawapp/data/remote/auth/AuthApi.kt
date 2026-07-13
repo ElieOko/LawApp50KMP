@@ -56,6 +56,42 @@ class AuthApi(
         }
     }
 
+    suspend fun validateOtp(identifier: String, code: String): Result<AuthSession> {
+        return runCatching {
+            val response = client.post("/api/v1/public/otp/validate") {
+                setBody(
+                    VerifyRequest(
+                        identifier = identifier.trim(),
+                        code = code.trim(),
+                    )
+                )
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw AuthApiException(extractMessage(bodyText) ?: "Code OTP invalide (${response.status.value})")
+            }
+            parseSessionOrEmpty(
+                bodyText = bodyText,
+                fallbackProfile = AuthUserProfile(
+                    email = identifier.trim().takeIf { it.contains("@") },
+                    username = identifier.trim().takeUnless { it.contains("@") },
+                )
+            )
+        }
+    }
+
+    suspend fun generateOtp(identifier: String): Result<Unit> {
+        return runCatching {
+            val response = client.post("/api/v1/public/otp/generate") {
+                setBody(IdentifiantRequest(identifier = identifier.trim()))
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw AuthApiException(extractMessage(bodyText) ?: "Renvoi du code impossible (${response.status.value})")
+            }
+        }
+    }
+
     private fun parseSession(bodyText: String, fallbackIdentifiant: String): AuthSession {
         val session = parseSessionOrEmpty(
             bodyText = bodyText,
@@ -173,6 +209,18 @@ object AuthRepository {
                 persistSession(session.copy(accessToken = currentSession?.accessToken.orEmpty()))
             }
         }
+    }
+
+    suspend fun validateOtp(identifier: String, code: String): Result<AuthSession> {
+        return api.validateOtp(identifier, code).onSuccess { session ->
+            if (session.accessToken.isNotBlank()) {
+                persistSession(session)
+            }
+        }
+    }
+
+    suspend fun generateOtp(identifier: String): Result<Unit> {
+        return api.generateOtp(identifier)
     }
 
     fun clearSession() {

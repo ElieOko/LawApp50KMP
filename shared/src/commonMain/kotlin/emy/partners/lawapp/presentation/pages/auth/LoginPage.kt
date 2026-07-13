@@ -31,7 +31,6 @@ import kotlinx.coroutines.launch
 private data class AuthPopup(
     val title: String,
     val message: String,
-    val isSuccess: Boolean = false,
 )
 
 @Composable
@@ -73,11 +72,7 @@ fun LoginBuild(
         AuthMessageDialog(
             title = dialog.title,
             message = dialog.message,
-            onConfirm = {
-                val success = dialog.isSuccess
-                popup = null
-                if (success) onLoginSuccess()
-            }
+            onConfirm = { popup = null }
         )
     }
 
@@ -147,11 +142,7 @@ fun LoginBuild(
                         )
                         isLoading = false
                         result.onSuccess {
-                            popup = AuthPopup(
-                                title = "Connexion reussie",
-                                message = "Bienvenue ${it.profile?.displayName ?: ""}. Votre session a ete enregistree.".trim(),
-                                isSuccess = true,
-                            )
+                            onLoginSuccess()
                         }.onFailure { error ->
                             popup = AuthPopup(
                                 title = "Echec de connexion",

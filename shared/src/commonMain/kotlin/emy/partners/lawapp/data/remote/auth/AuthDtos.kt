@@ -21,6 +21,17 @@ data class UserRegisterRequest(
 )
 
 @Serializable
+data class IdentifiantRequest(
+    val identifier: String,
+)
+
+@Serializable
+data class VerifyRequest(
+    val identifier: String,
+    val code: String,
+)
+
+@Serializable
 data class TokenPair(
     val accessToken: String? = null,
     val refreshToken: String? = null,
@@ -61,6 +72,12 @@ data class AuthUserProfile(
             !email.isNullOrBlank() -> email
             else -> "@lawapp_member"
         }
+
+    val fullName: String
+        get() = listOfNotNull(
+            firstName?.takeIf { it.isNotBlank() },
+            lastName?.takeIf { it.isNotBlank() },
+        ).joinToString(" ").ifBlank { displayName }
 }
 
 @Serializable
