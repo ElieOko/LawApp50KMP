@@ -47,6 +47,8 @@ import emy.partners.lawapp.domain.models.UserGeneratedContent
 import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.presentation.pages.ProfilPage
+import emy.partners.lawapp.presentation.pages.auth.AuthActions
+import emy.partners.lawapp.presentation.pages.auth.LocalAuthActions
 import emy.partners.lawapp.presentation.pages.auth.LoginPage
 import emy.partners.lawapp.presentation.pages.auth.RegisterPage
 import emy.partners.lawapp.presentation.pages.content.ContentCreatePage
@@ -298,13 +300,13 @@ private class ProfileScreen : UniqueLawAppScreen() {
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val authActions = LocalAuthActions.current
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ProfilPage(
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             scrollVertical = scrollVertical,
-            onConnectClick = { navigator.push(LoginScreen()) },
+            onConnectClick = authActions.openLogin,
         )
     }
 }
@@ -512,8 +514,17 @@ fun App() {
                         contentPadding = it,
                         state = appState,
                     )
+                    val authActions = remember(navigator) {
+                        AuthActions(
+                            openLogin = { navigator.push(LoginScreen()) },
+                            openRegister = { navigator.push(RegisterScreen()) },
+                        )
+                    }
                     Column {
-                        CompositionLocalProvider(LocalLawAppNavigationContext provides navigationContext) {
+                        CompositionLocalProvider(
+                            LocalLawAppNavigationContext provides navigationContext,
+                            LocalAuthActions provides authActions,
+                        ) {
                             CurrentScreen()
                         }
                     }
