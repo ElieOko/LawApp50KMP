@@ -1,7 +1,6 @@
 package emy.partners.lawapp.presentation.pages.auth
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -31,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -39,21 +36,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.presentation.themes.BlueDark
-import lawapp.shared.generated.resources.Res
-import lawapp.shared.generated.resources.app_name
-import lawapp.shared.generated.resources.google_g
-import lawapp.shared.generated.resources.logo_app
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 
 internal object AuthColors {
-    val Panel = Color.White.copy(alpha = 0.92f)
-    val SoftPanel = Color.White.copy(alpha = 0.18f)
+    val Panel = Color(0xFFF8FAFC)
     val TextPrimary = Color(0xFF0F172A)
     val TextSecondary = Color(0xFF475569)
     val Field = Color.White
     val Border = Color(0xFFCBD5E1)
-    val Accent = BlueDark
     val AccentBright = Color(0xFF2563EB)
 }
 
@@ -75,8 +64,8 @@ internal fun AuthBrandHeader(
             .background(
                 Brush.linearGradient(
                     listOf(
-                        BlueDark.copy(alpha = 0.95f),
-                        Color(0xFF08092B).copy(alpha = 0.92f)
+                        BlueDark.copy(alpha = 0.96f),
+                        Color(0xFF08092B).copy(alpha = 0.94f)
                     )
                 )
             )
@@ -85,12 +74,12 @@ internal fun AuthBrandHeader(
         if (onBack != null) {
             Text(
                 text = "Retour",
-                color = Color.White.copy(alpha = 0.85f),
+                color = Color.White.copy(alpha = 0.9f),
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White.copy(alpha = 0.14f))
+                    .background(Color.White.copy(alpha = 0.16f))
                     .clickable(onClick = onBack)
                     .padding(horizontal = 12.dp, vertical = 7.dp)
             )
@@ -101,24 +90,30 @@ internal fun AuthBrandHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Image(
-                painter = painterResource(Res.drawable.logo_app),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(14.dp))
-            )
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "LA",
+                    color = BlueDark,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp
+                )
+            }
             Column {
                 Text(
-                    text = stringResource(Res.string.app_name),
+                    text = "LawApp50",
                     color = Color.White,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = "Evaluation et contenus juridiques",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.White.copy(alpha = 0.72f),
                     fontSize = 12.sp
                 )
             }
@@ -134,7 +129,7 @@ internal fun AuthBrandHeader(
         Spacer(Modifier.height(6.dp))
         Text(
             text = subtitle,
-            color = Color.White.copy(alpha = 0.72f),
+            color = Color.White.copy(alpha = 0.75f),
             fontSize = 14.sp,
             lineHeight = 19.sp
         )
@@ -148,6 +143,7 @@ internal fun AuthFormPanel(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .clip(PanelShape)
             .background(AuthColors.Panel)
+            .border(1.dp, AuthColors.Border, PanelShape)
             .padding(18.dp)
     ) {
         content()
@@ -171,12 +167,20 @@ internal fun GoogleSignInButton(
             contentColor = AuthColors.TextPrimary
         )
     ) {
-        Icon(
-            painter = painterResource(Res.drawable.google_g),
-            contentDescription = null,
-            tint = Color.Unspecified,
-            modifier = Modifier.size(20.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFF1F5F9)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "G",
+                color = Color(0xFF4285F4),
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp
+            )
+        }
         Spacer(Modifier.width(10.dp))
         Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
@@ -279,7 +283,7 @@ internal fun AuthChoiceChips(
                         .clip(ChipShape)
                         .background(
                             if (isSelected) AuthColors.AccentBright.copy(alpha = 0.12f)
-                            else Color(0xFFF8FAFC)
+                            else Color.White
                         )
                         .border(
                             width = 1.dp,
