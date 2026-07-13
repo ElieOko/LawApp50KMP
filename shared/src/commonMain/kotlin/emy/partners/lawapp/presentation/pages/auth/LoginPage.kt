@@ -1,7 +1,7 @@
 package emy.partners.lawapp.presentation.pages.auth
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,72 +41,75 @@ fun LoginBuild(
     var email by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AuthColors.Black)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 28.dp, vertical = 32.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            AuthBrandMark()
-            Spacer(Modifier.height(36.dp))
-            AuthHeroTitle(
-                title = "Ça se passe\nmaintenant",
-                subtitle = "Connectez-vous pour continuer sur LawApp50."
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        AuthScreenBackground(Modifier.fillMaxSize())
 
-        Column {
-            GoogleSignInButton(
-                text = "Continuer avec Google",
-                onClick = onGoogleClick
-            )
-            Spacer(Modifier.height(18.dp))
-            AuthOrDivider()
-            Spacer(Modifier.height(18.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                AuthBrandMark()
+                Spacer(Modifier.height(28.dp))
+                AuthHeroTitle(
+                    title = "Bon retour",
+                    subtitle = "Accédez à votre espace LawApp50."
+                )
+            }
 
-            AuthTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email",
-                keyboardType = KeyboardType.Email
-            )
-            Spacer(Modifier.height(12.dp))
-            AuthTextField(
-                value = motDePasse,
-                onValueChange = { motDePasse = it },
-                label = "Mot de passe",
-                isPassword = true
-            )
-            Spacer(Modifier.height(20.dp))
-            AuthPrimaryButton(
-                text = "Se connecter",
-                onClick = onLoginClick,
-                filled = true
-            )
-            Spacer(Modifier.height(12.dp))
-            AuthPrimaryButton(
-                text = "Mot de passe oublié ?",
-                onClick = {},
-                filled = false
-            )
-        }
+            Column {
+                GoogleSignInButton(
+                    text = "Continuer avec Google",
+                    onClick = onGoogleClick
+                )
+                Spacer(Modifier.height(16.dp))
+                AuthOrDivider()
+                Spacer(Modifier.height(16.dp))
 
-        Column {
-            Spacer(Modifier.height(28.dp))
-            AuthFooterLink(
-                prefix = "Pas encore de compte ?",
-                action = "S'inscrire",
-                onClick = onRegisterClick
-            )
+                AuthTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Email",
+                    keyboardType = KeyboardType.Email
+                )
+                Spacer(Modifier.height(12.dp))
+                AuthTextField(
+                    value = motDePasse,
+                    onValueChange = { motDePasse = it },
+                    label = "Mot de passe",
+                    isPassword = true
+                )
+                Spacer(Modifier.height(20.dp))
+                AuthPrimaryButton(
+                    text = "Se connecter",
+                    onClick = onLoginClick,
+                    filled = true
+                )
+                Spacer(Modifier.height(10.dp))
+                AuthPrimaryButton(
+                    text = "Mot de passe oublié ?",
+                    onClick = {},
+                    filled = false
+                )
+            }
+
+            Column {
+                Spacer(Modifier.height(24.dp))
+                AuthFooterLink(
+                    prefix = "Pas encore de compte ?",
+                    action = "S'inscrire",
+                    onClick = onRegisterClick
+                )
+            }
         }
     }
 }
 
 @Composable
-@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Preview(showBackground = true, backgroundColor = 0xFF07111F)
 fun LoginPreview() {
     LoginBuild()
 }

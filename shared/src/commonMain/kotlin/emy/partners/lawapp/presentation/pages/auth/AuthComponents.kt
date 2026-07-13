@@ -1,6 +1,7 @@
 package emy.partners.lawapp.presentation.pages.auth
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,32 +38,59 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lawapp.shared.generated.resources.Res
+import lawapp.shared.generated.resources.app_name
 import lawapp.shared.generated.resources.google_g
+import lawapp.shared.generated.resources.logo_app
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 internal object AuthColors {
-    val Black = Color(0xFF000000)
-    val NearBlack = Color(0xFF0A0A0A)
-    val Surface = Color(0xFF16181C)
-    val Border = Color(0xFF2F3336)
-    val Muted = Color(0xFF71767B)
-    val White = Color(0xFFFFFFFF)
-    val Accent = Color(0xFF1D9BF0)
-    val AccentPressed = Color(0xFF1A8CD8)
+    val BackgroundTop = Color(0xFF07111F)
+    val BackgroundBottom = Color(0xFF10243F)
+    val Surface = Color(0xFF152238)
+    val Border = Color(0xFF2A3D5C)
+    val Muted = Color(0xFF93A4BD)
+    val White = Color(0xFFF8FAFC)
+    val Accent = Color(0xFF2F6FED)
+    val AccentSoft = Color(0xFF1E4EAD)
 }
 
-private val PillShape = RoundedCornerShape(999.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
+private val ButtonShape = RoundedCornerShape(16.dp)
+private val FieldShape = RoundedCornerShape(14.dp)
+private val ChipShape = RoundedCornerShape(14.dp)
 
 @Composable
 internal fun AuthBrandMark(modifier: Modifier = Modifier) {
-    Text(
-        text = "X",
-        color = AuthColors.White,
-        fontSize = 42.sp,
-        fontWeight = FontWeight.Black,
-        letterSpacing = (-1).sp,
-        modifier = modifier
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.logo_app),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+        )
+        Text(
+            text = stringResource(Res.string.app_name),
+            color = AuthColors.White,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+internal fun AuthScreenBackground(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(AuthColors.BackgroundTop, AuthColors.BackgroundBottom)
+            )
+        )
     )
 }
 
@@ -74,16 +103,16 @@ internal fun AuthHeroTitle(
         Text(
             text = title,
             color = AuthColors.White,
-            fontSize = 34.sp,
-            lineHeight = 38.sp,
-            fontWeight = FontWeight.Black
+            fontSize = 28.sp,
+            lineHeight = 34.sp,
+            fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.height(8.dp))
         Text(
             text = subtitle,
             color = AuthColors.Muted,
             fontSize = 15.sp,
-            lineHeight = 20.sp
+            lineHeight = 21.sp
         )
     }
 }
@@ -97,11 +126,11 @@ internal fun GoogleSignInButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp),
-        shape = PillShape,
+            .height(52.dp),
+        shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = AuthColors.White,
-            contentColor = Color(0xFF0F1419)
+            contentColor = Color(0xFF0F172A)
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
@@ -115,7 +144,7 @@ internal fun GoogleSignInButton(
         Text(
             text = text,
             fontSize = 15.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -157,30 +186,30 @@ internal fun AuthPrimaryButton(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            shape = PillShape,
+                .height(52.dp),
+            shape = ButtonShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = AuthColors.Accent,
                 contentColor = AuthColors.White
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
         ) {
-            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     } else {
         OutlinedButton(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            shape = PillShape,
+                .height(52.dp),
+            shape = ButtonShape,
             border = BorderStroke(1.dp, AuthColors.Border),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
                 contentColor = AuthColors.White
             )
         ) {
-            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -244,25 +273,25 @@ internal fun AuthChoiceChips(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(42.dp)
-                        .clip(PillShape)
+                        .height(44.dp)
+                        .clip(ChipShape)
                         .background(
-                            if (isSelected) AuthColors.Accent.copy(alpha = 0.18f)
+                            if (isSelected) AuthColors.Accent.copy(alpha = 0.22f)
                             else AuthColors.Surface
                         )
                         .border(
                             width = 1.dp,
                             color = if (isSelected) AuthColors.Accent else AuthColors.Border,
-                            shape = PillShape
+                            shape = ChipShape
                         )
                         .clickable { onSelected(option) },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = option,
-                        color = if (isSelected) AuthColors.Accent else AuthColors.White,
+                        color = if (isSelected) AuthColors.White else AuthColors.Muted,
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -286,7 +315,7 @@ internal fun AuthFooterLink(
             text = action,
             color = AuthColors.Accent,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.clickable(onClick = onClick)
         )
     }
