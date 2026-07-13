@@ -28,6 +28,12 @@ import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.remote.auth.AuthRepository
 import kotlinx.coroutines.launch
 
+private data class AuthPopup(
+    val title: String,
+    val message: String,
+    val isSuccess: Boolean = false,
+)
+
 @Composable
 fun LoginPage(
     modifier: Modifier = Modifier,
@@ -59,8 +65,21 @@ fun LoginBuild(
     var identifiant by remember { mutableStateOf("") }
     var motDePasse by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var popup by remember { mutableStateOf<AuthPopup?>(null) }
     val scope = rememberCoroutineScope()
+
+    AuthLoadingDialog(visible = isLoading, message = "Connexion en cours...")
+    popup?.let { dialog ->
+        AuthMessageDialog(
+            title = dialog.title,
+            message = dialog.message,
+            onConfirm = {
+                val success = dialog.isSuccess
+                popup = null
+                if (success) onLoginSuccess()
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -86,20 +105,14 @@ fun LoginBuild(
             Spacer(Modifier.height(14.dp))
             AuthTextField(
                 value = identifiant,
-                onValueChange = {
-                    identifiant = it
-                    errorMessage = null
-                },
+                onValueChange = { identifiant = it },
                 label = "Email ou pseudo",
                 keyboardType = KeyboardType.Email
             )
             Spacer(Modifier.height(12.dp))
             AuthTextField(
                 value = motDePasse,
-                onValueChange = {
-                    motDePasse = it
-                    errorMessage = null
-                },
+                onValueChange = { motDePasse = it },
                 label = "Mot de passe",
                 isPassword = true
             )
@@ -114,33 +127,36 @@ fun LoginBuild(
                     fontSize = 13.sp
                 )
             }
-            AuthErrorText(errorMessage)
             Spacer(Modifier.height(8.dp))
             AuthPrimaryButton(
-                text = if (isLoading) "Connexion..." else "Se connecter",
+                text = "Se connecter",
                 enabled = !isLoading,
                 onClick = {
-                    when {
-                        identifiant.trim().length < 4 -> {
-                            errorMessage = "Identifiant trop court"
-                        }
-                        motDePasse.length < 4 -> {
-                            errorMessage = "Mot de passe trop court"
-                        }
-                        else -> {
-                            isLoading = true
-                            errorMessage = null
-                            scope.launch {
-                                val result = AuthRepository.login(
-                                    identifiant = identifiant,
-                                    password = motDePasse,
-                                )
-                                isLoading = false
-                                result.onSuccess { onLoginSuccess() }
-                                    .onFailure { error ->
-                                        errorMessage = error.message ?: "Connexion impossible"
-                                    }
-                            }
+                    if (identifiant.isBlank() || motDePasse.isBlank()) {
+                        popup = AuthPopup(
+                            title = "Champs requis",
+                            message = "Veuillez renseigner votre identifiant et votre mot de passe."
+                        )
+                        return@AuthPrimaryButton
+                    }
+                    isLoading = true
+                    scope.launch {
+                        val result = AuthRepository.login(
+                            identifiant = identifiant,
+                            password = motDePasse,
+                        )
+                        isLoading = false
+                        result.onSuccess {
+                            popup = AuthPopup(
+                                title = "Connexion reussie",
+                                message = "Bienvenue ${it.profile?.displayName ?: ""}. Votre session a ete enregistree.".trim(),
+                                isSuccess = true,
+                            )
+                        }.onFailure { error ->
+                            popup = AuthPopup(
+                                title = "Echec de connexion",
+                                message = error.message ?: "Connexion impossible"
+                            )
                         }
                     }
                 }

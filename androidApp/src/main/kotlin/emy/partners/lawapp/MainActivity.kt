@@ -26,11 +26,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import emy.partners.lawapp.data.local.AndroidAppContext
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installCrashLogger()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        AndroidAppContext.init(applicationContext)
 
         setContent {
             CrashBoundary {
