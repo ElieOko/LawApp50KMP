@@ -66,8 +66,9 @@ fun ProfilBuild(
     onConnectClick: () -> Unit = {},
 ) {
     var currentSession by remember(session) { mutableStateOf(session) }
-    val profile = currentSession?.profile
-    val isLoggedIn = !currentSession?.accessToken.isNullOrBlank() || profile != null
+    // Infos visibles uniquement avec une vraie session (token).
+    val isLoggedIn = !currentSession?.accessToken.isNullOrBlank()
+    val profile = currentSession?.profile.takeIf { isLoggedIn }
 
     Column(
         modifier
@@ -80,7 +81,7 @@ fun ProfilBuild(
         ProfileHeaderCard(profile = profile, isLoggedIn = isLoggedIn)
         Spacer(Modifier.height(16.dp))
 
-        if (isLoggedIn && profile != null) {
+        if (isLoggedIn) {
             AuthFormPanel {
                 Text(
                     text = "Informations du compte",
@@ -89,12 +90,15 @@ fun ProfilBuild(
                     fontSize = 18.sp
                 )
                 Spacer(Modifier.height(14.dp))
-                ProfileInfoRow(label = "Premium", value = if (profile.premium == true) "Oui" else "Non")
-                ProfileInfoRow(label = "Email", value = profile.email.orDash())
-                ProfileInfoRow(label = "Nom", value = profile.lastName.orDash())
-                ProfileInfoRow(label = "Prenom", value = profile.firstName.orDash())
-                ProfileInfoRow(label = "Pseudo", value = profile.username.orDash())
-                ProfileInfoRow(label = "Fullname", value = profile.fullName)
+                ProfileInfoRow(label = "Premium", value = if (profile?.premium == true) "Oui" else "Non")
+                ProfileInfoRow(label = "Email", value = profile?.email.orDash())
+                // Mapping API: firstName = nom, lastName = prenom, username = pseudo
+                ProfileInfoRow(label = "Nom", value = profile?.firstName.orDash())
+                ProfileInfoRow(label = "Prenom", value = profile?.lastName.orDash())
+                ProfileInfoRow(label = "Pseudo", value = profile?.username.orDash())
+                ProfileInfoRow(label = "Telephone", value = profile?.phone.orDash())
+                ProfileInfoRow(label = "Ville", value = profile?.city.orDash())
+                ProfileInfoRow(label = "Fullname", value = profile?.fullName.orDash())
             }
             Spacer(Modifier.height(16.dp))
             AuthFormPanel {
@@ -106,14 +110,14 @@ fun ProfilBuild(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Votre profil est synchronise localement apres connexion.",
+                    text = "Deconnectez-vous pour masquer et verrouiller vos informations locales.",
                     color = AuthColors.TextSecondary,
                     fontSize = 13.sp,
                     lineHeight = 18.sp
                 )
                 Spacer(Modifier.height(14.dp))
                 AuthPrimaryButton(
-                    text = "Se deconnecter",
+                    text = "Deconnecter",
                     onClick = {
                         AuthRepository.clearSession()
                         currentSession = null
@@ -130,7 +134,7 @@ fun ProfilBuild(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Accedez a votre profil premium, email, nom, prenom et pseudo apres connexion.",
+                    text = "Connectez-vous pour y acceder. Vos informations (premium, email, nom, prenom, pseudo, telephone, ville) restent cachees tant que vous n'etes pas connecte.",
                     color = AuthColors.TextSecondary,
                     fontSize = 13.sp,
                     lineHeight = 18.sp
@@ -176,7 +180,7 @@ private fun ProfileHeaderCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = profileInitials(profile),
+                    text = if (isLoggedIn) profileInitials(profile) else "LA",
                     color = BlueDark,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 20.sp
@@ -196,7 +200,11 @@ private fun ProfileHeaderCard(
                     fontSize = 24.sp
                 )
                 Text(
-                    text = if (isLoggedIn) profile?.displayHandle ?: "@lawapp_member" else "Connectez-vous pour voir vos infos",
+                    text = if (isLoggedIn) {
+                        profile?.displayHandle ?: "@lawapp_member"
+                    } else {
+                        "Connectez-vous pour y acceder"
+                    },
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp
                 )
@@ -259,12 +267,13 @@ private fun ProfileInfoRow(
 }
 
 private fun profileInitials(profile: AuthUserProfile?): String {
-    val first = profile?.firstName?.trim()?.firstOrNull()?.uppercaseChar()
-    val last = profile?.lastName?.trim()?.firstOrNull()?.uppercaseChar()
+    // firstName = nom, lastName = prenom
+    val nom = profile?.firstName?.trim()?.firstOrNull()?.uppercaseChar()
+    val prenom = profile?.lastName?.trim()?.firstOrNull()?.uppercaseChar()
     val username = profile?.username?.trim().orEmpty()
     return when {
-        first != null && last != null -> "$first$last"
-        first != null -> "$first"
+        nom != null && prenom != null -> "$nom$prenom"
+        nom != null -> "$nom"
         username.isNotBlank() -> username.take(2).uppercase()
         else -> "LA"
     }
