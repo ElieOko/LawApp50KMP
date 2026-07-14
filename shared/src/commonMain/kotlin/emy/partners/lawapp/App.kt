@@ -627,7 +627,11 @@ fun App() {
                             .liquefiable(liquidState)
                     ) {
                         val hideJusticeBackground =
-                            !showsAppChrome || selectedTopLevel == TopLevelDestinationKind.Profile
+                            !showsAppChrome ||
+                                selectedTopLevel == TopLevelDestinationKind.Profile ||
+                                selectedTopLevel == TopLevelDestinationKind.Explore ||
+                                selectedTopLevel == TopLevelDestinationKind.Quiz ||
+                                selectedTopLevel == TopLevelDestinationKind.Evaluation
                         if (!hideJusticeBackground) {
                             Image(
                                 painter = painterResource(Res.drawable.justice),
@@ -691,7 +695,12 @@ fun App() {
 }
 
 @Composable
-expect fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean)
+expect fun PlatformVideoPlayer(
+    url: String,
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean,
+    isLooping: Boolean = true,
+)
 
 private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
     id = id ?: (1_000L + index),

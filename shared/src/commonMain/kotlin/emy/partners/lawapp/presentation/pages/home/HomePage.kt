@@ -1,6 +1,5 @@
 package emy.partners.lawapp.presentation.pages.home
 
-import VideoPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,6 +45,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import emy.partners.lawapp.PlatformVideoPlayer
 import emy.partners.lawapp.data.remote.contenu.ContenuFeedItem
 import emy.partners.lawapp.data.remote.contenu.ContenuRepository
 import emy.partners.lawapp.domain.models.Comment
@@ -303,11 +303,11 @@ private fun ContenuMedia(
 ) {
     when {
         item.isVideo && item.hasMediaFile -> {
-            VideoPlayer(
-                modifier = liquidModifier.clickable(onClick = onMediaClick),
+            PlatformVideoPlayer(
                 url = item.fileContent.orEmpty(),
-                autoPlay = isActivePage,
-                showControls = true,
+                modifier = liquidModifier.clickable(onClick = onMediaClick),
+                isPlaying = isActivePage,
+                isLooping = true,
             )
         }
         item.hasMediaFile -> {

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
@@ -19,8 +20,12 @@ class AndroidPlatform : Platform {
 actual fun getPlatform(): Platform = AndroidPlatform()
 
 @Composable
-actual fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boolean) {
-
+actual fun PlatformVideoPlayer(
+    url: String,
+    modifier: Modifier,
+    isPlaying: Boolean,
+    isLooping: Boolean,
+) {
     val context = LocalContext.current
 
     val exoPlayer = remember(url) {
@@ -31,7 +36,16 @@ actual fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boole
     }
 
     SideEffect {
-        exoPlayer.playWhenReady = isPlaying // clé TikTok
+        exoPlayer.repeatMode = if (isLooping) {
+            Player.REPEAT_MODE_ONE
+        } else {
+            Player.REPEAT_MODE_OFF
+        }
+        exoPlayer.playWhenReady = isPlaying
+        if (isPlaying && exoPlayer.playbackState == Player.STATE_ENDED) {
+            exoPlayer.seekTo(0)
+            exoPlayer.play()
+        }
     }
 
     DisposableEffect(exoPlayer) {
@@ -47,6 +61,6 @@ actual fun PlatformVideoPlayer(url: String, modifier: Modifier, isPlaying: Boole
                 useController = false
             }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
