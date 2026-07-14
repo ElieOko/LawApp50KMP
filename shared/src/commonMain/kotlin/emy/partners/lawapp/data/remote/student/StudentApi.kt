@@ -107,10 +107,24 @@ object StudentRepository {
                 promotionId = promotionId,
                 etablissementId = etablissementId,
                 matricule = matricule?.trim()?.takeIf { it.isNotBlank() },
-                gender = gender?.trim()?.takeIf { it.isNotBlank() },
+                gender = normalizeGender(gender),
             )
         ).onSuccess {
             markStudentProfileCompleted(userId)
+        }
+    }
+
+    private fun normalizeGender(value: String?): String? {
+        val raw = value?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        return when {
+            raw.equals("M", ignoreCase = true) ||
+                raw.equals("Masculin", ignoreCase = true) ||
+                raw.equals("Male", ignoreCase = true) -> "M"
+            raw.equals("F", ignoreCase = true) ||
+                raw.equals("Feminin", ignoreCase = true) ||
+                raw.equals("Féminin", ignoreCase = true) ||
+                raw.equals("Female", ignoreCase = true) -> "F"
+            else -> raw.take(1).uppercase()
         }
     }
 }

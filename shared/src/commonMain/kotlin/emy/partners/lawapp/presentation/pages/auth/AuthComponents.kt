@@ -242,22 +242,48 @@ internal fun AuthRequiredPanel(
             .padding(top = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        AuthFormPanel {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(PanelShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            BlueDark.copy(alpha = 0.96f),
+                            Color(0xFF08092B).copy(alpha = 0.94f),
+                        )
+                    )
+                )
+                .padding(18.dp)
+        ) {
             Text(
                 text = title,
-                color = AuthColors.TextPrimary,
+                color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
+                fontSize = 22.sp,
             )
-            Spacer(modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = message,
-                color = AuthColors.TextSecondary,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
+                color = Color.White.copy(alpha = 0.78f),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
             )
-            Spacer(modifier.height(14.dp))
-            AuthPrimaryButton(text = loginLabel, onClick = onLogin)
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = BlueDark,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(text = loginLabel, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
