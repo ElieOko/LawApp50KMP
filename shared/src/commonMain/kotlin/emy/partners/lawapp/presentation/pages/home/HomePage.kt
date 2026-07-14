@@ -120,6 +120,7 @@ fun HomeBuild(
                     Box(Modifier.fillMaxSize().background(Color.Black)) {
                         ContenuMedia(
                             fileContent = item.fileContent,
+                            isVideo = item.isVideo,
                             title = item.title,
                             isActivePage = isActive && pagerState.currentPage == pageIndex,
                             onMediaClick = { showComments = false },
@@ -191,17 +192,14 @@ fun HomeBuild(
 @Composable
 private fun ContenuMedia(
     fileContent: String?,
+    isVideo: Boolean,
     title: String,
     isActivePage: Boolean,
     onMediaClick: () -> Unit,
     liquidModifier: Modifier,
 ) {
-    val isVideo = fileContent?.lowercase()?.let { url ->
-        url.contains(".mp4") || url.contains(".mov") || url.contains(".webm") || url.contains("video")
-    } == true
-
     when {
-        !fileContent.isNullOrBlank() && isVideo -> {
+        isVideo && !fileContent.isNullOrBlank() -> {
             VideoPlayer(
                 modifier = liquidModifier.clickable(onClick = onMediaClick),
                 url = fileContent,

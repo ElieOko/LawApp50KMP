@@ -119,13 +119,19 @@ data class ContenuFeedItem(
     val title: String,
     val description: String,
     val fileContent: String?,
+    val typeContenuId: Long?,
     val authorName: String,
     val authorUsername: String,
     val likeCount: Int,
     val commentCount: Int,
     val comments: List<ContenuCommentUi>,
     val likedByMe: Boolean = false,
-)
+) {
+    val isVideo: Boolean
+        get() = typeContenuId == VIDEO_TYPE_CONTENU_ID
+}
+
+const val VIDEO_TYPE_CONTENU_ID = 3L
 
 data class ContenuCommentUi(
     val id: Long,
@@ -145,6 +151,7 @@ fun ContenuFeedItemDto.toFeedItem(currentUserId: Long? = null): ContenuFeedItem?
         title = entity.title.orEmpty().ifBlank { "Sans titre" },
         description = entity.description.orEmpty(),
         fileContent = media?.let { resolveMediaUrl(it) },
+        typeContenuId = entity.typeContenuId ?: typeContenu?.id,
         authorName = user?.displayName ?: "Utilisateur LawApp",
         authorUsername = user?.username?.let { if (it.startsWith("@")) it else "@$it" } ?: "@lawapp",
         likeCount = likes.count { it.like?.active != false && it.like?.like != false },
