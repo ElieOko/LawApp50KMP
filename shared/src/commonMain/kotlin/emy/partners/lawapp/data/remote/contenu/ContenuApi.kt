@@ -91,11 +91,26 @@ object ContenuRepository {
 
     private var memoryCache: List<ContenuFeedItem>? = null
 
+    /** Contenu actuellement affiché sur Home — conservé entre les navigations d'onglets. */
+    private var lastViewedContenuId: Long? = null
+
     fun cachedFeed(): List<ContenuFeedItem> {
         memoryCache?.let { return it }
         val disk = loadFeedCache()
         memoryCache = disk
         return disk
+    }
+
+    fun lastViewedContenuId(): Long? = lastViewedContenuId
+
+    fun rememberLastViewedContenuId(contenuId: Long) {
+        lastViewedContenuId = contenuId
+    }
+
+    fun indexOfLastViewed(items: List<ContenuFeedItem>): Int {
+        val id = lastViewedContenuId ?: return 0
+        val index = items.indexOfFirst { it.id == id }
+        return if (index >= 0) index else 0
     }
 
     suspend fun loadHomeFeed(forceRefresh: Boolean = false): Result<List<ContenuFeedItem>> {

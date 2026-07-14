@@ -96,7 +96,32 @@ fun HomeBuild(
     val displayFeed = remember(feed, createdContents, localLikeOverrides) {
         buildDisplayFeed(feed, createdContents, localLikeOverrides)
     }
-    val pagerState: PagerState = rememberPagerState(pageCount = { displayFeed.size.coerceAtLeast(1) })
+    val initialPage = remember {
+        ContenuRepository.indexOfLastViewed(displayFeed)
+            .coerceIn(0, (displayFeed.size - 1).coerceAtLeast(0))
+    }
+    val pagerState: PagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { displayFeed.size.coerceAtLeast(1) },
+    )
+    var didRestorePage by remember { mutableStateOf(displayFeed.isNotEmpty()) }
+
+    // Conserve le contenu en cours quand on quitte Home (autre onglet / page).
+    LaunchedEffect(pagerState.currentPage, displayFeed) {
+        displayFeed.getOrNull(pagerState.currentPage)?.let { item ->
+            ContenuRepository.rememberLastViewedContenuId(item.id)
+        }
+    }
+
+    // Si le feed arrive apres le montage, revenir au contenu en cours.
+    LaunchedEffect(displayFeed) {
+        if (didRestorePage || displayFeed.isEmpty()) return@LaunchedEffect
+        val target = ContenuRepository.indexOfLastViewed(displayFeed)
+        if (target != pagerState.currentPage) {
+            pagerState.scrollToPage(target)
+        }
+        didRestorePage = true
+    }
 
     // Cache d'abord ; reseau uniquement si le cache est vide (pas de reload a chaque visite/scroll).
     LaunchedEffect(Unit) {
@@ -126,8 +151,9 @@ fun HomeBuild(
                 .onSuccess {
                     feed = it
                     errorMessage = null
-                    if (displayFeed.isNotEmpty()) {
-                        pagerState.scrollToPage(0)
+                    val nextFeed = buildDisplayFeed(it, createdContents, localLikeOverrides)
+                    if (nextFeed.isNotEmpty()) {
+                        pagerState.scrollToPage(ContenuRepository.indexOfLastViewed(nextFeed))
                     }
                 }
                 .onFailure {
