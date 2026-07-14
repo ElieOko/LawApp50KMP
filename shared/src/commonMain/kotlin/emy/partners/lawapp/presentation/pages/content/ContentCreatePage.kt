@@ -2,9 +2,7 @@ package emy.partners.lawapp.presentation.pages.content
 
 import VideoPlayer
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,9 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -59,6 +60,11 @@ import emy.partners.lawapp.presentation.pages.auth.AuthPrimaryButton
 import emy.partners.lawapp.presentation.pages.auth.AuthTextField
 import emy.partners.lawapp.presentation.settings.LocalAppUiController
 import kotlinx.coroutines.launch
+import lawapp.shared.generated.resources.Res
+import lawapp.shared.generated.resources.close
+import lawapp.shared.generated.resources.ic_add_media
+import lawapp.shared.generated.resources.ic_change_media
+import org.jetbrains.compose.resources.painterResource
 
 private val PageBgLight = Color(0xFFE8EEF7)
 private val PageBgDark = Color(0xFF0B1220)
@@ -112,7 +118,8 @@ fun ContentCreatePage(
     } else {
         SCOPE_FREE_ID
     }
-    val canPublish = title.isNotBlank() && description.isNotBlank() && !isPublishing
+    val canPublish =
+        title.isNotBlank() && description.isNotBlank() && selectedFile != null && !isPublishing
 
     val pickMedia = rememberFilePickerLauncher { files ->
         val media = files.firstOrNull { file ->
@@ -223,41 +230,53 @@ fun ContentCreatePage(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Media (image ou video)",
+                text = "Media (image ou video) *",
                 color = AuthColors.TextPrimary,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 16.sp,
             )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Obligatoire : le serveur refuse une publication sans fichier.",
+                color = AuthColors.TextSecondary,
+                fontSize = 12.sp,
+            )
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = if (selectedFile == null) "Ajouter un media" else "Changer",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(AuthColors.AccentBright)
-                        .clickable(onClick = pickMedia)
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                )
-                if (selectedFile != null) {
-                    Text(
-                        text = "Retirer",
-                        color = AuthColors.AccentBright,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFFE2E8F0))
-                            .clickable { selectedFile = null }
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                    )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (selectedFile == null) {
+                    IconButton(onClick = pickMedia) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_add_media),
+                            contentDescription = "Ajouter un media",
+                            tint = AuthColors.AccentBright,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                } else {
+                    IconButton(onClick = pickMedia) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_change_media),
+                            contentDescription = "Changer le media",
+                            tint = AuthColors.AccentBright,
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
+                    IconButton(onClick = { selectedFile = null }) {
+                        Icon(
+                            painter = painterResource(Res.drawable.close),
+                            contentDescription = "Retirer le media",
+                            tint = Color(0xFFB91C1C),
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                 }
             }
 
             selectedFile?.let { file ->
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = file.name,
                     color = AuthColors.TextSecondary,
@@ -273,15 +292,24 @@ fun ContentCreatePage(
                 text = "Publier",
                 enabled = canPublish,
                 onClick = {
-                    val userId = session?.profile?.userId
-                    if (userId == null || session == null || session.accessToken.isBlank()) {
+                    val currentSession = session
+                    val userId = currentSession?.profile?.userId
+                    val media = selectedFile
+                    if (currentSession == null || userId == null || currentSession.accessToken.isBlank()) {
                         popup = PublishPopup(
                             title = "Connexion requise",
                             message = "Connectez-vous depuis le profil pour publier un contenu.",
                         )
                         return@AuthPrimaryButton
                     }
-                    if (!canPublish) {
+                    if (media == null) {
+                        popup = PublishPopup(
+                            title = "Media requis",
+                            message = "Ajoutez une image ou une video avant de publier.",
+                        )
+                        return@AuthPrimaryButton
+                    }
+                    if (title.isBlank() || description.isBlank()) {
                         popup = PublishPopup(
                             title = "Champs requis",
                             message = "Merci de renseigner un titre et une description.",
@@ -294,9 +322,9 @@ fun ContentCreatePage(
                             title = title,
                             description = description,
                             scopeId = scopeId,
-                            fileName = selectedFile?.name,
-                            fileMimeType = selectedFile?.mimeType,
-                            fileUri = selectedFile?.uri,
+                            fileName = media.name,
+                            fileMimeType = media.mimeType,
+                            fileUri = media.uri,
                         ).onSuccess {
                             popup = PublishPopup(
                                 title = "Publie",
@@ -348,52 +376,39 @@ private fun PublishMultilineField(
 
 @Composable
 private fun MediaPreview(file: PickedFile) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF0F172A))
-    ) {
-        when {
-            file.isVideoLike() -> {
-                VideoPlayer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                    url = file.uri,
-                    autoPlay = false,
-                    showControls = true,
-                )
-            }
-            file.isImageLike() -> {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalPlatformContext.current)
-                        .data(file.uri)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = file.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp),
-                )
-            }
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "Fichier: ${file.name}",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                    )
-                }
-            }
+    when {
+        file.isVideoLike() -> {
+            VideoPlayer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(18.dp)),
+                url = file.uri,
+                autoPlay = false,
+                showControls = true,
+            )
+        }
+        file.isImageLike() -> {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalPlatformContext.current)
+                    .data(file.uri)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = file.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 280.dp)
+                    .clip(RoundedCornerShape(18.dp)),
+            )
+        }
+        else -> {
+            Text(
+                text = "Fichier: ${file.name}",
+                color = AuthColors.TextSecondary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+            )
         }
     }
 }
