@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +56,7 @@ import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.presentation.pages.ProfilPage
 import emy.partners.lawapp.presentation.pages.auth.AuthActions
+import emy.partners.lawapp.presentation.pages.auth.AuthRequiredPanel
 import emy.partners.lawapp.presentation.pages.auth.LocalAuthActions
 import emy.partners.lawapp.presentation.pages.auth.LoginPage
 import emy.partners.lawapp.presentation.pages.auth.OtpVerificationPage
@@ -296,12 +301,27 @@ private class QuizScreen : UniqueLawAppScreen() {
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
+        val authActions = LocalAuthActions.current
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        val session = AuthRepository.currentSession
+        val isLoggedIn = !session?.accessToken.isNullOrBlank()
 
-        QuizPage(
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            scrollVertical = scrollVertical,
-        )
+        if (!isLoggedIn) {
+            AuthRequiredPanel(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = context.contentPadding.calculateTopPadding())
+                    .padding(horizontal = 14.dp),
+                title = "Quiz reserve aux membres",
+                message = "Connectez-vous pour demarrer un quiz juridique.",
+                onLogin = authActions.openLogin,
+            )
+        } else {
+            QuizPage(
+                modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+                scrollVertical = scrollVertical,
+            )
+        }
     }
 }
 
@@ -471,13 +491,31 @@ private fun ExploreRootContent(pageStateKey: String) {
 private fun EvaluationRootContent(pageStateKey: String) {
     val context = LocalLawAppNavigationContext.current
     val navigator = LocalNavigator.currentOrThrow
+    val authActions = LocalAuthActions.current
     val scrollVertical = rememberPageScrollState(pageStateKey, TopLevelDestinationKind.Evaluation)
+    val session = AuthRepository.currentSession
+    val isLoggedIn = !session?.accessToken.isNullOrBlank()
+    val isTeacher = session?.profile?.isTeacher == true
+    val canCreate = isLoggedIn && isTeacher
+    val blockedMessage = when {
+        !isLoggedIn -> "Connectez-vous avec un compte enseignant pour creer une evaluation."
+        !isTeacher -> "Seuls les enseignants peuvent creer des evaluations."
+        else -> null
+    }
 
     EvaluationPage(
         evaluations = context.evaluations,
         modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
         onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
-        onCreateClick = { navigator.push(EvaluationCreateScreen()) },
+        onCreateClick = {
+            when {
+                !isLoggedIn -> authActions.openLogin()
+                !isTeacher -> Unit
+                else -> navigator.push(EvaluationCreateScreen())
+            }
+        },
+        canCreateEvaluations = canCreate,
+        createBlockedMessage = blockedMessage,
         scrollVertical = scrollVertical,
     )
 }
@@ -570,17 +608,33 @@ fun App() {
                     //            contentWindowInsets = WindowInsets(0),
                     bottomBar = {
                         if (showsAppChrome) {
-                            //CompositionLocalProvider(LocalRippleConfiguration provides null){
-                            //Color(0xFF242D2C)
-                            Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                                BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                                    Color.White.copy(alpha = 0.5f)
-                                )) {
+                            val isHomeChrome = selectedTopLevel == TopLevelDestinationKind.Home
+                            Box(
+                                modifier = if (isHomeChrome) {
+                                    Modifier
+                                } else {
+                                    Modifier
+                                        .clip(RoundedCornerShape(9.dp))
+                                        .liquefiable(liquidState2)
+                                }
+                            ) {
+                                BottomAppBar(
+                                    containerColor = if (isHomeChrome) {
+                                        Color.Transparent
+                                    } else {
+                                        Color.White.copy(alpha = 0.5f)
+                                    },
+                                    modifier = if (isHomeChrome) {
+                                        Modifier
+                                    } else {
+                                        Modifier.background(Color.White.copy(alpha = 0.5f))
+                                    },
+                                ) {
                                     topLevelDestinations.forEach { destination ->
                                         NavigationBarItem(
                                             interactionSource = remember { MutableInteractionSource() },
-                                            colors =  NavigationBarItemDefaults.colors(
-                                                indicatorColor =  Color.White.copy(alpha = 0.65f),
+                                            colors = NavigationBarItemDefaults.colors(
+                                                indicatorColor = Color.White.copy(alpha = 0.65f),
                                                 selectedTextColor = Color(0xFf2563EB),
                                                 selectedIconColor = Color(0xFf2563EB),
                                                 unselectedIconColor = Color.Black.copy(0.6f),
@@ -590,18 +644,22 @@ fun App() {
                                             onClick = { navigator.replaceAll(destination.createScreen()) },
                                             icon = {
                                                 Icon(
-                                                    painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
+                                                    painter = painterResource(destination.icon),
+                                                    null,
+                                                    modifier = Modifier.size(28.dp),
                                                 )
                                             },
                                             label = {
-                                                Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                Text(
+                                                    destination.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                )
                                             }
                                         )
                                     }
                                 }
                             }
-
-                            //}
                         }
                     },
                     topBar = {
@@ -609,11 +667,16 @@ fun App() {
                             TopBarCustom(
                                 scrollState = topBarScrollState,
                                 onActionClick = {
-                                    navigator.push(
-                                        ContentCreateScreen(
-                                            initialDestination = selectedTopLevel.toDestination()
+                                    val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+                                    if (!loggedIn) {
+                                        navigator.push(LoginScreen())
+                                    } else {
+                                        navigator.push(
+                                            ContentCreateScreen(
+                                                initialDestination = selectedTopLevel.toDestination()
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             )
                         }
@@ -700,6 +763,7 @@ expect fun PlatformVideoPlayer(
     modifier: Modifier = Modifier,
     isPlaying: Boolean,
     isLooping: Boolean = true,
+    showControls: Boolean = true,
 )
 
 private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(

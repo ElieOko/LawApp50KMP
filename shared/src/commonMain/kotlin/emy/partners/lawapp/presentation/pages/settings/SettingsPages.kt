@@ -1,15 +1,21 @@
 package emy.partners.lawapp.presentation.pages.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -17,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.local.AppLanguage
 import emy.partners.lawapp.presentation.pages.auth.AuthBrandHeader
-import emy.partners.lawapp.presentation.pages.auth.AuthChoiceChips
 import emy.partners.lawapp.presentation.pages.auth.AuthColors
 import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
 import emy.partners.lawapp.presentation.settings.LocalAppUiController
@@ -41,10 +46,10 @@ fun ThemeSettingsPage(
             .padding(top = 36.dp, bottom = 24.dp)
     ) {
         AuthBrandHeader(
-            title = strings.t("Mode d'affichage", "Display mode"),
+            title = strings.t("Parametres d'affichage", "Display settings"),
             subtitle = strings.t(
-                "Choisissez le theme clair ou sombre de l'application.",
-                "Choose the light or dark theme for the app."
+                "Activez le mode sombre ou restez en mode clair.",
+                "Enable dark mode or stay in light mode."
             ),
             onBack = onBack,
         )
@@ -56,20 +61,18 @@ fun ThemeSettingsPage(
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 18.sp
             )
-            Spacer(Modifier.height(12.dp))
-            AuthChoiceChips(
-                label = strings.t("Mode", "Mode"),
-                options = listOf(strings.t("Clair", "Light"), strings.t("Sombre", "Dark")),
-                selected = if (ui.settings.darkMode) {
-                    strings.t("Sombre", "Dark")
+            Spacer(Modifier.height(14.dp))
+            SettingsSwitchRow(
+                title = strings.t("Mode sombre", "Dark mode"),
+                subtitle = if (ui.settings.darkMode) {
+                    strings.t("Active", "On")
                 } else {
-                    strings.t("Clair", "Light")
+                    strings.t("Desactive", "Off")
                 },
-                onSelected = { option ->
-                    ui.updateSettings(
-                        ui.settings.copy(darkMode = option == strings.t("Sombre", "Dark"))
-                    )
-                }
+                checked = ui.settings.darkMode,
+                onCheckedChange = { enabled ->
+                    ui.updateSettings(ui.settings.copy(darkMode = enabled))
+                },
             )
         }
     }
@@ -83,6 +86,7 @@ fun LanguageSettingsPage(
     val ui = LocalAppUiController.current
     val strings = ui.settings
     val pageBg = if (ui.settings.darkMode) Color(0xFF0B1220) else Color(0xFFE8EEF7)
+    val isEnglish = ui.settings.language == AppLanguage.English
 
     Column(
         modifier
@@ -108,19 +112,55 @@ fun LanguageSettingsPage(
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 18.sp
             )
-            Spacer(Modifier.height(12.dp))
-            AuthChoiceChips(
-                label = strings.t("Langue", "Language"),
-                options = listOf("Francais", "English"),
-                selected = if (ui.settings.language == AppLanguage.French) "Francais" else "English",
-                onSelected = { option ->
+            Spacer(Modifier.height(14.dp))
+            SettingsSwitchRow(
+                title = "English",
+                subtitle = if (isEnglish) "On" else "Off / Francais",
+                checked = isEnglish,
+                onCheckedChange = { enabled ->
                     ui.updateSettings(
                         ui.settings.copy(
-                            language = if (option == "English") AppLanguage.English else AppLanguage.French
+                            language = if (enabled) AppLanguage.English else AppLanguage.French
                         )
                     )
-                }
+                },
             )
         }
+    }
+}
+
+@Composable
+private fun SettingsSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = title,
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+            )
+            Text(
+                text = subtitle,
+                color = AuthColors.TextSecondary,
+                fontSize = 12.sp,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = AuthColors.AccentBright,
+                checkedThumbColor = Color.White,
+            ),
+        )
     }
 }

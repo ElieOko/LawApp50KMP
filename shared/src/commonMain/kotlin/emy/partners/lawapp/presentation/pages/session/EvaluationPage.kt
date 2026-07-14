@@ -49,6 +49,8 @@ fun EvaluationPage(
     evaluations: List<EvaluationSession> = Constants.evaluations,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
+    canCreateEvaluations: Boolean = false,
+    createBlockedMessage: String? = null,
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     EvaluationBuild(
@@ -56,6 +58,8 @@ fun EvaluationPage(
         evaluations = evaluations,
         onEvaluationClick = onEvaluationClick,
         onCreateClick = onCreateClick,
+        canCreateEvaluations = canCreateEvaluations,
+        createBlockedMessage = createBlockedMessage,
         scrollVertical = scrollVertical,
     )
 }
@@ -66,6 +70,8 @@ fun EvaluationBuild(
     evaluations: List<EvaluationSession> = Constants.evaluations,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
+    canCreateEvaluations: Boolean = false,
+    createBlockedMessage: String? = null,
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     val ui = LocalAppUiController.current
@@ -87,6 +93,8 @@ fun EvaluationBuild(
             total = evaluations.size,
             completed = completedCount,
             inProgress = progressCount,
+            canCreateEvaluations = canCreateEvaluations,
+            createBlockedMessage = createBlockedMessage,
             onCreateClick = onCreateClick,
         )
         Spacer(Modifier.height(14.dp))
@@ -149,6 +157,8 @@ private fun EvaluationHero(
     total: Int,
     completed: Int,
     inProgress: Int,
+    canCreateEvaluations: Boolean,
+    createBlockedMessage: String?,
     onCreateClick: () -> Unit,
 ) {
     Column(
@@ -186,25 +196,35 @@ private fun EvaluationHero(
             EvaluationMetric("Faites", completed.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(14.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color.White)
-                .clickable(onClick = onCreateClick)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text("Creer une evaluation", color = BlueDark, fontWeight = FontWeight.ExtraBold)
-                Text(
-                    "Questions, compteur, dates et contenu",
-                    color = AuthColors.TextSecondary,
-                    fontSize = 12.sp,
-                )
+        if (canCreateEvaluations) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .clickable(onClick = onCreateClick)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text("Creer une evaluation", color = BlueDark, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        "Questions, compteur, dates et contenu",
+                        color = AuthColors.TextSecondary,
+                        fontSize = 12.sp,
+                    )
+                }
+                Text("+", color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
             }
-            Text("+", color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
+        } else if (!createBlockedMessage.isNullOrBlank()) {
+            Text(
+                text = createBlockedMessage,
+                color = Color.White.copy(alpha = 0.82f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier.clickable(onClick = onCreateClick),
+            )
         }
     }
 }

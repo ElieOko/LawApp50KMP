@@ -25,6 +25,7 @@ actual fun PlatformVideoPlayer(
     modifier: Modifier,
     isPlaying: Boolean,
     isLooping: Boolean,
+    showControls: Boolean,
 ) {
     val context = LocalContext.current
 
@@ -58,8 +59,16 @@ actual fun PlatformVideoPlayer(
         factory = {
             PlayerView(it).apply {
                 player = exoPlayer
-                useController = false
+                useController = showControls
+                setShowNextButton(false)
+                setShowPreviousButton(false)
+                setShowFastForwardButton(true)
+                setShowRewindButton(true)
             }
+        },
+        update = { view ->
+            view.useController = showControls
+            view.player = exoPlayer
         },
         modifier = modifier,
     )

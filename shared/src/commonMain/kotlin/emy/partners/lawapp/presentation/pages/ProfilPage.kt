@@ -44,6 +44,8 @@ import emy.partners.lawapp.data.remote.auth.AuthSession
 import emy.partners.lawapp.data.remote.auth.AuthUserProfile
 import emy.partners.lawapp.data.remote.auth.SelectableAccountDto
 import emy.partners.lawapp.data.remote.auth.UserRequestChange
+import emy.partners.lawapp.data.remote.student.NamedOption
+import emy.partners.lawapp.data.remote.student.StudentRepository
 import emy.partners.lawapp.presentation.components.basics.ProfilePhotoAvatar
 import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
 import emy.partners.lawapp.presentation.pages.auth.AuthChoiceChips
@@ -109,6 +111,16 @@ fun ProfilBuild(
     var isEditing by remember { mutableStateOf(false) }
     var popup by remember { mutableStateOf<ProfilePopup?>(null) }
 
+    var promotions by remember { mutableStateOf<List<NamedOption>>(emptyList()) }
+    var etablissements by remember { mutableStateOf<List<NamedOption>>(emptyList()) }
+    var selectedPromotionName by remember { mutableStateOf("") }
+    var selectedEtablissementName by remember { mutableStateOf("") }
+    var matricule by remember { mutableStateOf("") }
+    var studentGender by remember { mutableStateOf("Masculin") }
+    var studentProfileDone by remember(profile?.userId) {
+        mutableStateOf(StudentRepository.isStudentProfileCompleted(profile?.userId))
+    }
+
     var email by remember(profile?.email) { mutableStateOf(profile?.email.orEmpty()) }
     var pseudo by remember(profile?.username) { mutableStateOf(profile?.username?.trimStart('@').orEmpty()) }
     var phone by remember(profile?.phone) { mutableStateOf(profile?.phone.orEmpty()) }
@@ -140,6 +152,25 @@ fun ProfilBuild(
             }
             if (selectedAccountName.isBlank()) {
                 selectedAccountName = selectableAccounts.firstOrNull()?.displayLabel.orEmpty()
+            }
+        }
+    }
+
+    // Charge promotions / etablissements pour completer le profil etudiant.
+    LaunchedEffect(isLoggedIn, profile?.isStudent, studentProfileDone) {
+        if (!isLoggedIn || profile?.isStudent != true || studentProfileDone) return@LaunchedEffect
+        val promoResult = StudentRepository.loadPromotions()
+        val schoolResult = StudentRepository.loadEtablissements()
+        promoResult.onSuccess { list ->
+            promotions = list
+            if (selectedPromotionName.isBlank()) {
+                selectedPromotionName = list.firstOrNull()?.name.orEmpty()
+            }
+        }
+        schoolResult.onSuccess { list ->
+            etablissements = list
+            if (selectedEtablissementName.isBlank()) {
+                selectedEtablissementName = list.firstOrNull()?.name.orEmpty()
             }
         }
     }
@@ -394,6 +425,123 @@ fun ProfilBuild(
                     Spacer(Modifier.height(16.dp))
                 }
 
+                if (profile?.isStudent == true && !studentProfileDone) {
+                    AuthFormPanel {
+                        Text(
+                            text = strings.t("Completer le profil etudiant", "Complete student profile"),
+                            color = AuthColors.TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = strings.t(
+                                "Renseignez votre promotion et votre etablissement.",
+                                "Fill in your promotion and school."
+                            ),
+                            color = AuthColors.TextSecondary,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        if (promotions.isNotEmpty()) {
+                            Text(
+                                text = strings.t("Promotion *", "Promotion *"),
+                                color = AuthColors.TextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OptionChipGrid(
+                                options = promotions.map { it.name },
+                                selected = selectedPromotionName.ifBlank { promotions.first().name },
+                                onSelected = { selectedPromotionName = it },
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        if (etablissements.isNotEmpty()) {
+                            Text(
+                                text = strings.t("Etablissement", "School"),
+                                color = AuthColors.TextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OptionChipGrid(
+                                options = etablissements.map { it.name },
+                                selected = selectedEtablissementName,
+                                onSelected = { selectedEtablissementName = it },
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        AuthTextField(
+                            value = matricule,
+                            onValueChange = { matricule = it },
+                            label = strings.t("Matricule (optionnel)", "Student ID (optional)"),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        AuthChoiceChips(
+                            label = strings.t("Genre", "Gender"),
+                            options = listOf("Masculin", "Feminin"),
+                            selected = studentGender,
+                            onSelected = { studentGender = it },
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        AuthPrimaryButton(
+                            text = strings.t("Enregistrer mon profil etudiant", "Save student profile"),
+                            enabled = !isSaving && selectedPromotionName.isNotBlank(),
+                            onClick = {
+                                val promotion = promotions.firstOrNull {
+                                    it.name.equals(selectedPromotionName, ignoreCase = true)
+                                }
+                                if (promotion == null) {
+                                    popup = ProfilePopup(
+                                        title = strings.t("Promotion requise", "Promotion required"),
+                                        message = strings.t(
+                                            "Selectionnez une promotion avant d'enregistrer.",
+                                            "Select a promotion before saving."
+                                        ),
+                                    )
+                                    return@AuthPrimaryButton
+                                }
+                                val school = etablissements.firstOrNull {
+                                    it.name.equals(selectedEtablissementName, ignoreCase = true)
+                                }
+                                isSaving = true
+                                scope.launch {
+                                    val result = StudentRepository.completeStudentProfile(
+                                        promotionId = promotion.id,
+                                        etablissementId = school?.id,
+                                        matricule = matricule,
+                                        gender = studentGender,
+                                    )
+                                    isSaving = false
+                                    result.onSuccess {
+                                        studentProfileDone = true
+                                        popup = ProfilePopup(
+                                            title = strings.t("Profil etudiant", "Student profile"),
+                                            message = strings.t(
+                                                "Informations etudiant enregistrees.",
+                                                "Student information saved."
+                                            ),
+                                        )
+                                    }.onFailure { error ->
+                                        popup = ProfilePopup(
+                                            title = strings.t("Echec", "Failed"),
+                                            message = error.message
+                                                ?: strings.t(
+                                                    "Impossible d'enregistrer le profil etudiant.",
+                                                    "Unable to save student profile."
+                                                ),
+                                        )
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
+
                 AuthFormPanel {
                     Text(
                         text = strings.t("Parametres", "Settings"),
@@ -619,6 +767,44 @@ private fun ProfileBadge(
     ) {
         Text(label, color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
         Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    }
+}
+
+@Composable
+private fun OptionChipGrid(
+    options: List<String>,
+    selected: String,
+    onSelected: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.chunked(3).forEach { rowOptions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowOptions.forEach { option ->
+                    val isSelected = option.equals(selected, ignoreCase = true)
+                    Text(
+                        text = option,
+                        color = if (isSelected) Color.White else AuthColors.TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                if (isSelected) AuthColors.AccentBright else Color(0xFFF1F5F9)
+                            )
+                            .clickable { onSelected(option) }
+                            .padding(horizontal = 10.dp, vertical = 10.dp),
+                    )
+                }
+                repeat(3 - rowOptions.size) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
     }
 }
 

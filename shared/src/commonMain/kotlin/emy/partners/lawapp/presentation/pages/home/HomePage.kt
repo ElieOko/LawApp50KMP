@@ -305,9 +305,10 @@ private fun ContenuMedia(
         item.isVideo && item.hasMediaFile -> {
             PlatformVideoPlayer(
                 url = item.fileContent.orEmpty(),
-                modifier = liquidModifier.clickable(onClick = onMediaClick),
+                modifier = liquidModifier,
                 isPlaying = isActivePage,
                 isLooping = true,
+                showControls = true,
             )
         }
         item.hasMediaFile -> {

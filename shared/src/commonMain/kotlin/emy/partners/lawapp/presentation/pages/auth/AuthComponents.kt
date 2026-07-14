@@ -229,15 +229,37 @@ internal fun AuthPrimaryButton(
 }
 
 @Composable
-internal fun AuthErrorText(message: String?) {
-    if (message.isNullOrBlank()) return
-    Text(
-        text = message,
-        color = Color(0xFFB91C1C),
-        fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.fillMaxWidth()
-    )
+internal fun AuthRequiredPanel(
+    title: String,
+    message: String,
+    onLogin: () -> Unit,
+    modifier: Modifier = Modifier,
+    loginLabel: String = "Se connecter",
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AuthFormPanel {
+            Text(
+                text = title,
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.sp,
+            )
+            Spacer(modifier.height(8.dp))
+            Text(
+                text = message,
+                color = AuthColors.TextSecondary,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            )
+            Spacer(modifier.height(14.dp))
+            AuthPrimaryButton(text = loginLabel, onClick = onLogin)
+        }
+    }
 }
 
 @Composable

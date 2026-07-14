@@ -123,6 +123,15 @@ data class AuthUserProfile(
             "defined" -> "Defini"
             else -> accountName?.replaceFirstChar { it.uppercase() } ?: "—"
         }
+
+    val isStudent: Boolean
+        get() = accountName.equals("student", ignoreCase = true) ||
+            accountName.equals("etudiant", ignoreCase = true) ||
+            accountName.equals("étudiant", ignoreCase = true)
+
+    val isTeacher: Boolean
+        get() = accountName.equals("teacher", ignoreCase = true) ||
+            accountName.equals("enseignant", ignoreCase = true)
 }
 
 @Serializable
