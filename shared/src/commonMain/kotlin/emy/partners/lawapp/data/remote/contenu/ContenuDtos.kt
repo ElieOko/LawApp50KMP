@@ -136,7 +136,43 @@ data class ContenuFeedItem(
         get() = !fileContent.isNullOrBlank()
 }
 
+const val TEXT_TYPE_CONTENU_ID = 1L
+const val IMAGE_TYPE_CONTENU_ID = 2L
 const val VIDEO_TYPE_CONTENU_ID = 3L
+
+const val SCOPE_FREE_ID = 1L
+const val SCOPE_PREMIUM_ID = 2L
+
+data class CreateContenuPayload(
+    val userId: Long,
+    val typeContenuId: Long,
+    val title: String,
+    val description: String,
+    val scopeId: Long,
+    val fileName: String? = null,
+    val fileMimeType: String? = null,
+    val fileBytes: ByteArray? = null,
+)
+
+fun resolveTypeContenuId(mimeType: String?, fileName: String?): Long {
+    val mime = mimeType.orEmpty().lowercase()
+    val name = fileName.orEmpty().lowercase()
+    return when {
+        mime.startsWith("video/") ||
+            name.endsWith(".mp4") ||
+            name.endsWith(".mov") ||
+            name.endsWith(".webm") ||
+            name.endsWith(".mkv") ||
+            name.endsWith(".avi") -> VIDEO_TYPE_CONTENU_ID
+        mime.startsWith("image/") ||
+            name.endsWith(".png") ||
+            name.endsWith(".jpg") ||
+            name.endsWith(".jpeg") ||
+            name.endsWith(".webp") ||
+            name.endsWith(".gif") -> IMAGE_TYPE_CONTENU_ID
+        else -> TEXT_TYPE_CONTENU_ID
+    }
+}
 
 @Serializable
 data class ContenuCommentUi(

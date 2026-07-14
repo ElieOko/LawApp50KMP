@@ -7,11 +7,14 @@ import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.createHttpClient
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -36,6 +39,51 @@ class ContenuApi(
                 throw ContenuApiException(extractMessage(bodyText) ?: "Chargement des contenus impossible")
             }
             json.decodeFromString(ContenuListResponse.serializer(), bodyText).contenu
+        }
+    }
+
+    suspend fun createContenu(payload: CreateContenuPayload): Result<Unit> {
+        return runCatching {
+            val response = client.post {
+                url.takeFrom("${ApiConfig.BASE_URL}/api/v1/public/contenu")
+                // defaultRequest force application/json ; multipart doit poser sa propre boundary.
+                headers.remove(HttpHeaders.ContentType)
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("userId", payload.userId.toString())
+                            append("typeContenuId", payload.typeContenuId.toString())
+                            append("title", payload.title)
+                            append("description", payload.description)
+                            append("scope", payload.scopeId.toString())
+                            val bytes = payload.fileBytes
+                            if (bytes != null && bytes.isNotEmpty()) {
+                                val mime = payload.fileMimeType
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: "application/octet-stream"
+                                val fileName = payload.fileName?.takeIf { it.isNotBlank() } ?: "media.bin"
+                                append(
+                                    key = "fileContent",
+                                    value = bytes,
+                                    headers = Headers.build {
+                                        append(HttpHeaders.ContentType, mime)
+                                        append(
+                                            HttpHeaders.ContentDisposition,
+                                            "form-data; name=\"fileContent\"; filename=\"$fileName\""
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    )
+                )
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw ContenuApiException(
+                    extractMessage(bodyText) ?: "Publication impossible (${response.status.value})"
+                )
+            }
         }
     }
 
@@ -117,6 +165,38 @@ object ContenuRepository {
     }
 
     suspend fun refreshHomeFeed(): Result<List<ContenuFeedItem>> = loadHomeFeed(forceRefresh = true)
+
+    suspend fun publishContenu(
+        title: String,
+        description: String,
+        scopeId: Long,
+        fileName: String? = null,
+        fileMimeType: String? = null,
+        fileUri: String? = null,
+    ): Result<Unit> {
+        val userId = AuthRepository.currentSession?.profile?.userId
+            ?: return Result.failure(ContenuApiException("Connectez-vous pour publier un contenu."))
+        val typeContenuId = resolveTypeContenuId(fileMimeType, fileName)
+        val fileBytes = fileUri?.let { readUriBytes(it) }
+        if (!fileUri.isNullOrBlank() && fileBytes == null) {
+            return Result.failure(ContenuApiException("Impossible de lire le fichier sélectionné."))
+        }
+        return api.createContenu(
+            CreateContenuPayload(
+                userId = userId,
+                typeContenuId = typeContenuId,
+                title = title.trim(),
+                description = description.trim(),
+                scopeId = scopeId,
+                fileName = fileName,
+                fileMimeType = fileMimeType,
+                fileBytes = fileBytes,
+            )
+        ).onSuccess {
+            memoryCache = null
+            refreshHomeFeed()
+        }
+    }
 
     /**
      * Toggle like locally (and sync like to API when turning on).
