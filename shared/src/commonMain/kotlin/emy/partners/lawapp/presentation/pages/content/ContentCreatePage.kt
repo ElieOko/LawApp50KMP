@@ -1,6 +1,5 @@
 package emy.partners.lawapp.presentation.pages.content
 
-import VideoPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,6 +37,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import emy.partners.lawapp.PlatformVideoPlayer
 import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.contenu.ContenuRepository
 import emy.partners.lawapp.data.remote.contenu.IMAGE_TYPE_CONTENU_ID
@@ -378,14 +378,14 @@ private fun PublishMultilineField(
 private fun MediaPreview(file: PickedFile) {
     when {
         file.isVideoLike() -> {
-            VideoPlayer(
+            PlatformVideoPlayer(
+                url = file.uri,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp)
                     .clip(RoundedCornerShape(18.dp)),
-                url = file.uri,
-                autoPlay = false,
-                showControls = true,
+                isPlaying = true,
+                isLooping = true,
             )
         }
         file.isImageLike() -> {
