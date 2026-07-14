@@ -100,6 +100,34 @@ class ContenuApi(
         }
     }
 
+    suspend fun createCommentaire(
+        contenuId: Long,
+        userId: Long,
+        description: String,
+        accessToken: String,
+    ): Result<Unit> {
+        return runCatching {
+            val response = client.post {
+                url.takeFrom("${ApiConfig.BASE_URL}/api/v1/private/commentaire")
+                withBearerToken(accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(
+                    CreateCommentaireRequest(
+                        contenuId = contenuId,
+                        userId = userId,
+                        description = description,
+                    )
+                )
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw ContenuApiException(
+                    extractMessage(bodyText) ?: "Commentaire impossible (${response.status.value})"
+                )
+            }
+        }
+    }
+
     private fun extractMessage(bodyText: String): String? {
         if (bodyText.isBlank()) return null
         return runCatching {
@@ -241,6 +269,54 @@ object ContenuRepository {
             }
         }
         return Result.success(current)
+    }
+
+    suspend fun addComment(contenuId: Long, description: String): Result<List<ContenuFeedItem>> {
+        val text = description.trim()
+        if (text.isBlank()) {
+            return Result.failure(ContenuApiException("Ecrivez un commentaire avant d'envoyer."))
+        }
+        val session = AuthRepository.currentSession
+        val userId = session?.profile?.userId
+        val token = session?.accessToken
+        if (session == null || userId == null || token.isNullOrBlank()) {
+            return Result.failure(ContenuApiException("Connectez-vous pour commenter."))
+        }
+
+        val apiResult = api.createCommentaire(
+            contenuId = contenuId,
+            userId = userId,
+            description = text,
+            accessToken = token,
+        )
+        if (apiResult.isFailure) {
+            return Result.failure(
+                apiResult.exceptionOrNull() ?: ContenuApiException("Commentaire impossible")
+            )
+        }
+
+        val authorName = session.profile?.displayName ?: "Moi"
+
+        val current = cachedFeed().toMutableList()
+        val index = current.indexOfFirst { it.id == contenuId }
+        if (index >= 0) {
+            val item = current[index]
+            val localComment = ContenuCommentUi(
+                id = -kotlin.random.Random.nextLong(1, Long.MAX_VALUE),
+                text = text,
+                authorName = authorName,
+            )
+            current[index] = item.copy(
+                comments = item.comments + localComment,
+                commentCount = item.commentCount + 1,
+            )
+            memoryCache = current
+            persistFeedCache(current)
+            return Result.success(current)
+        }
+
+        // Contenu absent du cache : rafraichir le feed.
+        return refreshHomeFeed()
     }
 
     private fun applyLocalLikes(items: List<ContenuFeedItem>): List<ContenuFeedItem> {

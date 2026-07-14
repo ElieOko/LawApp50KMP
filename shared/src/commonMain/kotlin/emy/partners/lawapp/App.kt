@@ -615,40 +615,43 @@ fun App() {
                     //            contentWindowInsets = WindowInsets(0),
                     bottomBar = {
                         if (showsAppChrome) {
-                            // Blanc glace uniforme : pas d'image / liquid en transparence.
-                            BottomAppBar(
-                                containerColor = Color.White.copy(alpha = 0.92f),
+                            Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                                    .background(Color.White.copy(alpha = 0.92f)),
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .liquid(liquidState)
+                                    .background(Color.White.copy(alpha = 0.5f))
                             ) {
-                                topLevelDestinations.forEach { destination ->
-                                    NavigationBarItem(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = Color.White.copy(alpha = 0.65f),
-                                            selectedTextColor = Color(0xFf2563EB),
-                                            selectedIconColor = Color(0xFf2563EB),
-                                            unselectedIconColor = Color.Black.copy(0.6f),
-                                            unselectedTextColor = Color.Black.copy(0.6f),
-                                        ),
-                                        selected = destination.kind == selectedTopLevel,
-                                        onClick = { navigator.replaceAll(destination.createScreen()) },
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(destination.icon),
-                                                null,
-                                                modifier = Modifier.size(28.dp),
-                                            )
-                                        },
-                                        label = {
-                                            Text(
-                                                destination.name,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                            )
-                                        }
-                                    )
+                                BottomAppBar(
+                                    containerColor = Color.Transparent,
+                                ) {
+                                    topLevelDestinations.forEach { destination ->
+                                        NavigationBarItem(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                indicatorColor = Color.White.copy(alpha = 0.65f),
+                                                selectedTextColor = Color(0xFf2563EB),
+                                                selectedIconColor = Color(0xFf2563EB),
+                                                unselectedIconColor = Color.Black.copy(0.6f),
+                                                unselectedTextColor = Color.Black.copy(0.6f),
+                                            ),
+                                            selected = destination.kind == selectedTopLevel,
+                                            onClick = { navigator.replaceAll(destination.createScreen()) },
+                                            icon = {
+                                                Icon(
+                                                    painter = painterResource(destination.icon),
+                                                    null,
+                                                    modifier = Modifier.size(28.dp),
+                                                )
+                                            },
+                                            label = {
+                                                Text(
+                                                    destination.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                )
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

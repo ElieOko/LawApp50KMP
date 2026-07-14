@@ -115,6 +115,13 @@ data class LikeContenuRequest(
 )
 
 @Serializable
+data class CreateCommentaireRequest(
+    val contenuId: Long,
+    val userId: Long,
+    val description: String,
+)
+
+@Serializable
 data class ContenuFeedItem(
     val id: Long,
     val title: String,

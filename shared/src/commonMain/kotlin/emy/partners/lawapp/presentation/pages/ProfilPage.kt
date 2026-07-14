@@ -473,6 +473,7 @@ fun ProfilBuild(
                                 options = etablissements.map { it.name },
                                 selected = selectedEtablissementName,
                                 onSelected = { selectedEtablissementName = it },
+                                collapsedLimit = 5,
                             )
                             Spacer(Modifier.height(12.dp))
                         }
@@ -785,25 +786,52 @@ private fun OptionChipGrid(
     options: List<String>,
     selected: String,
     onSelected: (String) -> Unit,
+    collapsedLimit: Int? = null,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        options.forEach { option ->
-            val isSelected = option.equals(selected, ignoreCase = true)
+    var expanded by remember(options) { mutableStateOf(false) }
+    val limit = collapsedLimit?.takeIf { it > 0 }
+    val visibleOptions = if (limit != null && !expanded && options.size > limit) {
+        options.take(limit)
+    } else {
+        options
+    }
+    val canToggle = limit != null && options.size > limit
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            visibleOptions.forEach { option ->
+                val isSelected = option.equals(selected, ignoreCase = true)
+                Text(
+                    text = option,
+                    color = if (isSelected) Color.White else AuthColors.TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            if (isSelected) AuthColors.AccentBright else Color(0xFFF1F5F9)
+                        )
+                        .clickable { onSelected(option) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+            }
+        }
+        if (canToggle) {
             Text(
-                text = option,
-                color = if (isSelected) Color.White else AuthColors.TextPrimary,
+                text = if (expanded) {
+                    "Voir moins"
+                } else {
+                    "Voir plus (${options.size - (limit ?: 0)})"
+                },
+                color = AuthColors.AccentBright,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (isSelected) AuthColors.AccentBright else Color(0xFFF1F5F9)
-                    )
-                    .clickable { onSelected(option) }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 2.dp),
             )
         }
     }
