@@ -190,6 +190,7 @@ data class ContenuCommentUi(
 
 @Serializable
 data class ContenuFeedCache(
+    val likedForUserId: Long? = null,
     val items: List<ContenuFeedItem> = emptyList(),
 )
 
@@ -201,6 +202,7 @@ data class LocalLikeEntry(
 
 @Serializable
 data class LocalLikesStore(
+    val userId: Long? = null,
     val likes: List<LocalLikeEntry> = emptyList(),
 )
 

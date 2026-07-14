@@ -545,6 +545,7 @@ object AuthRepository {
         currentSession = null
         store.remove(KEY_SESSION)
         store.remove(KEY_PROFILE)
+        emy.partners.lawapp.data.remote.contenu.ContenuRepository.onAuthUserChanged()
     }
 
     private fun applySelectedAccount(
@@ -562,6 +563,7 @@ object AuthRepository {
     }
 
     private fun persistSession(session: AuthSession) {
+        val previousUserId = currentSession?.profile?.userId
         val previous = loadProfileOnly()?.takeIf { saved ->
             val email = session.profile?.email
             val userId = session.profile?.userId
@@ -587,6 +589,9 @@ object AuthRepository {
         currentSession = toStore
         store.putString(KEY_SESSION, json.encodeToString(AuthSession.serializer(), toStore))
         mergedProfile?.let { persistProfileOnly(it) }
+        if (previousUserId != toStore.profile?.userId) {
+            emy.partners.lawapp.data.remote.contenu.ContenuRepository.onAuthUserChanged()
+        }
     }
 
     private fun persistProfileOnly(profile: AuthUserProfile) {

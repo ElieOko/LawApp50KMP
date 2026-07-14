@@ -92,10 +92,18 @@ fun HomeBuild(
     val scope = rememberCoroutineScope()
     val authActions = LocalAuthActions.current
     val isLoggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+    val currentUserId = AuthRepository.currentSession?.profile?.userId
     var isSubmittingComment by remember { mutableStateOf(false) }
     var commentError by remember { mutableStateOf<String?>(null) }
     val liquidState = rememberLiquidState()
     val pullState = rememberPullToRefreshState()
+
+    // Recalcule les likes affiches quand le profil connecte change.
+    LaunchedEffect(currentUserId) {
+        ContenuRepository.onAuthUserChanged()
+        feed = ContenuRepository.cachedFeed()
+        localLikeOverrides = emptyMap()
+    }
 
     val displayFeed = remember(feed, localLikeOverrides) {
         buildDisplayFeed(feed, localLikeOverrides)
@@ -222,12 +230,16 @@ fun HomeBuild(
                                         ),
                                         liked = item.likedByMe,
                                         onLikeClick = {
-                                            scope.launch {
-                                                if (isRemote) {
-                                                    ContenuRepository.toggleLike(item.id)
-                                                        .onSuccess { updated -> feed = updated }
-                                                } else {
-                                                    localLikeOverrides = toggleLocalLike(localLikeOverrides, item)
+                                            if (!isLoggedIn) {
+                                                authActions.openLogin()
+                                            } else {
+                                                scope.launch {
+                                                    if (isRemote) {
+                                                        ContenuRepository.toggleLike(item.id)
+                                                            .onSuccess { updated -> feed = updated }
+                                                    } else {
+                                                        localLikeOverrides = toggleLocalLike(localLikeOverrides, item)
+                                                    }
                                                 }
                                             }
                                         },

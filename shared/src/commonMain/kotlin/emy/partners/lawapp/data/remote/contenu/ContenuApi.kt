@@ -147,7 +147,8 @@ class ContenuApiException(message: String) : Exception(message)
 
 object ContenuRepository {
     private const val KEY_FEED_CACHE = "lawapp_contenu_feed_cache"
-    private const val KEY_LOCAL_LIKES = "lawapp_contenu_local_likes"
+    private const val KEY_LOCAL_LIKES_PREFIX = "lawapp_contenu_local_likes_u"
+    private const val KEY_LOCAL_LIKES_LEGACY = "lawapp_contenu_local_likes"
 
     private val api = ContenuApi()
     private val json = Json {
@@ -158,15 +159,43 @@ object ContenuRepository {
     private val store: LocalStore by lazy { createLocalStore() }
 
     private var memoryCache: List<ContenuFeedItem>? = null
+    private var memoryLikedForUserId: Long? = null
 
     /** Contenu actuellement affiché sur Home — conservé entre les navigations d'onglets. */
     private var lastViewedContenuId: Long? = null
 
+    private fun currentUserId(): Long? = AuthRepository.currentSession?.profile?.userId
+
+    private fun likesStorageKey(userId: Long): String = KEY_LOCAL_LIKES_PREFIX + userId
+
     fun cachedFeed(): List<ContenuFeedItem> {
-        memoryCache?.let { return it }
+        val userId = currentUserId()
+        memoryCache?.let { cached ->
+            if (memoryLikedForUserId == userId) return cached
+            val reconciled = reconcileLikesForCurrentUser(cached)
+            memoryCache = reconciled
+            memoryLikedForUserId = userId
+            persistFeedCache(reconciled)
+            return reconciled
+        }
         val disk = loadFeedCache()
         memoryCache = disk
+        memoryLikedForUserId = userId
         return disk
+    }
+
+    /** Appele apres login/logout pour recalculer likedByMe selon le profil. */
+    fun onAuthUserChanged() {
+        val current = memoryCache ?: loadFeedCache()
+        if (current.isEmpty()) {
+            memoryCache = null
+            memoryLikedForUserId = currentUserId()
+            return
+        }
+        val reconciled = reconcileLikesForCurrentUser(current)
+        memoryCache = reconciled
+        memoryLikedForUserId = currentUserId()
+        persistFeedCache(reconciled)
     }
 
     fun lastViewedContenuId(): Long? = lastViewedContenuId
@@ -192,9 +221,10 @@ object ContenuRepository {
         return api.getPublicContenus().map { items ->
             val mapped = items.mapNotNull { it.toFeedItem(currentUserId) }
                 .sortedByDescending { it.createdAt.orEmpty() }
-                .let(::applyLocalLikes)
+                .let { applyLocalLikes(it, currentUserId) }
             persistFeedCache(mapped)
             memoryCache = mapped
+            memoryLikedForUserId = currentUserId
             mapped
         }
     }
@@ -237,10 +267,17 @@ object ContenuRepository {
     }
 
     /**
-     * Toggle like locally (and sync like to API when turning on).
-     * Unlike is kept locally attached to the contenu.
+     * Toggle like for the connected profile only (local state keyed by userId).
+     * Syncs like to API when turning on.
      */
     suspend fun toggleLike(contenuId: Long): Result<List<ContenuFeedItem>> {
+        val session = AuthRepository.currentSession
+        val userId = session?.profile?.userId
+        val token = session?.accessToken
+        if (session == null || userId == null || token.isNullOrBlank()) {
+            return Result.failure(ContenuApiException("Connectez-vous pour liker un contenu."))
+        }
+
         val current = cachedFeed().toMutableList()
         val index = current.indexOfFirst { it.id == contenuId }
         if (index < 0) {
@@ -254,18 +291,14 @@ object ContenuRepository {
             (item.likeCount - 1).coerceAtLeast(0)
         }
         current[index] = item.copy(likedByMe = nextLiked, likeCount = nextCount)
-        persistLocalLike(contenuId, nextLiked)
+        persistLocalLike(userId, contenuId, nextLiked)
         memoryCache = current
+        memoryLikedForUserId = userId
         persistFeedCache(current)
 
         if (nextLiked) {
-            val session = AuthRepository.currentSession
-            val userId = session?.profile?.userId
-            val token = session?.accessToken
-            if (session != null && userId != null && !token.isNullOrBlank()) {
-                api.likeContenu(contenuId, userId, token).onFailure {
-                    // Keep local like anyway; UI already updated.
-                }
+            api.likeContenu(contenuId, userId, token).onFailure {
+                // Keep local like for this profile; UI already updated.
             }
         }
         return Result.success(current)
@@ -319,8 +352,23 @@ object ContenuRepository {
         return refreshHomeFeed()
     }
 
-    private fun applyLocalLikes(items: List<ContenuFeedItem>): List<ContenuFeedItem> {
-        val local = loadLocalLikes()
+    private fun reconcileLikesForCurrentUser(items: List<ContenuFeedItem>): List<ContenuFeedItem> {
+        val userId = currentUserId()
+        // Autre profil / deconnecte : ne pas reutiliser le likedByMe precedent.
+        val base = items.map { item ->
+            if (item.likedByMe) item.copy(likedByMe = false) else item
+        }
+        return applyLocalLikes(base, userId)
+    }
+
+    private fun applyLocalLikes(
+        items: List<ContenuFeedItem>,
+        userId: Long? = currentUserId(),
+    ): List<ContenuFeedItem> {
+        if (userId == null) {
+            return items.map { if (it.likedByMe) it.copy(likedByMe = false) else it }
+        }
+        val local = loadLocalLikes(userId)
         if (local.isEmpty()) return items
         return items.map { item ->
             val liked = local[item.id] ?: return@map item
@@ -334,35 +382,76 @@ object ContenuRepository {
         }
     }
 
-    private fun persistLocalLike(contenuId: Long, liked: Boolean) {
-        val map = loadLocalLikes().toMutableMap()
+    private fun persistLocalLike(userId: Long, contenuId: Long, liked: Boolean) {
+        val map = loadLocalLikes(userId).toMutableMap()
         map[contenuId] = liked
-        val payload = LocalLikesStore(likes = map.map { LocalLikeEntry(it.key, it.value) })
-        store.putString(KEY_LOCAL_LIKES, json.encodeToString(LocalLikesStore.serializer(), payload))
+        val payload = LocalLikesStore(
+            userId = userId,
+            likes = map.map { LocalLikeEntry(it.key, it.value) },
+        )
+        store.putString(
+            likesStorageKey(userId),
+            json.encodeToString(LocalLikesStore.serializer(), payload),
+        )
     }
 
-    private fun loadLocalLikes(): Map<Long, Boolean> {
-        val raw = store.getString(KEY_LOCAL_LIKES) ?: return emptyMap()
+    private fun loadLocalLikes(userId: Long): Map<Long, Boolean> {
+        val raw = store.getString(likesStorageKey(userId))
+        if (raw != null) {
+            return runCatching {
+                json.decodeFromString(LocalLikesStore.serializer(), raw)
+                    .likes
+                    .associate { it.contenuId to it.liked }
+            }.getOrDefault(emptyMap())
+        }
+        // Migration one-shot depuis l'ancien store global.
+        val legacy = store.getString(KEY_LOCAL_LIKES_LEGACY) ?: return emptyMap()
         return runCatching {
-            json.decodeFromString(LocalLikesStore.serializer(), raw)
-                .likes
-                .associate { it.contenuId to it.liked }
+            val parsed = json.decodeFromString(LocalLikesStore.serializer(), legacy)
+            val likes = parsed.likes.associate { it.contenuId to it.liked }
+            if (likes.isNotEmpty()) {
+                persistLocalLikeEntries(userId, likes)
+                store.remove(KEY_LOCAL_LIKES_LEGACY)
+            }
+            likes
         }.getOrDefault(emptyMap())
+    }
+
+    private fun persistLocalLikeEntries(userId: Long, likes: Map<Long, Boolean>) {
+        val payload = LocalLikesStore(
+            userId = userId,
+            likes = likes.map { LocalLikeEntry(it.key, it.value) },
+        )
+        store.putString(
+            likesStorageKey(userId),
+            json.encodeToString(LocalLikesStore.serializer(), payload),
+        )
     }
 
     private fun persistFeedCache(items: List<ContenuFeedItem>) {
         store.putString(
             KEY_FEED_CACHE,
-            json.encodeToString(ContenuFeedCache.serializer(), ContenuFeedCache(items))
+            json.encodeToString(
+                ContenuFeedCache.serializer(),
+                ContenuFeedCache(
+                    likedForUserId = currentUserId(),
+                    items = items,
+                ),
+            ),
         )
     }
 
     private fun loadFeedCache(): List<ContenuFeedItem> {
         val raw = store.getString(KEY_FEED_CACHE) ?: return emptyList()
         return runCatching {
-            json.decodeFromString(ContenuFeedCache.serializer(), raw).items
-                .sortedByDescending { it.createdAt.orEmpty() }
-                .let(::applyLocalLikes)
+            val cache = json.decodeFromString(ContenuFeedCache.serializer(), raw)
+            val userId = currentUserId()
+            val sorted = cache.items.sortedByDescending { it.createdAt.orEmpty() }
+            if (cache.likedForUserId != userId) {
+                reconcileLikesForCurrentUser(sorted)
+            } else {
+                applyLocalLikes(sorted, userId)
+            }
         }.getOrDefault(emptyList())
     }
 }
