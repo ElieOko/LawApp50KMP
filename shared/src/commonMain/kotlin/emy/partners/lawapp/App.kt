@@ -66,6 +66,8 @@ import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
+import emy.partners.lawapp.presentation.pages.settings.LanguageSettingsPage
+import emy.partners.lawapp.presentation.pages.settings.ThemeSettingsPage
 import emy.partners.lawapp.presentation.settings.AppUiController
 import emy.partners.lawapp.presentation.settings.LocalAppUiController
 import emy.partners.lawapp.presentation.themes.BlueDark
@@ -312,6 +314,7 @@ private class ProfileScreen : UniqueLawAppScreen() {
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
         val authActions = LocalAuthActions.current
+        val navigator = LocalNavigator.currentOrThrow
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ProfilPage(
@@ -319,7 +322,35 @@ private class ProfileScreen : UniqueLawAppScreen() {
             scrollVertical = scrollVertical,
             session = AuthRepository.currentSession,
             onConnectClick = authActions.openLogin,
+            onOpenThemeSettings = { navigator.push(ThemeSettingsScreen()) },
+            onOpenLanguageSettings = { navigator.push(LanguageSettingsScreen()) },
         )
+    }
+}
+
+private class ThemeSettingsScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
+    override val pageStateKey: String = "settings/theme"
+    override val showsAppChrome: Boolean = false
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        ThemeSettingsPage(onBack = { navigator.pop() })
+    }
+}
+
+private class LanguageSettingsScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Profile
+    override val pageStateKey: String = "settings/language"
+    override val showsAppChrome: Boolean = false
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        LanguageSettingsPage(onBack = { navigator.pop() })
     }
 }
 
