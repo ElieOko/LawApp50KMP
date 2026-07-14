@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -513,7 +515,14 @@ fun ProfilBuild(
                                         promotionId = promotion.id,
                                         etablissementId = school?.id,
                                         matricule = matricule,
-                                        gender = studentGender,
+                                        gender = when {
+                                            studentGender.equals("Masculin", ignoreCase = true) ||
+                                                studentGender.equals("M", ignoreCase = true) -> "M"
+                                            studentGender.equals("Feminin", ignoreCase = true) ||
+                                                studentGender.equals("Féminin", ignoreCase = true) ||
+                                                studentGender.equals("F", ignoreCase = true) -> "F"
+                                            else -> studentGender.take(1).uppercase()
+                                        },
                                     )
                                     isSaving = false
                                     result.onSuccess {
@@ -770,40 +779,32 @@ private fun ProfileBadge(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OptionChipGrid(
     options: List<String>,
     selected: String,
     onSelected: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.chunked(3).forEach { rowOptions ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowOptions.forEach { option ->
-                    val isSelected = option.equals(selected, ignoreCase = true)
-                    Text(
-                        text = option,
-                        color = if (isSelected) Color.White else AuthColors.TextPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        maxLines = 2,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (isSelected) AuthColors.AccentBright else Color(0xFFF1F5F9)
-                            )
-                            .clickable { onSelected(option) }
-                            .padding(horizontal = 10.dp, vertical = 10.dp),
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { option ->
+            val isSelected = option.equals(selected, ignoreCase = true)
+            Text(
+                text = option,
+                color = if (isSelected) Color.White else AuthColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        if (isSelected) AuthColors.AccentBright else Color(0xFFF1F5F9)
                     )
-                }
-                repeat(3 - rowOptions.size) {
-                    Spacer(Modifier.weight(1f))
-                }
-            }
+                    .clickable { onSelected(option) }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            )
         }
     }
 }

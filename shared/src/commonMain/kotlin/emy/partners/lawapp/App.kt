@@ -497,27 +497,35 @@ private fun EvaluationRootContent(pageStateKey: String) {
     val isLoggedIn = !session?.accessToken.isNullOrBlank()
     val isTeacher = session?.profile?.isTeacher == true
     val canCreate = isLoggedIn && isTeacher
-    val blockedMessage = when {
-        !isLoggedIn -> "Connectez-vous avec un compte enseignant pour creer une evaluation."
-        !isTeacher -> "Seuls les enseignants peuvent creer des evaluations."
-        else -> null
+    val blockedMessage = if (isLoggedIn && !isTeacher) {
+        "Seuls les enseignants peuvent creer des evaluations."
+    } else {
+        null
     }
 
-    EvaluationPage(
-        evaluations = context.evaluations,
-        modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-        onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
-        onCreateClick = {
-            when {
-                !isLoggedIn -> authActions.openLogin()
-                !isTeacher -> Unit
-                else -> navigator.push(EvaluationCreateScreen())
-            }
-        },
-        canCreateEvaluations = canCreate,
-        createBlockedMessage = blockedMessage,
-        scrollVertical = scrollVertical,
-    )
+    if (!isLoggedIn) {
+        AuthRequiredPanel(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = context.contentPadding.calculateTopPadding())
+                .padding(horizontal = 14.dp),
+            title = "Evaluations reservees aux membres",
+            message = "Connectez-vous pour consulter et gerer vos evaluations juridiques.",
+            onLogin = authActions.openLogin,
+        )
+    } else {
+        EvaluationPage(
+            evaluations = context.evaluations,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
+            onCreateClick = {
+                if (isTeacher) navigator.push(EvaluationCreateScreen())
+            },
+            canCreateEvaluations = canCreate,
+            createBlockedMessage = blockedMessage,
+            scrollVertical = scrollVertical,
+        )
+    }
 }
 
 @Composable

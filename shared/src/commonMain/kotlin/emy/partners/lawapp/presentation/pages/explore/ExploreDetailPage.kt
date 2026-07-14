@@ -1,9 +1,7 @@
 package emy.partners.lawapp.presentation.pages.explore
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -47,7 +44,7 @@ fun ExploreDetailPage(
     blog: Blog,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    scrollVertical: ScrollState =  rememberScrollState()
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     ExploreDetailBuild(
         blog = blog,
@@ -62,7 +59,7 @@ fun ExploreDetailBuild(
     blog: Blog,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    scrollVertical: ScrollState =  rememberScrollState()
+    scrollVertical: ScrollState = rememberScrollState()
 ) {
     val liquidState = rememberLiquidState()
     Column(
@@ -92,11 +89,8 @@ fun ExploreDetailBuild(
                     .height(330.dp)
                     .clip(RoundedCornerShape(34.dp))
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalPlatformContext.current)
-                        .data(blog.background)
-                        .size(1000)
-                        .build(),
+                Image(
+                    painter = painterResource(blog.background),
                     contentDescription = blog.title,
                     contentScale = ContentScale.Crop,
                     colorFilter = ColorFilter.colorMatrix(
@@ -178,14 +172,6 @@ fun ExploreDetailBuild(
                     ExploreDetailMetric("Theme", blog.type, Modifier.weight(1f))
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            Text("Ce que tu vas retenir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
-            Spacer(Modifier.height(10.dp))
-            KeyPoint("Les notions essentielles expliquees sans jargon.")
-            Spacer(Modifier.height(8.dp))
-            KeyPoint("Des exemples applicables a la vie quotidienne.")
-            Spacer(Modifier.height(8.dp))
-            KeyPoint("Une synthese rapide pour preparer tes evaluations.")
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {},
@@ -211,27 +197,6 @@ private fun ExploreDetailMetric(label: String, value: String, modifier: Modifier
     ) {
         Text(value, color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
         Text(label, color = Color.Black.copy(alpha = 0.46f), fontSize = 11.sp)
-    }
-}
-
-@Composable
-private fun KeyPoint(text: String) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.16f))
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier
-                .size(9.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White)
-        )
-        Spacer(Modifier.size(12.dp))
-        Text(text, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
