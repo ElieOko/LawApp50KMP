@@ -386,6 +386,7 @@ private fun MediaPreview(file: PickedFile) {
                     .clip(RoundedCornerShape(18.dp)),
                 isPlaying = true,
                 isLooping = true,
+                showControls = true,
             )
         }
         file.isImageLike() -> {

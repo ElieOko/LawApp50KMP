@@ -94,7 +94,12 @@ fun RegisterBuild(
         AuthFormPanel {
             GoogleSignInButton(
                 text = "S'inscrire avec Google",
-                onClick = onGoogleClick
+                onClick = {
+                    popup = RegisterPopup(
+                        title = "Google",
+                        message = "Inscription Google pas encore disponible.",
+                    )
+                }
             )
             Spacer(Modifier.height(14.dp))
             AuthOrDivider()

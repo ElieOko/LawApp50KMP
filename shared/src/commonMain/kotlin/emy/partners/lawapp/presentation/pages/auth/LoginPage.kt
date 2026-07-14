@@ -93,7 +93,12 @@ fun LoginBuild(
         AuthFormPanel {
             GoogleSignInButton(
                 text = "Continuer avec Google",
-                onClick = onGoogleClick
+                onClick = {
+                    popup = AuthPopup(
+                        title = "Google",
+                        message = "Connexion Google pas encore disponible.",
+                    )
+                }
             )
             Spacer(Modifier.height(14.dp))
             AuthOrDivider()
