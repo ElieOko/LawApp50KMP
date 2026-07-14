@@ -204,10 +204,8 @@ object ContenuRepository {
                 fileMimeType = fileMimeType,
                 fileBytes = fileBytes,
             )
-        ).onSuccess {
-            memoryCache = null
-            refreshHomeFeed()
-        }
+        )
+        // Pas de refresh auto : le feed Home se met a jour via pull-to-refresh.
     }
 
     /**

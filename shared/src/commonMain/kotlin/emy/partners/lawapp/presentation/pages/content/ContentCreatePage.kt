@@ -164,7 +164,7 @@ fun ContentCreatePage(
             .background(pageBg)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 14.dp)
-            .padding(top = 8.dp, bottom = 90.dp)
+            .padding(top = 12.dp, bottom = 28.dp)
     ) {
         AuthBrandHeader(
             title = "Publier un contenu",
@@ -328,7 +328,7 @@ fun ContentCreatePage(
                         ).onSuccess {
                             popup = PublishPopup(
                                 title = "Publie",
-                                message = "Votre contenu a ete envoye avec succes.",
+                                message = "Contenu envoye. Faites un pull-to-refresh sur Home pour le voir dans le fil.",
                                 success = true,
                             )
                         }.onFailure { error ->

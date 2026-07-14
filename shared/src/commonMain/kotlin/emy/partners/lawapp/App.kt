@@ -182,21 +182,20 @@ private data class ContentCreateScreen(
             TopLevelDestinationKind.Explore
         }
     override val pageStateKey: String = "content/create/${initialDestination.name.lowercase()}"
+    // Page individuelle : pas de topbar / bottombar / fond justice.
+    override val showsAppChrome: Boolean = false
 
     @Composable
     override fun Content() {
-        val context = LocalLawAppNavigationContext.current
         val navigator = LocalNavigator.currentOrThrow
         rememberPageScrollState(pageStateKey, topLevelDestinationKind)
 
         ContentCreatePage(
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            modifier = Modifier.fillMaxSize(),
             initialDestination = initialDestination,
             onBack = { navigator.pop() },
             onPublish = { draft ->
-                context.state.createdContents.add(
-                    draft.toContent(index = context.state.createdContents.size)
-                )
+                // Pas d'ajout local : le contenu apparait sur Home apres pull-to-refresh.
                 navigator.replaceAll(
                     if (draft.destination == ContentDestination.Home) HomeScreen() else ExploreScreen()
                 )
