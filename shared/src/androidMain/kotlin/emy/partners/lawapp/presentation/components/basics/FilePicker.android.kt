@@ -34,6 +34,7 @@ actual fun rememberFilePickerLauncher(
             launcher.launch(
                 arrayOf(
                     "image/*",
+                    "video/*",
                     "application/pdf",
                     "text/*",
                     "*/*"
