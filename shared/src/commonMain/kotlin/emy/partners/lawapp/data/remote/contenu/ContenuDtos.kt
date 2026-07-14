@@ -114,6 +114,7 @@ data class LikeContenuRequest(
     val userId: Long,
 )
 
+@Serializable
 data class ContenuFeedItem(
     val id: Long,
     val title: String,
@@ -126,17 +127,38 @@ data class ContenuFeedItem(
     val commentCount: Int,
     val comments: List<ContenuCommentUi>,
     val likedByMe: Boolean = false,
+    val createdAt: String? = null,
 ) {
     val isVideo: Boolean
         get() = typeContenuId == VIDEO_TYPE_CONTENU_ID
+
+    val hasMediaFile: Boolean
+        get() = !fileContent.isNullOrBlank()
 }
 
 const val VIDEO_TYPE_CONTENU_ID = 3L
 
+@Serializable
 data class ContenuCommentUi(
     val id: Long,
     val text: String,
     val authorName: String,
+)
+
+@Serializable
+data class ContenuFeedCache(
+    val items: List<ContenuFeedItem> = emptyList(),
+)
+
+@Serializable
+data class LocalLikeEntry(
+    val contenuId: Long,
+    val liked: Boolean,
+)
+
+@Serializable
+data class LocalLikesStore(
+    val likes: List<LocalLikeEntry> = emptyList(),
 )
 
 fun ContenuFeedItemDto.toFeedItem(currentUserId: Long? = null): ContenuFeedItem? {
@@ -165,6 +187,7 @@ fun ContenuFeedItemDto.toFeedItem(currentUserId: Long? = null): ContenuFeedItem?
             )
         },
         likedByMe = likedByMe,
+        createdAt = entity.createdAt,
     )
 }
 
