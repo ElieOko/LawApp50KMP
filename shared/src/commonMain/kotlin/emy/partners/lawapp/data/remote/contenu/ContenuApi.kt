@@ -7,8 +7,8 @@ import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.createHttpClient
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -44,40 +44,32 @@ class ContenuApi(
 
     suspend fun createContenu(payload: CreateContenuPayload): Result<Unit> {
         return runCatching {
-            val response = client.post {
-                url.takeFrom("${ApiConfig.BASE_URL}/api/v1/public/contenu")
-                // defaultRequest force application/json ; multipart doit poser sa propre boundary.
-                headers.remove(HttpHeaders.ContentType)
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("userId", payload.userId.toString())
-                            append("typeContenuId", payload.typeContenuId.toString())
-                            append("title", payload.title)
-                            append("description", payload.description)
-                            append("scope", payload.scopeId.toString())
-                            val bytes = payload.fileBytes
-                            if (bytes != null && bytes.isNotEmpty()) {
-                                val mime = payload.fileMimeType
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "application/octet-stream"
-                                val fileName = payload.fileName?.takeIf { it.isNotBlank() } ?: "media.bin"
-                                append(
-                                    key = "fileContent",
-                                    value = bytes,
-                                    headers = Headers.build {
-                                        append(HttpHeaders.ContentType, mime)
-                                        append(
-                                            HttpHeaders.ContentDisposition,
-                                            "form-data; name=\"fileContent\"; filename=\"$fileName\""
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                    )
-                )
+            val fileBytes = payload.fileBytes
+            if (fileBytes == null || fileBytes.isEmpty()) {
+                throw ContenuApiException("Un media (image ou video) est obligatoire pour publier.")
             }
+            val mime = payload.fileMimeType
+                ?.takeIf { it.isNotBlank() }
+                ?: "application/octet-stream"
+            val fileName = payload.fileName?.takeIf { it.isNotBlank() } ?: "media.bin"
+            val response = client.submitFormWithBinaryData(
+                url = "${ApiConfig.BASE_URL}/api/v1/public/contenu",
+                formData = formData {
+                    append("userId", payload.userId.toString())
+                    append("typeContenuId", payload.typeContenuId.toString())
+                    append("title", payload.title)
+                    append("description", payload.description)
+                    append("scope", payload.scopeId.toString())
+                    append(
+                        key = "fileContent",
+                        value = fileBytes,
+                        headers = Headers.build {
+                            append(HttpHeaders.ContentType, mime)
+                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                        },
+                    )
+                },
+            )
             val bodyText = response.bodyAsText()
             if (!response.status.isSuccess()) {
                 throw ContenuApiException(
@@ -177,8 +169,13 @@ object ContenuRepository {
         val userId = AuthRepository.currentSession?.profile?.userId
             ?: return Result.failure(ContenuApiException("Connectez-vous pour publier un contenu."))
         val typeContenuId = resolveTypeContenuId(fileMimeType, fileName)
-        val fileBytes = fileUri?.let { readUriBytes(it) }
-        if (!fileUri.isNullOrBlank() && fileBytes == null) {
+        if (fileUri.isNullOrBlank()) {
+            return Result.failure(
+                ContenuApiException("Ajoutez une image ou une video avant de publier.")
+            )
+        }
+        val fileBytes = readUriBytes(fileUri)
+        if (fileBytes == null || fileBytes.isEmpty()) {
             return Result.failure(ContenuApiException("Impossible de lire le fichier sélectionné."))
         }
         return api.createContenu(
