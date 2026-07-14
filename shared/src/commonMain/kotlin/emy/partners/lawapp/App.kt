@@ -19,6 +19,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +41,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import emy.partners.lawapp.data.Constants
+import emy.partners.lawapp.data.local.AppPreferences
 import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.EvaluationDAO
@@ -63,6 +66,9 @@ import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
+import emy.partners.lawapp.presentation.settings.AppUiController
+import emy.partners.lawapp.presentation.settings.LocalAppUiController
+import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.tekoTypography
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
@@ -482,6 +488,35 @@ fun App() {
     val appState = remember(createdEvaluations, createdContents) {
         LawAppState(createdEvaluations, createdContents)
     }
+    var uiSettings by remember { mutableStateOf(AppPreferences.load()) }
+    val uiController = remember(uiSettings) {
+        AppUiController(
+            settings = uiSettings,
+            updateSettings = { next ->
+                AppPreferences.save(next)
+                uiSettings = next
+            }
+        )
+    }
+    val colorScheme = if (uiSettings.darkMode) {
+        darkColorScheme(
+            primary = Color(0xFF60A5FA),
+            onPrimary = Color.White,
+            background = Color(0xFF0B1220),
+            onBackground = Color(0xFFE2E8F0),
+            surface = Color(0xFF111827),
+            onSurface = Color(0xFFE2E8F0),
+        )
+    } else {
+        lightColorScheme(
+            primary = BlueDark,
+            onPrimary = Color.White,
+            background = Color(0xFFE8EEF7),
+            onBackground = Color(0xFF0F172A),
+            surface = Color.White,
+            onSurface = Color(0xFF0F172A),
+        )
+    }
     val defaultTopBarScrollState = rememberScrollState()
     val topLevelDestinations = listOf(
         TopLevelDestination(TopLevelDestinationKind.Home, ::HomeScreen, stringResource(Res.string.house), Res.drawable.house),
@@ -490,129 +525,136 @@ fun App() {
         TopLevelDestination(TopLevelDestinationKind.Quiz, ::QuizScreen, stringResource(Res.string.quiz), Res.drawable.quiz),
         TopLevelDestination(TopLevelDestinationKind.Profile, ::ProfileScreen, stringResource(Res.string.profil), Res.drawable.profil_user),
     )
-    MaterialTheme(typography = tekoTypography()) {
-        Navigator(HomeScreen()) { navigator ->
-            val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
-            val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
-                ?.topLevelDestinationKind
-                ?: TopLevelDestinationKind.Home
-            val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.showsAppChrome != false
-            Scaffold(
-                //            contentWindowInsets = WindowInsets(0),
-                bottomBar = {
-                    if (showsAppChrome) {
-                        //CompositionLocalProvider(LocalRippleConfiguration provides null){
-                        //Color(0xFF242D2C)
-                        Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
-                            BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
-                                Color.White.copy(alpha = 0.5f)
-                            )) {
-                                topLevelDestinations.forEach { destination ->
-                                    NavigationBarItem(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        colors =  NavigationBarItemDefaults.colors(
-                                            indicatorColor =  Color.White.copy(alpha = 0.65f),
-                                            selectedTextColor = Color(0xFf2563EB),
-                                            selectedIconColor = Color(0xFf2563EB),
-                                            unselectedIconColor = Color.Black.copy(0.6f),
-                                            unselectedTextColor = Color.Black.copy(0.6f),
-                                        ),
-                                        selected = destination.kind == selectedTopLevel,
-                                        onClick = { navigator.replaceAll(destination.createScreen()) },
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
-                                            )
-                                        },
-                                        label = {
-                                            Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
-                                    )
+    CompositionLocalProvider(LocalAppUiController provides uiController) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = tekoTypography()
+        ) {
+            Navigator(HomeScreen()) { navigator ->
+                val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
+                val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
+                    ?.topLevelDestinationKind
+                    ?: TopLevelDestinationKind.Home
+                val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.showsAppChrome != false
+                Scaffold(
+                    //            contentWindowInsets = WindowInsets(0),
+                    bottomBar = {
+                        if (showsAppChrome) {
+                            //CompositionLocalProvider(LocalRippleConfiguration provides null){
+                            //Color(0xFF242D2C)
+                            Box(modifier = Modifier.clip(RoundedCornerShape(9.dp)).liquefiable(liquidState2)){
+                                BottomAppBar(containerColor =  Color.White.copy(alpha = 0.5f),modifier = Modifier.background(
+                                    Color.White.copy(alpha = 0.5f)
+                                )) {
+                                    topLevelDestinations.forEach { destination ->
+                                        NavigationBarItem(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            colors =  NavigationBarItemDefaults.colors(
+                                                indicatorColor =  Color.White.copy(alpha = 0.65f),
+                                                selectedTextColor = Color(0xFf2563EB),
+                                                selectedIconColor = Color(0xFf2563EB),
+                                                unselectedIconColor = Color.Black.copy(0.6f),
+                                                unselectedTextColor = Color.Black.copy(0.6f),
+                                            ),
+                                            selected = destination.kind == selectedTopLevel,
+                                            onClick = { navigator.replaceAll(destination.createScreen()) },
+                                            icon = {
+                                                Icon(
+                                                    painter = painterResource(destination.icon),null, modifier = Modifier.size(28.dp),
+                                                )
+                                            },
+                                            label = {
+                                                Text(destination.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            }
+                                        )
+                                    }
                                 }
                             }
+
+                            //}
                         }
-
-                        //}
-                    }
-                },
-                topBar = {
-                    if (showsAppChrome) {
-                        TopBarCustom(
-                            scrollState = topBarScrollState,
-                            onActionClick = {
-                                navigator.push(
-                                    ContentCreateScreen(
-                                        initialDestination = selectedTopLevel.toDestination()
+                    },
+                    topBar = {
+                        if (showsAppChrome) {
+                            TopBarCustom(
+                                scrollState = topBarScrollState,
+                                onActionClick = {
+                                    navigator.push(
+                                        ContentCreateScreen(
+                                            initialDestination = selectedTopLevel.toDestination()
+                                        )
                                     )
-                                )
-                            }
-                        )
-                    }
-                }
-                //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
-            ) {
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .liquefiable(liquidState)
-                ) {
-                    val hideJusticeBackground =
-                        !showsAppChrome || selectedTopLevel == TopLevelDestinationKind.Profile
-                    if (!hideJusticeBackground) {
-                        Image(
-                            painter = painterResource(Res.drawable.justice),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.matchParentSize(),
-                            colorFilter = ColorFilter.colorMatrix(
-                                ColorMatrix().apply {
-                                    setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
                                 }
                             )
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(Color(0xFFE8EEF7))
-                        )
+                        }
                     }
+                    //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
+                ) {
 
                     Box(
                         modifier = Modifier
-                            .matchParentSize()
-                            .liquid(liquidState)
-                            .background(
-                                if (hideJusticeBackground) {
-                                    Color.Transparent
-                                } else {
-                                    Color.White.copy(alpha = 0.15f)
-                                }
+                            .fillMaxSize()
+                            .liquefiable(liquidState)
+                    ) {
+                        val hideJusticeBackground =
+                            !showsAppChrome || selectedTopLevel == TopLevelDestinationKind.Profile
+                        if (!hideJusticeBackground) {
+                            Image(
+                                painter = painterResource(Res.drawable.justice),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.matchParentSize(),
+                                colorFilter = ColorFilter.colorMatrix(
+                                    ColorMatrix().apply {
+                                        setToSaturation(0.7f) // 1 = normal, 0 = noir et blanc
+                                    }
+                                )
                             )
-                    )
-                    val navigationContext = LawAppNavigationContext(
-                        contentPadding = it,
-                        state = appState,
-                    )
-                    val authActions = remember(navigator) {
-                        AuthActions(
-                            openLogin = { navigator.push(LoginScreen()) },
-                            openRegister = { navigator.push(RegisterScreen()) },
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(
+                                        if (uiSettings.darkMode) Color(0xFF0B1220) else Color(0xFFE8EEF7)
+                                    )
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .liquid(liquidState)
+                                .background(
+                                    if (hideJusticeBackground) {
+                                        Color.Transparent
+                                    } else {
+                                        Color.White.copy(alpha = 0.15f)
+                                    }
+                                )
                         )
-                    }
-                    Column {
-                        CompositionLocalProvider(
-                            LocalLawAppNavigationContext provides navigationContext,
-                            LocalAuthActions provides authActions,
-                        ) {
-                            CurrentScreen()
+                        val navigationContext = LawAppNavigationContext(
+                            contentPadding = it,
+                            state = appState,
+                        )
+                        val authActions = remember(navigator) {
+                            AuthActions(
+                                openLogin = { navigator.push(LoginScreen()) },
+                                openRegister = { navigator.push(RegisterScreen()) },
+                            )
+                        }
+                        Column {
+                            CompositionLocalProvider(
+                                LocalLawAppNavigationContext provides navigationContext,
+                                LocalAuthActions provides authActions,
+                            ) {
+                                CurrentScreen()
+                            }
                         }
                     }
+
+
+
                 }
-
-
-
             }
         }
     }

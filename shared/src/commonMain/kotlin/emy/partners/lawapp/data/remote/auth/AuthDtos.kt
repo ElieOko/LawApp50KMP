@@ -86,6 +86,7 @@ data class AuthUserProfile(
     val certified: Boolean? = null,
     val accountId: Long? = null,
     val accountName: String? = null,
+    val avatarUri: String? = null,
 ) {
     val displayName: String
         get() {
@@ -160,6 +161,16 @@ data class SelectedAccountLocal(
     val userId: Long,
     val accountId: Long,
     val accountName: String,
+)
+
+@Serializable
+data class UserRequestChange(
+    val email: String,
+    val pseudo: String,
+    val phone: String,
+    val city: String,
+    val firstName: String,
+    val lastName: String,
 )
 
 @Serializable

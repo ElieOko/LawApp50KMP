@@ -7,6 +7,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -147,6 +148,28 @@ class AuthApi(
                     SelectAccountOutcome.AlreadySelectedSame
                 else -> SelectAccountOutcome.Created
             }
+        }
+    }
+
+    suspend fun updateUser(userId: Long, accessToken: String, request: UserRequestChange): Result<AuthUserProfile> {
+        return runCatching {
+            val response = client.put("/api/v1/protected/users/$userId") {
+                header(HttpHeaders.Authorization, "Bearer $accessToken")
+                setBody(request)
+            }
+            val bodyText = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                throw AuthApiException(extractMessage(bodyText) ?: "Mise a jour du profil impossible (${response.status.value})")
+            }
+            parseProfile(bodyText) ?: AuthUserProfile(
+                userId = userId,
+                email = request.email,
+                username = request.pseudo,
+                phone = request.phone,
+                city = request.city,
+                firstName = request.firstName,
+                lastName = request.lastName,
+            )
         }
     }
 
@@ -389,6 +412,64 @@ object AuthRepository {
         return api.getSelectableAccounts()
     }
 
+    suspend fun refreshProfile(): Result<AuthSession> {
+        val session = currentSession
+            ?: return Result.failure(AuthApiException("Session absente"))
+        val userId = session.profile?.userId
+            ?: return Result.failure(AuthApiException("Identifiant utilisateur manquant"))
+        if (session.accessToken.isBlank()) {
+            return Result.failure(AuthApiException("Token manquant"))
+        }
+        return runCatching {
+            val remote = api.fetchUserProfile(userId, session.accessToken)
+                ?: throw AuthApiException("Impossible de rafraichir le profil")
+            val merged = session.copy(
+                profile = mergeProfiles(session.profile, remote)?.copy(
+                    avatarUri = session.profile?.avatarUri,
+                    accountId = session.profile?.accountId ?: remote.accountId,
+                    accountName = session.profile?.accountName ?: remote.accountName,
+                )
+            )
+            persistSession(merged)
+            merged
+        }
+    }
+
+    suspend fun updateProfile(request: UserRequestChange): Result<AuthSession> {
+        val session = currentSession
+            ?: return Result.failure(AuthApiException("Session absente"))
+        val userId = session.profile?.userId
+            ?: return Result.failure(AuthApiException("Identifiant utilisateur manquant"))
+        if (session.accessToken.isBlank()) {
+            return Result.failure(AuthApiException("Token manquant"))
+        }
+        return api.updateUser(userId, session.accessToken, request).map { updated ->
+            val merged = session.copy(
+                profile = mergeProfiles(session.profile, updated)?.copy(
+                    avatarUri = session.profile?.avatarUri,
+                    accountId = session.profile?.accountId,
+                    accountName = session.profile?.accountName,
+                    email = request.email,
+                    username = request.pseudo,
+                    phone = request.phone,
+                    city = request.city,
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                )
+            )
+            persistSession(merged)
+            merged
+        }
+    }
+
+    fun updateAvatarUri(uri: String): AuthSession? {
+        val session = currentSession ?: return null
+        val profile = (session.profile ?: AuthUserProfile()).copy(avatarUri = uri)
+        val updated = session.copy(profile = profile)
+        persistSession(updated)
+        return updated
+    }
+
     suspend fun selectAccountType(account: SelectableAccountDto): Result<AuthSession> {
         val session = currentSession
             ?: return Result.failure(AuthApiException("Connectez-vous pour choisir un type de compte"))
@@ -545,6 +626,7 @@ internal fun mergeProfiles(
         certified = overlay.certified ?: base.certified,
         accountId = overlay.accountId ?: base.accountId,
         accountName = overlay.accountName?.takeIf { it.isNotBlank() } ?: base.accountName,
+        avatarUri = overlay.avatarUri?.takeIf { it.isNotBlank() } ?: base.avatarUri,
     )
 }
 
@@ -559,7 +641,8 @@ private fun AuthUserProfile.isEmpty(): Boolean =
         premium == null &&
         certified == null &&
         accountId == null &&
-        accountName.isNullOrBlank()
+        accountName.isNullOrBlank() &&
+        avatarUri.isNullOrBlank()
 
 private fun JsonObject.stringOrNull(key: String): String? =
     this[key]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
