@@ -2,16 +2,21 @@ package emy.partners.lawapp.data.remote.auth
 
 import emy.partners.lawapp.data.local.LocalStore
 import emy.partners.lawapp.data.local.createLocalStore
+import emy.partners.lawapp.data.remote.ApiConfig
 import emy.partners.lawapp.data.remote.createHttpClient
 import io.ktor.client.HttpClient
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.http.takeFrom
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
@@ -108,15 +113,22 @@ class AuthApi(
         }
     }
 
-    suspend fun fetchUserProfile(userId: Long, accessToken: String): AuthUserProfile? {
+    suspend fun fetchUserProfile(userId: Long, accessToken: String): Result<AuthUserProfile> {
         return runCatching {
-            val response = client.get("/api/v1/protected/users/$userId") {
-                header(HttpHeaders.Authorization, "Bearer $accessToken")
+            val response = client.get {
+                url.takeFrom("${ApiConfig.BASE_URL}/api/v1/protected/users/$userId")
+                withBearerToken(accessToken)
             }
             val bodyText = response.bodyAsText()
-            if (!response.status.isSuccess()) return null
+            if (!response.status.isSuccess()) {
+                throw AuthApiException(
+                    extractMessage(bodyText)
+                        ?: "Acces non autorise (${response.status.value})"
+                )
+            }
             parseProfile(bodyText)
-        }.getOrNull()
+                ?: throw AuthApiException("Reponse profil invalide")
+        }
     }
 
     suspend fun getSelectableAccounts(): Result<List<SelectableAccountDto>> {
@@ -153,13 +165,18 @@ class AuthApi(
 
     suspend fun updateUser(userId: Long, accessToken: String, request: UserRequestChange): Result<AuthUserProfile> {
         return runCatching {
-            val response = client.put("/api/v1/protected/users/$userId") {
-                header(HttpHeaders.Authorization, "Bearer $accessToken")
+            val response = client.put {
+                url.takeFrom("${ApiConfig.BASE_URL}/api/v1/protected/users/$userId")
+                withBearerToken(accessToken)
+                contentType(ContentType.Application.Json)
                 setBody(request)
             }
             val bodyText = response.bodyAsText()
             if (!response.status.isSuccess()) {
-                throw AuthApiException(extractMessage(bodyText) ?: "Mise a jour du profil impossible (${response.status.value})")
+                throw AuthApiException(
+                    extractMessage(bodyText)
+                        ?: "Acces non autorise (${response.status.value})"
+                )
             }
             parseProfile(bodyText) ?: AuthUserProfile(
                 userId = userId,
@@ -179,7 +196,7 @@ class AuthApi(
 
         val userId = profile?.userId ?: jwtProfile?.userId
         if (userId != null && session.accessToken.isNotBlank()) {
-            val remote = fetchUserProfile(userId, session.accessToken)
+            val remote = fetchUserProfile(userId, session.accessToken).getOrNull()
             profile = mergeProfiles(profile, remote)
         }
 
@@ -344,6 +361,17 @@ class AuthApi(
             json.parseToJsonElement(bodyText).jsonObject.stringOrNull("message")
         }.getOrNull()
     }
+
+    private fun HttpRequestBuilder.withBearerToken(token: String) {
+        val clean = token
+            .trim()
+            .removePrefix("Bearer")
+            .removePrefix("bearer")
+            .trim()
+        require(clean.isNotBlank()) { "Token Bearer manquant" }
+        headers.remove(HttpHeaders.Authorization)
+        headers.append(HttpHeaders.Authorization, "Bearer $clean")
+    }
 }
 
 enum class SelectAccountOutcome {
@@ -420,9 +448,7 @@ object AuthRepository {
         if (session.accessToken.isBlank()) {
             return Result.failure(AuthApiException("Token manquant"))
         }
-        return runCatching {
-            val remote = api.fetchUserProfile(userId, session.accessToken)
-                ?: throw AuthApiException("Impossible de rafraichir le profil")
+        return api.fetchUserProfile(userId, session.accessToken).map { remote ->
             val merged = session.copy(
                 profile = mergeProfiles(session.profile, remote)?.copy(
                     avatarUri = session.profile?.avatarUri,

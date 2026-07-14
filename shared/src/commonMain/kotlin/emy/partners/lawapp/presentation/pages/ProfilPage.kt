@@ -39,7 +39,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import emy.partners.lawapp.data.local.AppLanguage
 import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.auth.AuthSession
 import emy.partners.lawapp.data.remote.auth.AuthUserProfile
@@ -74,12 +73,16 @@ fun ProfilPage(
     scrollVertical: ScrollState = rememberScrollState(),
     session: AuthSession? = AuthRepository.currentSession,
     onConnectClick: () -> Unit = {},
+    onOpenThemeSettings: () -> Unit = {},
+    onOpenLanguageSettings: () -> Unit = {},
 ) {
     ProfilBuild(
         modifier = modifier,
         scrollVertical = scrollVertical,
         session = session,
         onConnectClick = onConnectClick,
+        onOpenThemeSettings = onOpenThemeSettings,
+        onOpenLanguageSettings = onOpenLanguageSettings,
     )
 }
 
@@ -90,6 +93,8 @@ fun ProfilBuild(
     scrollVertical: ScrollState = rememberScrollState(),
     session: AuthSession? = AuthRepository.currentSession,
     onConnectClick: () -> Unit = {},
+    onOpenThemeSettings: () -> Unit = {},
+    onOpenLanguageSettings: () -> Unit = {},
 ) {
     val ui = LocalAppUiController.current
     val strings = ui.settings
@@ -320,27 +325,16 @@ fun ProfilBuild(
                 }
 
                 Spacer(Modifier.height(16.dp))
-                AuthFormPanel {
-                    Text(
-                        text = strings.t("Type de compte", "Account type"),
-                        color = AuthColors.TextPrimary,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    if (profile?.hasAccountType == true) {
+                // Section choix type de compte uniquement si pas encore defini.
+                if (profile?.hasAccountType != true) {
+                    AuthFormPanel {
                         Text(
-                            text = strings.t(
-                                "Votre type de compte est defini et ne peut plus etre modifie.",
-                                "Your account type is set and can no longer be changed."
-                            ),
-                            color = AuthColors.TextSecondary,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
+                            text = strings.t("Type de compte", "Account type"),
+                            color = AuthColors.TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp
                         )
-                        Spacer(Modifier.height(12.dp))
-                        ProfileInfoRow(label = strings.t("Compte", "Account"), value = profile.accountTypeLabel)
-                    } else {
+                        Spacer(Modifier.height(8.dp))
                         Text(
                             text = strings.t(
                                 "Choisissez Etudiant ou Enseignant. Ce choix est definitif.",
@@ -397,9 +391,9 @@ fun ProfilBuild(
                             )
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
                 }
 
-                Spacer(Modifier.height(16.dp))
                 AuthFormPanel {
                     Text(
                         text = strings.t("Parametres", "Settings"),
@@ -407,32 +401,25 @@ fun ProfilBuild(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp
                     )
-                    Spacer(Modifier.height(12.dp))
-                    AuthChoiceChips(
-                        label = strings.t("Mode", "Theme"),
-                        options = listOf(
-                            strings.t("Clair", "Light"),
-                            strings.t("Sombre", "Dark"),
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = strings.t(
+                            "Gerez le theme et la langue dans leurs pages dediees.",
+                            "Manage theme and language on their dedicated pages."
                         ),
-                        selected = if (ui.settings.darkMode) {
-                            strings.t("Sombre", "Dark")
-                        } else {
-                            strings.t("Clair", "Light")
-                        },
-                        onSelected = { option ->
-                            val dark = option == strings.t("Sombre", "Dark")
-                            ui.updateSettings(ui.settings.copy(darkMode = dark))
-                        }
+                        color = AuthColors.TextSecondary,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
                     )
                     Spacer(Modifier.height(14.dp))
-                    AuthChoiceChips(
-                        label = strings.t("Langue", "Language"),
-                        options = listOf("Francais", "English"),
-                        selected = if (ui.settings.language == AppLanguage.French) "Francais" else "English",
-                        onSelected = { option ->
-                            val language = if (option == "English") AppLanguage.English else AppLanguage.French
-                            ui.updateSettings(ui.settings.copy(language = language))
-                        }
+                    AuthPrimaryButton(
+                        text = strings.t("Mode d'affichage", "Display mode"),
+                        onClick = onOpenThemeSettings,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AuthPrimaryButton(
+                        text = strings.t("Langue", "Language"),
+                        onClick = onOpenLanguageSettings,
                     )
                 }
 
@@ -499,27 +486,15 @@ fun ProfilBuild(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 18.sp
                     )
-                    Spacer(Modifier.height(12.dp))
-                    AuthChoiceChips(
-                        label = strings.t("Mode", "Theme"),
-                        options = listOf(strings.t("Clair", "Light"), strings.t("Sombre", "Dark")),
-                        selected = if (ui.settings.darkMode) strings.t("Sombre", "Dark") else strings.t("Clair", "Light"),
-                        onSelected = { option ->
-                            ui.updateSettings(ui.settings.copy(darkMode = option == strings.t("Sombre", "Dark")))
-                        }
-                    )
                     Spacer(Modifier.height(14.dp))
-                    AuthChoiceChips(
-                        label = strings.t("Langue", "Language"),
-                        options = listOf("Francais", "English"),
-                        selected = if (ui.settings.language == AppLanguage.French) "Francais" else "English",
-                        onSelected = { option ->
-                            ui.updateSettings(
-                                ui.settings.copy(
-                                    language = if (option == "English") AppLanguage.English else AppLanguage.French
-                                )
-                            )
-                        }
+                    AuthPrimaryButton(
+                        text = strings.t("Mode d'affichage", "Display mode"),
+                        onClick = onOpenThemeSettings,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    AuthPrimaryButton(
+                        text = strings.t("Langue", "Language"),
+                        onClick = onOpenLanguageSettings,
                     )
                 }
             }
