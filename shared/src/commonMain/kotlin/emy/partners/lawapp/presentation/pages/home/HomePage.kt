@@ -48,9 +48,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import emy.partners.lawapp.data.remote.contenu.ContenuFeedItem
 import emy.partners.lawapp.data.remote.contenu.ContenuRepository
-import emy.partners.lawapp.data.remote.contenu.VIDEO_TYPE_CONTENU_ID
 import emy.partners.lawapp.domain.models.Comment
-import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.ExtraContent
 import emy.partners.lawapp.domain.models.User
 import emy.partners.lawapp.domain.models.UserGeneratedContent
@@ -93,8 +91,8 @@ fun HomeBuild(
     val liquidState = rememberLiquidState()
     val pullState = rememberPullToRefreshState()
 
-    val displayFeed = remember(feed, createdContents, localLikeOverrides) {
-        buildDisplayFeed(feed, createdContents, localLikeOverrides)
+    val displayFeed = remember(feed, localLikeOverrides) {
+        buildDisplayFeed(feed, localLikeOverrides)
     }
     val initialPage = remember {
         ContenuRepository.indexOfLastViewed(displayFeed)
@@ -151,13 +149,13 @@ fun HomeBuild(
                 .onSuccess {
                     feed = it
                     errorMessage = null
-                    val nextFeed = buildDisplayFeed(it, createdContents, localLikeOverrides)
+                    val nextFeed = buildDisplayFeed(it, localLikeOverrides)
                     if (nextFeed.isNotEmpty()) {
                         pagerState.scrollToPage(ContenuRepository.indexOfLastViewed(nextFeed))
                     }
                 }
                 .onFailure {
-                    if (feed.isEmpty() && createdContents.none { it.destination == ContentDestination.Home }) {
+                    if (feed.isEmpty()) {
                         errorMessage = it.message ?: "Impossible de rafraichir les contenus"
                     }
                 }
@@ -287,38 +285,13 @@ private fun toggleLocalLike(
 
 private fun buildDisplayFeed(
     feed: List<ContenuFeedItem>,
-    createdContents: List<UserGeneratedContent>,
     localLikeOverrides: Map<Long, LikeOverride>,
 ): List<ContenuFeedItem> {
-    val localItems = createdContents
-        .asReversed()
-        .filter { it.destination == ContentDestination.Home }
-        .map { it.toFeedItem() }
-    val localIds = localItems.map { it.id }.toSet()
-    val merged = localItems + feed.filter { it.id !in localIds }
-    return merged.map { item ->
+    // Les publications API n'apparaissent qu'apres pull-to-refresh (pas de doublon local).
+    return feed.map { item ->
         val override = localLikeOverrides[item.id] ?: return@map item
         item.copy(likedByMe = override.liked, likeCount = override.likeCount)
     }
-}
-
-private fun UserGeneratedContent.toFeedItem(): ContenuFeedItem {
-    val mediaUri = attachment?.uri?.takeIf { it.isNotBlank() }
-    val isVideo = attachment?.mimeType?.startsWith("video", ignoreCase = true) == true
-    return ContenuFeedItem(
-        id = id,
-        title = title.ifBlank { "Sans titre" },
-        description = description,
-        fileContent = mediaUri,
-        typeContenuId = if (isVideo) VIDEO_TYPE_CONTENU_ID else null,
-        authorName = author.ifBlank { "Moi" },
-        authorUsername = "@${author.filter { !it.isWhitespace() }.take(18).ifBlank { "moi" }}",
-        likeCount = 0,
-        commentCount = 0,
-        comments = emptyList(),
-        likedByMe = false,
-        createdAt = createdAt,
-    )
 }
 
 @Composable

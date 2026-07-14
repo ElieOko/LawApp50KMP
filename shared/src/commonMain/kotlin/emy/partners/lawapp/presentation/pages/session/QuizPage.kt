@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,13 +33,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.domain.models.QuizQuestion
+import emy.partners.lawapp.presentation.pages.auth.AuthColors
+import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
+import emy.partners.lawapp.presentation.pages.auth.AuthPrimaryButton
+import emy.partners.lawapp.presentation.settings.LocalAppUiController
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
+
+private val PageBgLight = Color(0xFFE8EEF7)
+private val PageBgDark = Color(0xFF0B1220)
 
 @Composable
 fun QuizPage(
     modifier: Modifier = Modifier,
-    scrollVertical: ScrollState = rememberScrollState()
+    scrollVertical: ScrollState = rememberScrollState(),
 ) {
     QuizBuild(modifier, scrollVertical)
 }
@@ -49,8 +54,10 @@ fun QuizPage(
 @Composable
 fun QuizBuild(
     modifier: Modifier = Modifier,
-    scrollVertical: ScrollState = rememberScrollState()
+    scrollVertical: ScrollState = rememberScrollState(),
 ) {
+    val ui = LocalAppUiController.current
+    val pageBg = if (ui.settings.darkMode) PageBgDark else PageBgLight
     val questions = remember { Constants.quizQuestions }
     val currentIndex = remember { mutableIntStateOf(0) }
     val answers = remember { mutableStateMapOf<Long, Int>() }
@@ -62,28 +69,35 @@ fun QuizBuild(
     val progress = (answers.size.toFloat() / questions.size).coerceIn(0f, 1f)
 
     Column(
-        Modifier
+        modifier
             .fillMaxSize()
+            .background(pageBg)
             .verticalScroll(scrollVertical)
-            .padding(16.dp)
+            .padding(horizontal = 14.dp)
+            .padding(top = 8.dp, bottom = 96.dp)
     ) {
-        Column(modifier) {
-            QuizHeader(
-                answered = answers.size,
-                total = questions.size,
-                score = score,
-                progress = progress
-            )
-            Spacer(Modifier.height(16.dp))
+        QuizHeader(
+            answered = answers.size,
+            total = questions.size,
+            score = score,
+            progress = progress,
+        )
+        Spacer(Modifier.height(14.dp))
+        AuthFormPanel {
             QuestionCard(
                 question = question,
                 current = currentIndex.intValue + 1,
                 total = questions.size,
                 selectedIndex = selectedIndex,
-                onSelect = { answers[question.id] = it }
+                onSelect = { answers[question.id] = it },
             )
             Spacer(Modifier.height(14.dp))
-            Button(
+            AuthPrimaryButton(
+                text = if (currentIndex.intValue == questions.lastIndex) {
+                    "Recommencer le tour"
+                } else {
+                    "Question suivante"
+                },
                 onClick = {
                     currentIndex.intValue = if (currentIndex.intValue == questions.lastIndex) {
                         0
@@ -91,16 +105,7 @@ fun QuizBuild(
                         currentIndex.intValue + 1
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BlueDark)
-            ) {
-                Text(
-                    text = if (currentIndex.intValue == questions.lastIndex) "Recommencer le tour" else "Question suivante",
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(Modifier.height(90.dp))
+            )
         }
     }
 }
@@ -110,46 +115,50 @@ private fun QuizHeader(
     answered: Int,
     total: Int,
     score: Int,
-    progress: Float
+    progress: Float,
 ) {
-    Box(
+    Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(32.dp))
+            .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.linearGradient(
                     listOf(
-                        Color(0xFF2563EB).copy(alpha = 0.92f),
-                        BlueDarkEffect.copy(alpha = 0.92f)
+                        Color(0xFF2563EB).copy(alpha = 0.95f),
+                        BlueDark.copy(alpha = 0.94f),
+                        BlueDarkEffect.copy(alpha = 0.94f),
                     )
                 )
             )
-            .padding(20.dp)
+            .padding(18.dp)
     ) {
-        Column {
-            Text(
-                "Quiz juridique",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "Entraine-toi avec des questions courtes et un feedback direct.",
-                color = Color.White.copy(alpha = 0.72f)
-            )
-            Spacer(Modifier.height(18.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(9.dp).clip(RoundedCornerShape(40.dp)),
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = 0.18f)
-            )
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuizMetric("Repondu", "$answered/$total", Modifier.weight(1f))
-                QuizMetric("Score", "$score/$total", Modifier.weight(1f))
-            }
+        Text(
+            "Quiz juridique",
+            color = Color.White,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Entraine-toi avec des questions courtes et un feedback direct.",
+            color = Color.White.copy(alpha = 0.75f),
+            fontSize = 14.sp,
+            lineHeight = 19.sp,
+        )
+        Spacer(Modifier.height(16.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(9.dp)
+                .clip(RoundedCornerShape(40.dp)),
+            color = Color.White,
+            trackColor = Color.White.copy(alpha = 0.18f),
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuizMetric("Repondu", "$answered/$total", Modifier.weight(1f))
+            QuizMetric("Score", "$score/$total", Modifier.weight(1f))
         }
     }
 }
@@ -158,12 +167,12 @@ private fun QuizHeader(
 private fun QuizMetric(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.14f))
             .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
         Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
     }
 }
@@ -174,54 +183,53 @@ private fun QuestionCard(
     current: Int,
     total: Int,
     selectedIndex: Int?,
-    onSelect: (Int) -> Unit
+    onSelect: (Int) -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(30.dp))
-            .background(Color.White.copy(alpha = 0.9f))
-            .padding(18.dp)
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(question.category, color = BlueDark, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("$current/$total", color = Color.Black.copy(alpha = 0.45f), fontWeight = FontWeight.Bold)
+            Text(question.category, color = AuthColors.AccentBright, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(
+                "$current/$total",
+                color = AuthColors.TextSecondary,
+                fontWeight = FontWeight.Bold,
+            )
         }
         Spacer(Modifier.height(12.dp))
         Text(
             question.title,
-            color = Color.Black.copy(alpha = 0.88f),
+            color = AuthColors.TextPrimary,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 24.sp,
-            lineHeight = 28.sp
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
         )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(16.dp))
         question.options.forEachIndexed { index, option ->
             AnswerOption(
                 label = option,
                 index = index,
                 correctIndex = question.correctIndex,
                 selectedIndex = selectedIndex,
-                onClick = { onSelect(index) }
+                onClick = { onSelect(index) },
             )
             Spacer(Modifier.height(10.dp))
         }
         if (selectedIndex != null) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = if (selectedIndex == question.correctIndex) "Bonne reponse" else "A revoir",
                 color = if (selectedIndex == question.correctIndex) Color(0xFF10B981) else Color(0xFFEF4444),
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
             )
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = question.explanation,
-                color = Color.Black.copy(alpha = 0.58f),
+                color = AuthColors.TextSecondary,
                 fontSize = 13.sp,
-                lineHeight = 18.sp
+                lineHeight = 18.sp,
             )
         }
     }
@@ -233,41 +241,43 @@ private fun AnswerOption(
     index: Int,
     correctIndex: Int,
     selectedIndex: Int?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val wasSelected = selectedIndex == index
     val hasAnswer = selectedIndex != null
     val color = when {
         hasAnswer && index == correctIndex -> Color(0xFF10B981)
         wasSelected -> Color(0xFFEF4444)
-        else -> Color.White
+        else -> Color(0xFFF8FAFC)
     }
     val contentColor = when {
         hasAnswer && index == correctIndex -> Color.White
         wasSelected -> Color.White
-        else -> Color.Black.copy(alpha = 0.76f)
+        else -> AuthColors.TextPrimary
     }
 
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(color)
             .clickable(enabled = !hasAnswer, onClick = onClick)
             .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             Modifier
                 .size(30.dp)
                 .clip(RoundedCornerShape(50))
-                .background(if (hasAnswer) Color.White.copy(alpha = 0.2f) else BlueDark.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+                .background(
+                    if (hasAnswer) Color.White.copy(alpha = 0.2f) else AuthColors.AccentBright.copy(alpha = 0.12f)
+                ),
+            contentAlignment = Alignment.Center,
         ) {
             Text(('A' + index).toString(), color = contentColor, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.size(12.dp))
-        Text(label, color = contentColor, fontWeight = FontWeight.Bold, lineHeight = 18.sp)
+        Text(label, color = contentColor, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp)
     }
 }
 
