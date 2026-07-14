@@ -46,6 +46,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import emy.partners.lawapp.PlatformVideoPlayer
+import emy.partners.lawapp.data.remote.auth.AuthRepository
 import emy.partners.lawapp.data.remote.contenu.ContenuFeedItem
 import emy.partners.lawapp.data.remote.contenu.ContenuRepository
 import emy.partners.lawapp.domain.models.Comment
@@ -53,6 +54,7 @@ import emy.partners.lawapp.domain.models.ExtraContent
 import emy.partners.lawapp.domain.models.User
 import emy.partners.lawapp.domain.models.UserGeneratedContent
 import emy.partners.lawapp.presentation.components.basics.CommentsSheet
+import emy.partners.lawapp.presentation.pages.auth.LocalAuthActions
 import emy.partners.lawapp.presentation.components.basics.ContentPublication
 import emy.partners.lawapp.presentation.components.basics.IconColumnPub
 import io.github.fletchmckee.liquid.liquefiable
@@ -88,8 +90,20 @@ fun HomeBuild(
     var isRefreshing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val authActions = LocalAuthActions.current
+    val isLoggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+    val currentUserId = AuthRepository.currentSession?.profile?.userId
+    var isSubmittingComment by remember { mutableStateOf(false) }
+    var commentError by remember { mutableStateOf<String?>(null) }
     val liquidState = rememberLiquidState()
     val pullState = rememberPullToRefreshState()
+
+    // Recalcule les likes affiches quand le profil connecte change.
+    LaunchedEffect(currentUserId) {
+        ContenuRepository.onAuthUserChanged()
+        feed = ContenuRepository.cachedFeed()
+        localLikeOverrides = emptyMap()
+    }
 
     val displayFeed = remember(feed, localLikeOverrides) {
         buildDisplayFeed(feed, localLikeOverrides)
@@ -216,12 +230,16 @@ fun HomeBuild(
                                         ),
                                         liked = item.likedByMe,
                                         onLikeClick = {
-                                            scope.launch {
-                                                if (isRemote) {
-                                                    ContenuRepository.toggleLike(item.id)
-                                                        .onSuccess { updated -> feed = updated }
-                                                } else {
-                                                    localLikeOverrides = toggleLocalLike(localLikeOverrides, item)
+                                            if (!isLoggedIn) {
+                                                authActions.openLogin()
+                                            } else {
+                                                scope.launch {
+                                                    if (isRemote) {
+                                                        ContenuRepository.toggleLike(item.id)
+                                                            .onSuccess { updated -> feed = updated }
+                                                    } else {
+                                                        localLikeOverrides = toggleLocalLike(localLikeOverrides, item)
+                                                    }
                                                 }
                                             }
                                         },
@@ -256,7 +274,37 @@ fun HomeBuild(
                                         )
                                     )
                                 },
-                                onDismiss = { showComments = false }
+                                onDismiss = {
+                                    showComments = false
+                                    commentError = null
+                                },
+                                canComment = isLoggedIn,
+                                isSubmitting = isSubmittingComment,
+                                errorMessage = commentError,
+                                onLoginRequired = {
+                                    showComments = false
+                                    authActions.openLogin()
+                                },
+                                onSubmitComment = { text ->
+                                    if (!isLoggedIn) {
+                                        showComments = false
+                                        authActions.openLogin()
+                                        return@CommentsSheet
+                                    }
+                                    isSubmittingComment = true
+                                    commentError = null
+                                    scope.launch {
+                                        ContenuRepository.addComment(item.id, text)
+                                            .onSuccess { updated ->
+                                                feed = updated
+                                            }
+                                            .onFailure { error ->
+                                                commentError = error.message
+                                                    ?: "Impossible d'envoyer le commentaire"
+                                            }
+                                        isSubmittingComment = false
+                                    }
+                                },
                             )
                         }
                     }

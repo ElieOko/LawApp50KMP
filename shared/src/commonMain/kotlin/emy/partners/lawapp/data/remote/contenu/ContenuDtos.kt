@@ -115,6 +115,13 @@ data class LikeContenuRequest(
 )
 
 @Serializable
+data class CreateCommentaireRequest(
+    val contenuId: Long,
+    val userId: Long,
+    val description: String,
+)
+
+@Serializable
 data class ContenuFeedItem(
     val id: Long,
     val title: String,
@@ -183,6 +190,7 @@ data class ContenuCommentUi(
 
 @Serializable
 data class ContenuFeedCache(
+    val likedForUserId: Long? = null,
     val items: List<ContenuFeedItem> = emptyList(),
 )
 
@@ -194,6 +202,7 @@ data class LocalLikeEntry(
 
 @Serializable
 data class LocalLikesStore(
+    val userId: Long? = null,
     val likes: List<LocalLikeEntry> = emptyList(),
 )
 
