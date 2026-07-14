@@ -12,8 +12,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,62 +33,106 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 @Preview(showBackground = false)
-fun IconColumnPub(extra: ExtraContent = ExtraContent(), eventComment : ()-> Any = {}) {
-    val like = remember { mutableStateOf(0) }
-    val comment = remember { mutableStateOf(extra.comment) }
-    val favorite = remember { mutableStateOf(0) }
-    val share = remember { mutableStateOf(0) }
-    val isLike = remember{mutableStateOf(false)}
-    val isFavorite = remember{mutableStateOf(false)}
+fun IconColumnPub(
+    extra: ExtraContent = ExtraContent(),
+    liked: Boolean = false,
+    onLikeClick: (() -> Unit)? = null,
+    eventComment: () -> Unit = {},
+) {
+    var likeCount by remember(extra.like) { mutableStateOf(extra.like) }
+    var commentCount by remember(extra.comment) { mutableStateOf(extra.comment) }
+    var favoriteCount by remember(extra.favorite) { mutableStateOf(extra.favorite) }
+    val shareCount by remember(extra.share) { mutableStateOf(extra.share) }
+    var isLike by remember(liked) { mutableStateOf(liked) }
+    var isFavorite by remember { mutableStateOf(false) }
+
+    LaunchedEffect(extra.like, extra.comment, liked) {
+        likeCount = extra.like
+        commentCount = extra.comment
+        isLike = liked
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box{
-            IconButton(onClick = {
-                isLike.value = !isLike.value
-                when(isLike.value){
-                    true -> like.value++
-                    else -> like.value--
-                }
-            }, colors = IconButtonDefaults.iconButtonColors(contentColor = if (isLike.value) Color.Red else Color.White)){
+        Box {
+            IconButton(
+                onClick = {
+                    if (onLikeClick != null) {
+                        onLikeClick()
+                    } else {
+                        isLike = !isLike
+                        likeCount = if (isLike) likeCount + 1 else (likeCount - 1).coerceAtLeast(0)
+                    }
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = if (isLike) Color.Red else Color.White
+                )
+            ) {
                 Icon(painter = painterResource(Res.drawable.like), null, modifier = Modifier.size(35.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Spacer(Modifier.height(40.dp))
-                Text(like.value.toString(), color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.absoluteOffset(x = 20.dp))
+                Text(
+                    likeCount.toString(),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.absoluteOffset(x = 20.dp)
+                )
             }
         }
-        Box{
-            IconButton(onClick = {
-                eventComment()
-            },colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)){
+        Box {
+            IconButton(
+                onClick = { eventComment() },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
+            ) {
                 Icon(painter = painterResource(Res.drawable.comment), null, modifier = Modifier.size(35.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Spacer(Modifier.height(40.dp))
-                Text(comment.value.toString(), color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.absoluteOffset(x = 20.dp))
+                Text(
+                    commentCount.toString(),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.absoluteOffset(x = 20.dp)
+                )
             }
         }
-        Box{
-            IconButton(onClick = {
-                isFavorite.value = !isFavorite.value
-                when(isFavorite.value){
-                    true -> favorite.value++
-                    else -> favorite.value--
-                }
-            },colors = IconButtonDefaults.iconButtonColors(contentColor = if (isFavorite.value) Color.Red else Color.White)){
+        Box {
+            IconButton(
+                onClick = {
+                    isFavorite = !isFavorite
+                    favoriteCount = if (isFavorite) favoriteCount + 1 else (favoriteCount - 1).coerceAtLeast(0)
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = if (isFavorite) Color.Red else Color.White
+                )
+            ) {
                 Icon(painter = painterResource(Res.drawable.favorite), null, modifier = Modifier.size(35.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Spacer(Modifier.height(40.dp))
-                Text(favorite.value.toString(), color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.absoluteOffset(x = 20.dp))
+                Text(
+                    favoriteCount.toString(),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.absoluteOffset(x = 20.dp)
+                )
             }
         }
-        Box{
-            IconButton(onClick = {},colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)){
+        Box {
+            IconButton(
+                onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
+            ) {
                 Icon(painter = painterResource(Res.drawable.share), null, modifier = Modifier.size(35.dp))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Spacer(Modifier.height(40.dp))
-                Text(share.value.toString(), color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.absoluteOffset(x = 20.dp))
+                Text(
+                    shareCount.toString(),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.absoluteOffset(x = 20.dp)
+                )
             }
         }
     }
