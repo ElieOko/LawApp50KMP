@@ -27,24 +27,37 @@ import org.jetbrains.compose.resources.painterResource
 @Preview(showBackground = false)
 fun TopBarCustom(
     scrollState: ScrollState = rememberScrollState(),
-    onActionClick: () -> Unit = {}
+    onActionClick: () -> Unit = {},
+    /** Hors Home : icones lisibles sur fond glace. Home : transparent sur video. */
+    frosted: Boolean = false,
 ) {
     val isScrolled = scrollState.value > 0
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (isScrolled)
-            Color.White.copy(0.62f)
-        else
-            Color.Transparent,
+        targetValue = when {
+            frosted -> Color.Transparent
+            isScrolled -> Color.White.copy(0.62f)
+            else -> Color.Transparent
+        },
         label = "topBarColor"
     )
 
     val iconColor by animateColorAsState(
-        targetValue = if (isScrolled)
-            Color.Black
-        else
-            Color.White,
+        targetValue = when {
+            frosted -> Color.Black
+            isScrolled -> Color.Black
+            else -> Color.White
+        },
         label = "iconColor"
+    )
+
+    val actionContainer by animateColorAsState(
+        targetValue = when {
+            frosted -> Color.White.copy(alpha = 0.55f)
+            isScrolled -> Color.White.copy(alpha = 0.72f)
+            else -> Color.White.copy(alpha = 0.22f)
+        },
+        label = "actionContainer"
     )
 
     TopAppBar(
@@ -64,7 +77,7 @@ fun TopBarCustom(
                     .padding(end = 8.dp)
                     .size(38.dp),
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = if (isScrolled) Color.White.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.22f),
+                    containerColor = actionContainer,
                     contentColor = iconColor
                 )
             ) {

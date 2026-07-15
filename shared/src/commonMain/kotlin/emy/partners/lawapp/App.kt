@@ -611,15 +611,17 @@ fun App() {
                     ?.topLevelDestinationKind
                     ?: TopLevelDestinationKind.Home
                 val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.showsAppChrome != false
+                val isHomeChrome = selectedTopLevel == TopLevelDestinationKind.Home
                 Scaffold(
                     //            contentWindowInsets = WindowInsets(0),
                     bottomBar = {
                         if (showsAppChrome) {
+                            // Meme style partout : glace liquid, fond transparent (pas d'image dediee).
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(9.dp))
                                     .liquid(liquidState)
-                                    .background(Color.White.copy(alpha = 0.5f))
+                                    .background(Color.Transparent)
                             ) {
                                 BottomAppBar(
                                     containerColor = Color.Transparent,
@@ -658,21 +660,48 @@ fun App() {
                     },
                     topBar = {
                         if (showsAppChrome) {
-                            TopBarCustom(
-                                scrollState = topBarScrollState,
-                                onActionClick = {
-                                    val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
-                                    if (!loggedIn) {
-                                        navigator.push(LoginScreen())
-                                    } else {
-                                        navigator.push(
-                                            ContentCreateScreen(
-                                                initialDestination = selectedTopLevel.toDestination()
+                            if (isHomeChrome) {
+                                TopBarCustom(
+                                    scrollState = topBarScrollState,
+                                    frosted = false,
+                                    onActionClick = {
+                                        val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+                                        if (!loggedIn) {
+                                            navigator.push(LoginScreen())
+                                        } else {
+                                            navigator.push(
+                                                ContentCreateScreen(
+                                                    initialDestination = selectedTopLevel.toDestination()
+                                                )
                                             )
-                                        )
+                                        }
                                     }
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
+                                        .liquid(liquidState)
+                                        .background(Color.Transparent)
+                                ) {
+                                    TopBarCustom(
+                                        scrollState = topBarScrollState,
+                                        frosted = true,
+                                        onActionClick = {
+                                            val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+                                            if (!loggedIn) {
+                                                navigator.push(LoginScreen())
+                                            } else {
+                                                navigator.push(
+                                                    ContentCreateScreen(
+                                                        initialDestination = selectedTopLevel.toDestination()
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    )
                                 }
-                            )
+                            }
                         }
                     }
                     //            contentWindowInsets = WindowInsets(0, 0, 0, 0) // Désactive les insets par défaut
