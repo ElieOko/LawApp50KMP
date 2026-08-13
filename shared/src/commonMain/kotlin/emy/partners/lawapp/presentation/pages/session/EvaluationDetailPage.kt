@@ -67,7 +67,6 @@ fun EvaluationDetailBuild(
     scrollVertical: ScrollState = rememberScrollState()
 ) {
     val completed = evaluation.status == EvaluationStatus.Completed || evaluation.alreadySubmitted
-    val remaining = evaluation.questionCount - evaluation.completedQuestions
 
     Column(
         Modifier
@@ -125,8 +124,9 @@ fun EvaluationDetailBuild(
                             modifier = Modifier.weight(1f)
                         )
                         DetailMetric(
-                            label = "Compteur",
-                            value = if (completed) "0 restant" else "$remaining restant",
+                            label = "Chrono",
+                            value = evaluation.compteurMinutes?.takeIf { it > 0 }?.let { "$it min" }
+                                ?: evaluation.duration,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -161,7 +161,7 @@ fun EvaluationDetailBuild(
                     ) {
                         DetailLine("Niveau", evaluation.level)
                         DetailLine("Questions", "${evaluation.completedQuestions}/${evaluation.questionCount}")
-                        DetailLine("Duree", evaluation.duration)
+                        DetailLine("Chrono", evaluation.duration)
                     }
                     Spacer(Modifier.height(18.dp))
                     Text(

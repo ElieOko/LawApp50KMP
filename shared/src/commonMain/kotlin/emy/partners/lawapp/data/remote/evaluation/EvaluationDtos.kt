@@ -104,6 +104,7 @@ data class EvaluationPassageDto(
     val description: String? = null,
     val startDate: String? = null,
     val endDate: String? = null,
+    val compteur: Long? = null,
     val questions: List<EvaluationQuestionPassageDto> = emptyList(),
 )
 
@@ -201,6 +202,7 @@ data class EvaluationTakeSheet(
     val startDate: String?,
     val endDate: String?,
     val questions: List<EvaluationTakeQuestion>,
+    val compteurMinutes: Long = 0,
 )
 
 data class EvaluationAnswerInput(
@@ -233,6 +235,8 @@ data class EvaluationAttemptProgress(
     val optionAnswers: List<EvaluationOptionAnswerStore> = emptyList(),
     val textAnswers: List<EvaluationTextAnswerStore> = emptyList(),
     val questionCount: Int = 0,
+    val durationMinutes: Long = 0,
+    val startedAtEpochMs: Long? = null,
 ) {
     val answeredCount: Int
         get() {
@@ -277,6 +281,7 @@ fun EvaluationSessionDto.toSession(
         alreadySubmitted = completed,
         startDate = startDate,
         endDate = endDate,
+        compteurMinutes = minutes,
     )
 }
 
@@ -341,6 +346,7 @@ fun EvaluationSessionDto.toTakeSheet(): EvaluationTakeSheet? {
         startDate = startDate,
         endDate = endDate,
         questions = questions,
+        compteurMinutes = compteur?.takeIf { it > 0 } ?: 0L,
     )
 }
 
@@ -372,6 +378,7 @@ fun EvaluationPassageDto.toTakeSheet(): EvaluationTakeSheet? {
         startDate = startDate,
         endDate = endDate,
         questions = mapped,
+        compteurMinutes = compteur?.takeIf { it > 0 } ?: 0L,
     )
 }
 
@@ -452,6 +459,7 @@ fun EvaluationDAO.toLocalSession(index: Int): EvaluationSession = EvaluationSess
     alreadySubmitted = false,
     startDate = startDate,
     endDate = endDate,
+    compteurMinutes = compteur?.takeIf { it > 0 },
 )
 
 private fun String?.toQuestionKind(hasOptions: Boolean): EvaluationQuestionKind {

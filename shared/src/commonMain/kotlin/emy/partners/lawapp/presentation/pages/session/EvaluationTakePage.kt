@@ -50,6 +50,11 @@ import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
 import emy.partners.lawapp.data.remote.evaluation.EvaluationTakeQuestion
 import emy.partners.lawapp.data.remote.evaluation.EvaluationTakeSheet
 import emy.partners.lawapp.data.remote.evaluation.EvaluationTextAnswerStore
+import emy.partners.lawapp.data.remote.evaluation.formatCountdown
+import emy.partners.lawapp.data.remote.evaluation.nowEpochMs
+import emy.partners.lawapp.data.remote.evaluation.remainingSeconds
+import emy.partners.lawapp.data.remote.evaluation.resolveCompteurMinutes
+import kotlinx.coroutines.delay
 import emy.partners.lawapp.presentation.pages.auth.AuthColors
 import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
 import emy.partners.lawapp.presentation.pages.auth.AuthLoadingDialog
@@ -81,13 +86,17 @@ fun EvaluationTakePage(
     var resultTitle by remember { mutableStateOf<String?>(null) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     var allowExitAfterResult by remember { mutableStateOf(false) }
+    var startedAtEpochMs by remember { mutableStateOf<Long?>(null) }
+    var secondsLeft by remember { mutableStateOf(-1L) }
+    var timeExpired by remember { mutableStateOf(false) }
     val currentIndex = remember { mutableIntStateOf(0) }
     val selectedOptions = remember { mutableStateMapOf<Long, Long>() }
     val textAnswers = remember { mutableStateMapOf<Long, String>() }
-    val examInProgress = errorMessage == null && (sheet == null || sheet!!.questions.isNotEmpty())
+    val examInProgress = errorMessage == null && (sheet == null || sheet!!.questions.isNotEmpty()) && !allowExitAfterResult
     LockSystemBack(enabled = examInProgress)
 
     fun persistProgress(currentSheet: EvaluationTakeSheet) {
+        val existing = EvaluationRepository.loadAttemptProgress(currentSheet.id)
         EvaluationRepository.saveAttemptProgress(
             EvaluationAttemptProgress(
                 evaluationId = currentSheet.id,
@@ -99,8 +108,80 @@ fun EvaluationTakePage(
                     EvaluationTextAnswerStore(questionId = questionId, text = text)
                 },
                 questionCount = currentSheet.questions.size,
+                durationMinutes = resolveCompteurMinutes(
+                    existing?.durationMinutes,
+                    currentSheet.compteurMinutes,
+                ),
+                startedAtEpochMs = existing?.startedAtEpochMs?.takeIf { it > 0L }
+                    ?: startedAtEpochMs
+                    ?: nowEpochMs(),
             )
         )
+    }
+
+    fun collectAnswers(currentSheet: EvaluationTakeSheet): List<EvaluationAnswerInput> =
+        currentSheet.questions.mapNotNull { item ->
+            when (item.kind) {
+                EvaluationQuestionKind.Option -> {
+                    val optionId = selectedOptions[item.id] ?: return@mapNotNull null
+                    EvaluationAnswerInput(
+                        questionId = item.id,
+                        selectedOptionId = optionId,
+                    )
+                }
+                else -> {
+                    val text = textAnswers[item.id]?.trim().orEmpty()
+                    if (text.isBlank()) return@mapNotNull null
+                    EvaluationAnswerInput(
+                        questionId = item.id,
+                        textResponse = text,
+                    )
+                }
+            }
+        }
+
+    fun submitEvaluation(currentSheet: EvaluationTakeSheet, timedOut: Boolean) {
+        if (isSubmitting) return
+        persistProgress(currentSheet)
+        val answers = collectAnswers(currentSheet)
+        if (timedOut && answers.isEmpty()) {
+            EvaluationRepository.clearAttempt(currentSheet.id)
+            allowExitAfterResult = true
+            resultTitle = "Temps ecoule"
+            resultMessage = "Le chrono est termine. Aucune reponse n'a pu etre envoyee."
+            return
+        }
+        isSubmitting = true
+        scope.launch {
+            EvaluationRepository.submitAnswers(currentSheet.id, answers)
+                .onSuccess { result ->
+                    allowExitAfterResult = true
+                    resultTitle = if (timedOut) "Temps ecoule" else "Evaluation soumise"
+                    resultMessage = if (timedOut) {
+                        "Le chrono est termine. Tes reponses ont ete envoyees."
+                    } else {
+                        result.message
+                    }
+                }
+                .onFailure {
+                    val message = it.message.orEmpty()
+                    val alreadyDone = message.lowercase().let { text ->
+                        text.contains("deja") ||
+                            text.contains("déjà") ||
+                            text.contains("une seule") ||
+                            text.contains("already")
+                    }
+                    if (alreadyDone || timedOut) {
+                        EvaluationRepository.clearAttempt(currentSheet.id)
+                        allowExitAfterResult = true
+                    }
+                    resultTitle = if (timedOut) "Temps ecoule" else "Soumission impossible"
+                    resultMessage = message.ifBlank {
+                        if (timedOut) "Le chrono est termine." else "La soumission a echoue"
+                    }
+                }
+            isSubmitting = false
+        }
     }
 
     LaunchedEffect(evaluationId) {
@@ -110,8 +191,20 @@ fun EvaluationTakePage(
                 sheet = loaded
                 errorMessage = null
                 if (loaded.questions.isNotEmpty()) {
-                    EvaluationRepository.beginAttempt(loaded.id, loaded.questions.size)
+                    EvaluationRepository.beginAttempt(
+                        evaluationId = loaded.id,
+                        questionCount = loaded.questions.size,
+                        durationMinutes = loaded.compteurMinutes,
+                    )
                     val saved = EvaluationRepository.loadAttemptProgress(loaded.id)
+                    startedAtEpochMs = saved?.startedAtEpochMs?.takeIf { it > 0L } ?: nowEpochMs()
+                    secondsLeft = remainingSeconds(
+                        startedAtEpochMs = startedAtEpochMs ?: 0L,
+                        durationMinutes = resolveCompteurMinutes(
+                            saved?.durationMinutes,
+                            loaded.compteurMinutes,
+                        ),
+                    )
                     if (saved != null) {
                         currentIndex.intValue = saved.currentIndex.coerceIn(0, loaded.questions.lastIndex)
                         selectedOptions.clear()
@@ -119,12 +212,38 @@ fun EvaluationTakePage(
                         textAnswers.clear()
                         textAnswers.putAll(saved.textAnswers.associate { it.questionId to it.text })
                     }
+                    persistProgress(loaded)
                 }
             }
             .onFailure {
                 errorMessage = it.message ?: "Impossible d'ouvrir cette evaluation"
             }
         isLoading = false
+    }
+
+    LaunchedEffect(sheet?.id, startedAtEpochMs, sheet?.compteurMinutes) {
+        val currentSheet = sheet ?: return@LaunchedEffect
+        val started = startedAtEpochMs ?: return@LaunchedEffect
+        val minutes = currentSheet.compteurMinutes
+        if (minutes <= 0L) {
+            secondsLeft = -1L
+            return@LaunchedEffect
+        }
+        while (true) {
+            val left = remainingSeconds(started, minutes)
+            secondsLeft = left
+            if (left <= 0L) {
+                timeExpired = true
+                break
+            }
+            delay(1_000)
+        }
+    }
+
+    LaunchedEffect(timeExpired) {
+        val currentSheet = sheet ?: return@LaunchedEffect
+        if (!timeExpired || isSubmitting || allowExitAfterResult) return@LaunchedEffect
+        submitEvaluation(currentSheet, timedOut = true)
     }
 
     Column(
@@ -192,6 +311,9 @@ fun EvaluationTakePage(
                     answered = answeredCount,
                     total = currentSheet.questions.size,
                     progress = progress,
+                    compteurMinutes = currentSheet.compteurMinutes,
+                    secondsLeft = secondsLeft,
+                    expired = timeExpired,
                 )
                 Spacer(Modifier.height(14.dp))
                 AuthFormPanel {
@@ -201,13 +323,17 @@ fun EvaluationTakePage(
                         total = currentSheet.questions.size,
                         selectedOptionId = selectedOptions[question.id],
                         textValue = textAnswers[question.id].orEmpty(),
-                        onSelectOption = {
-                            selectedOptions[question.id] = it
-                            persistProgress(currentSheet)
+                        onSelectOption = { optionId ->
+                            if (!timeExpired) {
+                                selectedOptions[question.id] = optionId
+                                persistProgress(currentSheet)
+                            }
                         },
-                        onTextChange = {
-                            textAnswers[question.id] = it
-                            persistProgress(currentSheet)
+                        onTextChange = { value ->
+                            if (!timeExpired) {
+                                textAnswers[question.id] = value
+                                persistProgress(currentSheet)
+                            }
                         },
                     )
                     Spacer(Modifier.height(14.dp))
@@ -218,6 +344,7 @@ fun EvaluationTakePage(
                                     currentIndex.intValue -= 1
                                     persistProgress(currentSheet)
                                 },
+                                enabled = !isSubmitting && !timeExpired,
                                 modifier = Modifier.weight(1f).height(52.dp),
                                 shape = RoundedCornerShape(18.dp),
                             ) {
@@ -227,58 +354,14 @@ fun EvaluationTakePage(
                         Box(Modifier.weight(1.4f)) {
                             AuthPrimaryButton(
                                 text = if (isLast) "Soumettre l'evaluation" else "Question suivante",
-                                enabled = canAdvance && !isSubmitting,
+                                enabled = canAdvance && !isSubmitting && !timeExpired,
                                 onClick = {
                                     if (!isLast) {
                                         currentIndex.intValue += 1
                                         persistProgress(currentSheet)
                                         return@AuthPrimaryButton
                                     }
-                                    val answers = currentSheet.questions.mapNotNull { item ->
-                                        when (item.kind) {
-                                            EvaluationQuestionKind.Option -> {
-                                                val optionId = selectedOptions[item.id] ?: return@mapNotNull null
-                                                EvaluationAnswerInput(
-                                                    questionId = item.id,
-                                                    selectedOptionId = optionId,
-                                                )
-                                            }
-                                            else -> {
-                                                val text = textAnswers[item.id]?.trim().orEmpty()
-                                                if (text.isBlank()) return@mapNotNull null
-                                                EvaluationAnswerInput(
-                                                    questionId = item.id,
-                                                    textResponse = text,
-                                                )
-                                            }
-                                        }
-                                    }
-                                    persistProgress(currentSheet)
-                                    isSubmitting = true
-                                    scope.launch {
-                                        EvaluationRepository.submitAnswers(currentSheet.id, answers)
-                                            .onSuccess { result ->
-                                                allowExitAfterResult = true
-                                                resultTitle = "Evaluation soumise"
-                                                resultMessage = result.message
-                                            }
-                                            .onFailure {
-                                                val message = it.message.orEmpty()
-                                                val alreadyDone = message.lowercase().let { text ->
-                                                    text.contains("deja") ||
-                                                        text.contains("déjà") ||
-                                                        text.contains("une seule") ||
-                                                        text.contains("already")
-                                                }
-                                                if (alreadyDone) {
-                                                    EvaluationRepository.clearAttempt(currentSheet.id)
-                                                    allowExitAfterResult = true
-                                                }
-                                                resultTitle = "Soumission impossible"
-                                                resultMessage = message.ifBlank { "La soumission a echoue" }
-                                            }
-                                        isSubmitting = false
-                                    }
+                                    submitEvaluation(currentSheet, timedOut = false)
                                 },
                             )
                         }
@@ -310,6 +393,9 @@ private fun EvaluationTakeHeader(
     answered: Int,
     total: Int,
     progress: Float,
+    compteurMinutes: Long,
+    secondsLeft: Long,
+    expired: Boolean,
 ) {
     Column(
         Modifier
@@ -326,11 +412,28 @@ private fun EvaluationTakeHeader(
             )
             .padding(18.dp)
     ) {
-        Text("Evaluation verrouillee", color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Evaluation verrouillee", color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            ChronoBadge(
+                compteurMinutes = compteurMinutes,
+                secondsLeft = secondsLeft,
+                expired = expired,
+            )
+        }
         Spacer(Modifier.height(8.dp))
         Text(
-            "Menus et navigation desactives jusqu'a la soumission. Ta progression est enregistree a chaque reponse.",
+            if (compteurMinutes > 0L) {
+                "Menus et navigation desactives. Le compteur de ${compteurMinutes.toInt()} min continue meme si tu quittes l'ecran."
+            } else {
+                "Menus et navigation desactives jusqu'a la soumission. Ta progression est enregistree a chaque reponse."
+            },
             color = Color.White.copy(alpha = 0.78f),
             fontSize = 13.sp,
             lineHeight = 18.sp,
@@ -351,6 +454,34 @@ private fun EvaluationTakeHeader(
             color = Color.White.copy(alpha = 0.8f),
             fontWeight = FontWeight.Bold,
         )
+    }
+}
+
+@Composable
+private fun ChronoBadge(
+    compteurMinutes: Long,
+    secondsLeft: Long,
+    expired: Boolean,
+) {
+    val urgent = expired || (secondsLeft in 0L..59L)
+    val label = when {
+        compteurMinutes <= 0L -> "Sans limite"
+        expired || secondsLeft == 0L -> "00:00"
+        secondsLeft < 0L -> formatCountdown(compteurMinutes * 60L)
+        else -> formatCountdown(secondsLeft)
+    }
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (urgent && compteurMinutes > 0L) Color(0xFFEF4444) else Color.White.copy(alpha = 0.16f))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.End,
+    ) {
+        Text("Chrono", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+        if (compteurMinutes > 0L) {
+            Text("${compteurMinutes.toInt()} min", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+        }
     }
 }
 

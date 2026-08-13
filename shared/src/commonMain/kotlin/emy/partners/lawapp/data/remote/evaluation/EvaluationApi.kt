@@ -249,6 +249,7 @@ object EvaluationRepository {
             val passage = api.getPassage(token, id)
             if (passage.isSuccess) {
                 val sheet = passage.getOrNull()?.toTakeSheet()
+                    ?.withFallbackMinutes(fallbackCompteurMinutes(id))
                 if (sheet != null && sheet.questions.isNotEmpty()) {
                     return Result.success(sheet)
                 }
@@ -259,6 +260,7 @@ object EvaluationRepository {
         }
         detail.id?.let { memoryDetails = memoryDetails + (it to detail) }
         val sheet = detail.toTakeSheet()
+            ?.withFallbackMinutes(fallbackCompteurMinutes(id))
             ?: return Result.failure(EvaluationApiException("Aucune question pour cette evaluation"))
         if (sheet.questions.isEmpty()) {
             return Result.failure(EvaluationApiException("Aucune question pour cette evaluation"))
@@ -336,14 +338,33 @@ object EvaluationRepository {
         }.getOrNull()
     }
 
-    fun beginAttempt(evaluationId: Long, questionCount: Int) {
+    fun beginAttempt(evaluationId: Long, questionCount: Int, durationMinutes: Long = 0) {
         val userId = AuthRepository.currentSession?.profile?.userId ?: return
         store.putString(activeAttemptKey(userId), evaluationId.toString())
-        if (loadAttemptProgress(evaluationId) == null) {
+        val existing = loadAttemptProgress(evaluationId)
+        val startedAt = existing?.startedAtEpochMs?.takeIf { it > 0L } ?: nowEpochMs()
+        val duration = resolveCompteurMinutes(existing?.durationMinutes, durationMinutes)
+        if (existing == null) {
             saveAttemptProgress(
                 EvaluationAttemptProgress(
                     evaluationId = evaluationId,
                     questionCount = questionCount,
+                    durationMinutes = duration,
+                    startedAtEpochMs = startedAt,
+                )
+            )
+            return
+        }
+        val needsUpdate = existing.startedAtEpochMs == null ||
+            existing.startedAtEpochMs <= 0L ||
+            (existing.durationMinutes <= 0L && duration > 0L) ||
+            (existing.questionCount <= 0 && questionCount > 0)
+        if (needsUpdate) {
+            saveAttemptProgress(
+                existing.copy(
+                    questionCount = existing.questionCount.takeIf { it > 0 } ?: questionCount,
+                    durationMinutes = duration,
+                    startedAtEpochMs = startedAt,
                 )
             )
         }
@@ -415,6 +436,12 @@ object EvaluationRepository {
 
     private fun submittedKey(userId: Long): String = KEY_SUBMITTED_PREFIX + userId
 
+    private fun fallbackCompteurMinutes(id: Long): Long =
+        resolveCompteurMinutes(
+            memoryDetails[id]?.compteur,
+            cachedSession(id)?.compteurMinutes,
+        )
+
     private fun persistCache(items: List<EvaluationSession>) {
         store.putString(
             KEY_EVAL_CACHE,
@@ -458,6 +485,7 @@ private data class EvaluationCacheItem(
     val alreadySubmitted: Boolean = false,
     val startDate: String? = null,
     val endDate: String? = null,
+    val compteurMinutes: Long? = null,
 )
 
 private fun EvaluationSession.toCacheItem() = EvaluationCacheItem(
@@ -477,6 +505,7 @@ private fun EvaluationSession.toCacheItem() = EvaluationCacheItem(
     alreadySubmitted = alreadySubmitted,
     startDate = startDate,
     endDate = endDate,
+    compteurMinutes = compteurMinutes,
 )
 
 private fun EvaluationCacheItem.toSession() = EvaluationSession(
@@ -500,4 +529,5 @@ private fun EvaluationCacheItem.toSession() = EvaluationSession(
     alreadySubmitted = alreadySubmitted,
     startDate = startDate,
     endDate = endDate,
+    compteurMinutes = compteurMinutes,
 )

@@ -2,9 +2,13 @@ package emy.partners.lawapp
 
 import emy.partners.lawapp.data.remote.AppJson
 import emy.partners.lawapp.data.remote.evaluation.EvaluationSessionDto
+import emy.partners.lawapp.data.remote.evaluation.formatCountdown
+import emy.partners.lawapp.data.remote.evaluation.remainingSeconds
+import emy.partners.lawapp.data.remote.evaluation.resolveCompteurMinutes
 import emy.partners.lawapp.data.remote.evaluation.toCreateRequest
 import emy.partners.lawapp.data.remote.evaluation.toSession
 import emy.partners.lawapp.data.remote.evaluation.toTakeSheet
+import emy.partners.lawapp.data.remote.evaluation.withFallbackMinutes
 import emy.partners.lawapp.data.remote.extractArray
 import emy.partners.lawapp.data.remote.quiz.QuizDetailDto
 import emy.partners.lawapp.data.remote.quiz.QuizSummaryDto
@@ -75,6 +79,67 @@ class QuizEvaluationApiMappingTest {
         assertEquals(4L, sheet.questions.first().id)
         assertEquals(3, sheet.questions.first().options.size)
         assertEquals(8L, sheet.questions.first().options.first().id)
+        assertEquals(0L, sheet.compteurMinutes)
+    }
+
+    @Test
+    fun mapsEvaluationCompteurAsChronoMinutes() {
+        val body = """
+            {
+              "id":9,
+              "title":"Interrogation 1 Kotlin",
+              "description":"QCM",
+              "compteur":45,
+              "startDate":"2026-08-13",
+              "endDate":"2026-08-14",
+              "option":[
+                {
+                  "question":{"id":1,"evaluationId":9,"title":"val ou var","point":1.0},
+                  "questionOption":[
+                    {"id":1,"questionId":1,"option":"val","isValid":true}
+                  ]
+                }
+              ],
+              "ouverte":[],
+              "caseStudy":[]
+            }
+        """.trimIndent()
+        val dto = json.decodeFromString(EvaluationSessionDto.serializer(), body)
+        val session = dto.toSession(canAnswer = true, alreadySubmitted = false)
+        assertNotNull(session)
+        assertEquals(45L, session.compteurMinutes)
+        assertEquals("45 min", session.duration)
+
+        val sheet = dto.toTakeSheet()
+        assertNotNull(sheet)
+        assertEquals(45L, sheet.compteurMinutes)
+
+        val passage = emy.partners.lawapp.data.remote.evaluation.EvaluationPassageDto(
+            id = 9,
+            title = "Interrogation 1 Kotlin",
+            compteur = null,
+            questions = emptyList(),
+        )
+        val passageSheet = passage.toTakeSheet()
+        assertNotNull(passageSheet)
+        assertEquals(0L, passageSheet.compteurMinutes)
+        assertEquals(45L, passageSheet.withFallbackMinutes(session.compteurMinutes ?: 0L).compteurMinutes)
+    }
+
+    @Test
+    fun countdownUsesCompteurMinutesFromStartTime() {
+        val started = 1_000_000L
+        assertEquals(-1L, remainingSeconds(started, 0, started))
+        assertEquals(30 * 60L, remainingSeconds(started, 30, started))
+        assertEquals(29 * 60L, remainingSeconds(started, 30, started + 60_000L))
+        assertEquals(0L, remainingSeconds(started, 30, started + 30 * 60_000L))
+        assertEquals(0L, remainingSeconds(started, 30, started + 40 * 60_000L))
+        assertEquals("30:00", formatCountdown(30 * 60L))
+        assertEquals("01:00", formatCountdown(60))
+        assertEquals("00:09", formatCountdown(9))
+        assertEquals("1:05:07", formatCountdown(3907))
+        assertEquals(45L, resolveCompteurMinutes(0, null, 45, 10))
+        assertEquals(0L, resolveCompteurMinutes(0, null, -3))
     }
 
     @Test
@@ -102,6 +167,7 @@ class QuizEvaluationApiMappingTest {
         assertEquals("Interro 3", request.title)
         assertEquals("2026-08-13", request.startDate)
         assertEquals("2026-08-14", request.endDate)
+        assertEquals(30L, request.compteur)
         assertEquals(1, request.option.size)
         assertEquals("Le consentement", request.option.first().questionOption.first().option)
         assertTrue(request.option.first().questionOption.first().goal)

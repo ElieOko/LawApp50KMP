@@ -17,6 +17,7 @@ data class EvaluationSession(
     val alreadySubmitted: Boolean = false,
     val startDate: String? = null,
     val endDate: String? = null,
+    val compteurMinutes: Long? = null,
 )
 
 enum class EvaluationStatus {
