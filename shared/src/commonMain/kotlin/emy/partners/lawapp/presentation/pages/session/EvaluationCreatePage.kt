@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import emy.partners.lawapp.convertMillisToDate
 import emy.partners.lawapp.data.Constants.typeEvaluationItems
+import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.Question
 import emy.partners.lawapp.domain.models.QuestionCaseStudy
@@ -68,11 +70,14 @@ import emy.partners.lawapp.presentation.components.basics.PickedFile
 import emy.partners.lawapp.presentation.components.basics.PlatformPdfViewer
 import emy.partners.lawapp.presentation.components.basics.StepPager
 import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
+import emy.partners.lawapp.presentation.pages.auth.AuthLoadingDialog
+import emy.partners.lawapp.presentation.pages.auth.AuthMessageDialog
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 import lawapp.shared.generated.resources.Res
 import lawapp.shared.generated.resources.date
 import org.jetbrains.compose.resources.DrawableResource
+import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
 @Composable
@@ -123,6 +128,11 @@ fun EvaluationCreateBuild(
     val openQuestions = remember { mutableStateListOf<QuestionOuverteDAO>() }
     val caseStudyQuestions = remember { mutableStateListOf<QuestionCaseStudyDAO>() }
     val attachedFiles = remember { mutableStateListOf<PickedFile>() }
+    val scope = rememberCoroutineScope()
+    var isSaving by remember { mutableStateOf(false) }
+    var dialogTitle by remember { mutableStateOf<String?>(null) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
+    var pendingSave by remember { mutableStateOf<EvaluationDAO?>(null) }
     val totalQuestions = optionQuestions.size + openQuestions.size + caseStudyQuestions.size
     val durationTotalMinutes = (durationHours * 60) + durationMinutes
     val durationLabel = formatDuration(durationTotalMinutes)
@@ -677,15 +687,29 @@ fun EvaluationCreateBuild(
                                 ouverte = openQuestions.toList(),
                                 caseStudy = caseStudyQuestions.toList()
                             )
-                            onSave(dao)
-                            savedMessage = "Evaluation enregistree avec $totalQuestions question(s) - chrono $durationLabel"
+                            isSaving = true
+                            scope.launch {
+                                EvaluationRepository.createEvaluation(dao)
+                                    .onSuccess {
+                                        savedMessage = "Evaluation envoyee avec $totalQuestions question(s)"
+                                        pendingSave = dao
+                                        dialogTitle = "Evaluation publiee"
+                                        dialogMessage = "La session a ete soumise au serveur."
+                                    }
+                                    .onFailure {
+                                        savedMessage = it.message ?: "Publication impossible"
+                                        dialogTitle = "Publication impossible"
+                                        dialogMessage = it.message ?: "La creation de l'evaluation a echoue."
+                                    }
+                                isSaving = false
+                            }
                         }
                     },
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),
                     shape = RoundedCornerShape(18.dp),
-                    enabled = canGoNext,
+                    enabled = canGoNext && !isSaving,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = BlueDark,
@@ -694,12 +718,30 @@ fun EvaluationCreateBuild(
                     )
                 ) {
                     Text(
-                        if (currentStep == stepLabels.lastIndex) "Enregistrer" else "Suivant",
+                        if (currentStep == stepLabels.lastIndex) {
+                            if (isSaving) "Publication..." else "Publier"
+                        } else {
+                            "Suivant"
+                        },
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
             }
             Spacer(Modifier.height(90.dp))
+            AuthLoadingDialog(visible = isSaving, message = "Publication de l'evaluation...")
+            if (dialogTitle != null && dialogMessage != null) {
+                AuthMessageDialog(
+                    title = dialogTitle.orEmpty(),
+                    message = dialogMessage.orEmpty(),
+                    onConfirm = {
+                        val saved = pendingSave
+                        dialogTitle = null
+                        dialogMessage = null
+                        pendingSave = null
+                        if (saved != null) onSave(saved)
+                    }
+                )
+            }
             if (showDatePicker) {
                 Popup(
                     onDismissRequest = { showDatePicker = false },

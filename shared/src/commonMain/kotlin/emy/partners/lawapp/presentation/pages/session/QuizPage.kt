@@ -12,16 +12,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,14 +37,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import emy.partners.lawapp.data.Constants
-import emy.partners.lawapp.domain.models.QuizQuestion
+import emy.partners.lawapp.data.remote.quiz.QuizRepository
+import emy.partners.lawapp.data.remote.quiz.QuizSummary
 import emy.partners.lawapp.presentation.pages.auth.AuthColors
 import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
 import emy.partners.lawapp.presentation.pages.auth.AuthPrimaryButton
 import emy.partners.lawapp.presentation.settings.LocalAppUiController
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
+import kotlinx.coroutines.launch
 
 private val PageBgLight = Color(0xFFE8EEF7)
 private val PageBgDark = Color(0xFF0B1220)
@@ -46,76 +53,160 @@ private val PageBgDark = Color(0xFF0B1220)
 @Composable
 fun QuizPage(
     modifier: Modifier = Modifier,
+    onQuizClick: (QuizSummary) -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
-    QuizBuild(modifier, scrollVertical)
+    val scope = rememberCoroutineScope()
+    var quizzes by remember { mutableStateOf(QuizRepository.cachedQuizzes()) }
+    var isInitialLoading by remember { mutableStateOf(quizzes.isEmpty()) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        val cached = QuizRepository.cachedQuizzes()
+        if (cached.isNotEmpty()) {
+            quizzes = cached
+            isInitialLoading = false
+        }
+        val loader = if (cached.isEmpty()) {
+            QuizRepository.loadQuizzes()
+        } else {
+            QuizRepository.refreshQuizzes()
+        }
+        loader
+            .onSuccess {
+                quizzes = it
+                errorMessage = null
+            }
+            .onFailure {
+                if (quizzes.isEmpty()) {
+                    errorMessage = it.message ?: "Impossible de charger les quiz"
+                }
+            }
+        isInitialLoading = false
+    }
+
+    QuizBuild(
+        modifier = modifier,
+        quizzes = quizzes,
+        isLoading = isInitialLoading,
+        isRefreshing = isRefreshing,
+        errorMessage = errorMessage,
+        onRetry = {
+            isRefreshing = true
+            scope.launch {
+                QuizRepository.refreshQuizzes()
+                    .onSuccess {
+                        quizzes = it
+                        errorMessage = null
+                    }
+                    .onFailure {
+                        if (quizzes.isEmpty()) {
+                            errorMessage = it.message ?: "Impossible de charger les quiz"
+                        }
+                    }
+                isRefreshing = false
+            }
+        },
+        onQuizClick = onQuizClick,
+        scrollVertical = scrollVertical,
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizBuild(
     modifier: Modifier = Modifier,
+    quizzes: List<QuizSummary> = emptyList(),
+    isLoading: Boolean = false,
+    isRefreshing: Boolean = false,
+    errorMessage: String? = null,
+    onRetry: () -> Unit = {},
+    onQuizClick: (QuizSummary) -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     val ui = LocalAppUiController.current
     val pageBg = if (ui.settings.darkMode) PageBgDark else PageBgLight
-    val questions = remember { Constants.quizQuestions }
-    val currentIndex = remember { mutableIntStateOf(0) }
-    val answers = remember { mutableStateMapOf<Long, Int>() }
-    val question = questions[currentIndex.intValue]
-    val selectedIndex = answers[question.id]
-    val score = answers.count { (questionId, answerIndex) ->
-        questions.first { it.id == questionId }.correctIndex == answerIndex
-    }
-    val progress = (answers.size.toFloat() / questions.size).coerceIn(0f, 1f)
+    val pullState = rememberPullToRefreshState()
+    val completedCount = quizzes.count { it.completed }
 
-    Column(
-        modifier
-            .fillMaxSize()
-            .background(pageBg)
-            .verticalScroll(scrollVertical)
-            .padding(horizontal = 14.dp)
-            .padding(top = 8.dp, bottom = 96.dp)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRetry,
+        state = pullState,
+        modifier = modifier.fillMaxSize().background(pageBg),
     ) {
-        QuizHeader(
-            answered = answers.size,
-            total = questions.size,
-            score = score,
-            progress = progress,
-        )
-        Spacer(Modifier.height(14.dp))
-        AuthFormPanel {
-            QuestionCard(
-                question = question,
-                current = currentIndex.intValue + 1,
-                total = questions.size,
-                selectedIndex = selectedIndex,
-                onSelect = { answers[question.id] = it },
-            )
-            Spacer(Modifier.height(14.dp))
-            AuthPrimaryButton(
-                text = if (currentIndex.intValue == questions.lastIndex) {
-                    "Recommencer le tour"
-                } else {
-                    "Question suivante"
-                },
-                onClick = {
-                    currentIndex.intValue = if (currentIndex.intValue == questions.lastIndex) {
-                        0
-                    } else {
-                        currentIndex.intValue + 1
+        when {
+            isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AuthColors.AccentBright)
+                }
+            }
+            errorMessage != null && quizzes.isEmpty() -> {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        errorMessage,
+                        color = AuthColors.TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    AuthPrimaryButton(text = "Reessayer", onClick = onRetry)
+                }
+            }
+            else -> {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollVertical)
+                        .padding(horizontal = 14.dp)
+                        .padding(top = 8.dp, bottom = 96.dp)
+                ) {
+                    QuizListHeader(
+                        total = quizzes.size,
+                        completed = completedCount,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    AuthFormPanel {
+                        Text(
+                            text = "Quiz du serveur",
+                            color = AuthColors.TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = if (quizzes.isEmpty()) {
+                                "Aucun quiz n'a encore ete publie."
+                            } else {
+                                "${quizzes.size} quiz disponible(s)"
+                            },
+                            color = AuthColors.TextSecondary,
+                            fontSize = 13.sp,
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        quizzes.forEachIndexed { index, quiz ->
+                            QuizCard(quiz = quiz, onClick = { onQuizClick(quiz) })
+                            if (index != quizzes.lastIndex) {
+                                Spacer(Modifier.height(10.dp))
+                            }
+                        }
                     }
-                },
-            )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun QuizHeader(
-    answered: Int,
+private fun QuizListHeader(
     total: Int,
-    score: Int,
-    progress: Float,
+    completed: Int,
 ) {
     Column(
         Modifier
@@ -140,25 +231,15 @@ private fun QuizHeader(
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            "Entraine-toi avec des questions courtes et un feedback direct.",
+            "Les quiz crees sur le serveur, organises par niveaux.",
             color = Color.White.copy(alpha = 0.75f),
             fontSize = 14.sp,
             lineHeight = 19.sp,
         )
         Spacer(Modifier.height(16.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(9.dp)
-                .clip(RoundedCornerShape(40.dp)),
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.18f),
-        )
-        Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuizMetric("Repondu", "$answered/$total", Modifier.weight(1f))
-            QuizMetric("Score", "$score/$total", Modifier.weight(1f))
+            QuizMetric("Disponibles", total.toString(), Modifier.weight(1f))
+            QuizMetric("Termines", completed.toString(), Modifier.weight(1f))
         }
     }
 }
@@ -178,111 +259,100 @@ private fun QuizMetric(label: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun QuestionCard(
-    question: QuizQuestion,
-    current: Int,
-    total: Int,
-    selectedIndex: Int?,
-    onSelect: (Int) -> Unit,
+private fun QuizCard(
+    quiz: QuizSummary,
+    onClick: () -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFFF8FAFC))
+            .clickable(onClick = onClick)
+            .padding(14.dp)
+    ) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(question.category, color = AuthColors.AccentBright, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = quiz.notionTypeLabel,
+                    color = AuthColors.AccentBright,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                )
+                Text(
+                    text = quiz.title,
+                    color = AuthColors.TextPrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    lineHeight = 21.sp,
+                )
+            }
             Text(
-                "$current/$total",
-                color = AuthColors.TextSecondary,
+                text = if (quiz.completed) "Fait" else "Jouer",
+                color = if (quiz.completed) Color(0xFF10B981) else AuthColors.AccentBright,
                 fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(
+                        (if (quiz.completed) Color(0xFF10B981) else AuthColors.AccentBright)
+                            .copy(alpha = 0.12f)
+                    )
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
             )
         }
-        Spacer(Modifier.height(12.dp))
-        Text(
-            question.title,
-            color = AuthColors.TextPrimary,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 22.sp,
-            lineHeight = 28.sp,
-        )
-        Spacer(Modifier.height(16.dp))
-        question.options.forEachIndexed { index, option ->
-            AnswerOption(
-                label = option,
-                index = index,
-                correctIndex = question.correctIndex,
-                selectedIndex = selectedIndex,
-                onClick = { onSelect(index) },
-            )
-            Spacer(Modifier.height(10.dp))
-        }
-        if (selectedIndex != null) {
-            Spacer(Modifier.height(4.dp))
+        if (quiz.description.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
             Text(
-                text = if (selectedIndex == question.correctIndex) "Bonne reponse" else "A revoir",
-                color = if (selectedIndex == question.correctIndex) Color(0xFF10B981) else Color(0xFFEF4444),
-                fontWeight = FontWeight.ExtraBold,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = question.explanation,
+                text = quiz.description,
                 color = AuthColors.TextSecondary,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
             )
         }
-    }
-}
-
-@Composable
-private fun AnswerOption(
-    label: String,
-    index: Int,
-    correctIndex: Int,
-    selectedIndex: Int?,
-    onClick: () -> Unit,
-) {
-    val wasSelected = selectedIndex == index
-    val hasAnswer = selectedIndex != null
-    val color = when {
-        hasAnswer && index == correctIndex -> Color(0xFF10B981)
-        wasSelected -> Color(0xFFEF4444)
-        else -> Color(0xFFF8FAFC)
-    }
-    val contentColor = when {
-        hasAnswer && index == correctIndex -> Color.White
-        wasSelected -> Color.White
-        else -> AuthColors.TextPrimary
-    }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(color)
-            .clickable(enabled = !hasAnswer, onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .size(30.dp)
-                .clip(RoundedCornerShape(50))
-                .background(
-                    if (hasAnswer) Color.White.copy(alpha = 0.2f) else AuthColors.AccentBright.copy(alpha = 0.12f)
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(('A' + index).toString(), color = contentColor, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.size(12.dp))
-        Text(label, color = contentColor, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp)
+        Spacer(Modifier.height(12.dp))
+        LinearProgressIndicator(
+            progress = { quiz.progressPercent },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(50.dp)),
+            color = if (quiz.completed) Color(0xFF10B981) else AuthColors.AccentBright,
+            trackColor = Color.Black.copy(alpha = 0.08f),
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = if (quiz.totalLevels > 0) {
+                "Niveau ${quiz.highestCompletedLevelOrder}/${quiz.totalLevels}"
+            } else {
+                "Ouvrir le quiz"
+            },
+            color = AuthColors.TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
 @Composable
 @Preview(showBackground = true)
 fun QuizPreview() {
-    QuizBuild()
+    QuizBuild(
+        quizzes = listOf(
+            QuizSummary(
+                id = 1,
+                title = "Quiz droit civil",
+                description = "Contrats et obligations",
+                notionTypeId = 1,
+                notionTypeLabel = "Droit",
+                totalLevels = 3,
+                highestCompletedLevelOrder = 1,
+                progressPercent = 0.33f,
+            )
+        )
+    )
 }

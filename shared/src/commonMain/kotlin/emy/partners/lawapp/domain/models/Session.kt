@@ -12,7 +12,11 @@ data class EvaluationSession(
     val completedQuestions: Int,
     val duration: String,
     val updatedAt: String,
-    val level: String
+    val level: String,
+    val canAnswer: Boolean = true,
+    val alreadySubmitted: Boolean = false,
+    val startDate: String? = null,
+    val endDate: String? = null,
 )
 
 enum class EvaluationStatus {
