@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,12 +16,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,13 +39,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import emy.partners.lawapp.data.Constants
+import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
 import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
 import emy.partners.lawapp.presentation.pages.auth.AuthColors
 import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
+import emy.partners.lawapp.presentation.pages.auth.AuthPrimaryButton
 import emy.partners.lawapp.presentation.settings.LocalAppUiController
 import emy.partners.lawapp.presentation.themes.BlueDark
 import emy.partners.lawapp.presentation.themes.BlueDarkEffect
+import kotlinx.coroutines.launch
 
 private val PageBgLight = Color(0xFFE8EEF7)
 private val PageBgDark = Color(0xFF0B1220)
@@ -46,16 +56,64 @@ private val PageBgDark = Color(0xFF0B1220)
 @Composable
 fun EvaluationPage(
     modifier: Modifier = Modifier,
-    evaluations: List<EvaluationSession> = Constants.evaluations,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
     canCreateEvaluations: Boolean = false,
     createBlockedMessage: String? = null,
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
+    val scope = rememberCoroutineScope()
+    var evaluations by remember { mutableStateOf(EvaluationRepository.cachedSessions()) }
+    var isInitialLoading by remember { mutableStateOf(evaluations.isEmpty()) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        val cached = EvaluationRepository.cachedSessions()
+        if (cached.isNotEmpty()) {
+            evaluations = cached
+            isInitialLoading = false
+        }
+        val loader = if (cached.isEmpty()) {
+            EvaluationRepository.loadEvaluations()
+        } else {
+            EvaluationRepository.refreshEvaluations()
+        }
+        loader
+            .onSuccess {
+                evaluations = it
+                errorMessage = null
+            }
+            .onFailure {
+                if (evaluations.isEmpty()) {
+                    errorMessage = it.message ?: "Impossible de charger les evaluations"
+                }
+            }
+        isInitialLoading = false
+    }
+
     EvaluationBuild(
         modifier = modifier,
         evaluations = evaluations,
+        isLoading = isInitialLoading,
+        isRefreshing = isRefreshing,
+        errorMessage = errorMessage,
+        onRetry = {
+            isRefreshing = true
+            scope.launch {
+                EvaluationRepository.refreshEvaluations()
+                    .onSuccess {
+                        evaluations = it
+                        errorMessage = null
+                    }
+                    .onFailure {
+                        if (evaluations.isEmpty()) {
+                            errorMessage = it.message ?: "Impossible de charger les evaluations"
+                        }
+                    }
+                isRefreshing = false
+            }
+        },
         onEvaluationClick = onEvaluationClick,
         onCreateClick = onCreateClick,
         canCreateEvaluations = canCreateEvaluations,
@@ -64,10 +122,15 @@ fun EvaluationPage(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EvaluationBuild(
     modifier: Modifier = Modifier,
     evaluations: List<EvaluationSession> = Constants.evaluations,
+    isLoading: Boolean = false,
+    isRefreshing: Boolean = false,
+    errorMessage: String? = null,
+    onRetry: () -> Unit = {},
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
     canCreateEvaluations: Boolean = false,
@@ -76,15 +139,39 @@ fun EvaluationBuild(
 ) {
     val ui = LocalAppUiController.current
     val pageBg = if (ui.settings.darkMode) PageBgDark else PageBgLight
+    val pullState = rememberPullToRefreshState()
     var activeFilter by remember { mutableStateOf<EvaluationStatus?>(null) }
     val visibleEvaluations = evaluations.filter { activeFilter == null || it.status == activeFilter }
     val completedCount = evaluations.count { it.status == EvaluationStatus.Completed }
     val progressCount = evaluations.count { it.status == EvaluationStatus.InProgress }
 
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRetry,
+        state = pullState,
+        modifier = modifier.fillMaxSize().background(pageBg),
+    ) {
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AuthColors.AccentBright)
+            }
+            return@PullToRefreshBox
+        }
+        if (errorMessage != null && evaluations.isEmpty()) {
+            Column(
+                Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(errorMessage, color = AuthColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(12.dp))
+                AuthPrimaryButton(text = "Reessayer", onClick = onRetry)
+            }
+            return@PullToRefreshBox
+        }
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
-            .background(pageBg)
             .verticalScroll(scrollVertical)
             .padding(horizontal = 14.dp)
             .padding(top = 8.dp, bottom = 96.dp)
@@ -149,6 +236,7 @@ fun EvaluationBuild(
                 }
             }
         }
+    }
     }
 }
 

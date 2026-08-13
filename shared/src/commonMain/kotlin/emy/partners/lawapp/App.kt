@@ -47,6 +47,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import emy.partners.lawapp.data.Constants
 import emy.partners.lawapp.data.local.AppPreferences
 import emy.partners.lawapp.data.remote.auth.AuthRepository
+import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
+import emy.partners.lawapp.data.remote.quiz.QuizSummary
 import emy.partners.lawapp.domain.models.ContentDestination
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
@@ -70,7 +72,9 @@ import emy.partners.lawapp.presentation.pages.home.HomePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
+import emy.partners.lawapp.presentation.pages.session.EvaluationTakePage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
+import emy.partners.lawapp.presentation.pages.session.QuizPlayPage
 import emy.partners.lawapp.presentation.pages.settings.LanguageSettingsPage
 import emy.partners.lawapp.presentation.pages.settings.ThemeSettingsPage
 import emy.partners.lawapp.presentation.settings.AppUiController
@@ -115,7 +119,11 @@ private class LawAppNavigationContext(
     val state: LawAppState,
 ) {
     val evaluations: List<EvaluationSession>
-        get() = Constants.evaluations + state.createdEvaluations
+        get() {
+            val remote = EvaluationRepository.cachedSessions()
+            val remoteIds = remote.map { it.id }.toSet()
+            return remote + state.createdEvaluations.filter { it.id !in remoteIds }
+        }
     val createdContents: List<UserGeneratedContent>
         get() = state.createdContents
 }
@@ -266,7 +274,8 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawApp
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
-            onStartQuiz = { navigator.replaceAll(QuizScreen()) },
+            onContinue = { navigator.push(EvaluationTakeScreen(evaluationId)) },
+            onReviseWithQuiz = { navigator.replaceAll(QuizScreen()) },
             scrollVertical = scrollVertical,
         )
     }
@@ -301,6 +310,7 @@ private class QuizScreen : UniqueLawAppScreen() {
     @Composable
     override fun Content() {
         val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
         val authActions = LocalAuthActions.current
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
         val session = AuthRepository.currentSession
@@ -319,9 +329,47 @@ private class QuizScreen : UniqueLawAppScreen() {
         } else {
             QuizPage(
                 modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+                onQuizClick = { quiz: QuizSummary -> navigator.push(QuizPlayScreen(quiz.id)) },
                 scrollVertical = scrollVertical,
             )
         }
+    }
+}
+
+private data class QuizPlayScreen(val quizId: Long) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Quiz
+    override val pageStateKey: String = "quiz/play/$quizId"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        QuizPlayPage(
+            quizId = quizId,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            scrollVertical = scrollVertical,
+        )
+    }
+}
+
+private data class EvaluationTakeScreen(val evaluationId: Long) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/take/$evaluationId"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        EvaluationTakePage(
+            evaluationId = evaluationId,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onSubmitted = { navigator.pop() },
+            scrollVertical = scrollVertical,
+        )
     }
 }
 
@@ -515,7 +563,6 @@ private fun EvaluationRootContent(pageStateKey: String) {
         )
     } else {
         EvaluationPage(
-            evaluations = context.evaluations,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
             onCreateClick = {

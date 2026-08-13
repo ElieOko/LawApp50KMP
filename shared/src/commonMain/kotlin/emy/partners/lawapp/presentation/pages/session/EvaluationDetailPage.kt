@@ -43,14 +43,16 @@ fun EvaluationDetailPage(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {},
+    onContinue: () -> Unit = {},
+    onReviseWithQuiz: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
     EvaluationDetailBuild(
         evaluation = evaluation,
         modifier = modifier,
         onBack = onBack,
-        onStartQuiz = onStartQuiz,
+        onContinue = onContinue,
+        onReviseWithQuiz = onReviseWithQuiz,
         scrollVertical
     )
 }
@@ -60,10 +62,11 @@ fun EvaluationDetailBuild(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onStartQuiz: () -> Unit = {},
+    onContinue: () -> Unit = {},
+    onReviseWithQuiz: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
-    val completed = evaluation.status == EvaluationStatus.Completed
+    val completed = evaluation.status == EvaluationStatus.Completed || evaluation.alreadySubmitted
     val remaining = evaluation.questionCount - evaluation.completedQuestions
 
     Column(
@@ -172,13 +175,17 @@ fun EvaluationDetailBuild(
                     )
                     Spacer(Modifier.height(18.dp))
                     Button(
-                        onClick = onStartQuiz,
+                        onClick = if (completed) onReviseWithQuiz else onContinue,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
                     ) {
                         Text(
-                            text = if (completed) "Reviser avec un quiz" else "Continuer l'evaluation",
+                            text = when {
+                                completed -> "Reviser avec un quiz"
+                                evaluation.canAnswer -> "Commencer l'evaluation"
+                                else -> "Consulter l'evaluation"
+                            },
                             fontWeight = FontWeight.Bold
                         )
                     }
