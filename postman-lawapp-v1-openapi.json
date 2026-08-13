@@ -1,0 +1,5076 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://backend.lawapp50.com",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Quiz",
+      "description": "Quiz structurés par niveaux (QCM)"
+    },
+    {
+      "name": "Utilisateur",
+      "description": "Gestion des utilisateurs"
+    },
+    {
+      "name": "Status",
+      "description": "Publications de statut (notes / stories)"
+    },
+    {
+      "name": "Authentification",
+      "description": "Gestion des accès"
+    },
+    {
+      "name": "Payment",
+      "description": "Abonnement premium LawApp50"
+    },
+    {
+      "name": "Devise",
+      "description": "Devises de paiement"
+    },
+    {
+      "name": "Evaluation",
+      "description": "Gestion des evaluations"
+    }
+  ],
+  "paths": {
+    "/api/v1/protected/users/{id}": {
+      "get": {
+        "tags": [
+          "Utilisateur"
+        ],
+        "summary": "Detail utilisateur",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Utilisateur"
+        ],
+        "summary": "Modification utilisateur",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRequestChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/teachers/validation": {
+      "put": {
+        "tags": [
+          "teacher-controller"
+        ],
+        "summary": "Validtion compte enseignant",
+        "operationId": "goValidateAccountTeacher",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationAccountTeacher"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/reset/password": {
+      "put": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Reset password ",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPassword"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/recovery/user/{id}": {
+      "put": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Recovery Account User",
+        "operationId": "unlockAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/change/password": {
+      "put": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Change password utilisateur",
+        "operationId": "updateUser_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPassword"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/certification/{userId}": {
+      "put": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "certification user",
+        "operationId": "goCertification",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CertificationState"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/protected/quiz/{id}/progression": {
+      "post": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Enregistrer la complétion d'un niveau de quiz",
+        "operationId": "recordQuizLevelProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizProgressUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/private/teachers": {
+      "post": {
+        "tags": [
+          "teacher-controller"
+        ],
+        "summary": "Création des Enseignants",
+        "operationId": "createTeacher",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/private/quiz": {
+      "post": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Création d'un quiz avec niveaux et questions",
+        "operationId": "createQuiz",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/private/quiz/notion-types": {
+      "post": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Création d'un type de notion",
+        "operationId": "createNotionType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizNotionTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/private/document": {
+      "post": {
+        "tags": [
+          "document-controller"
+        ],
+        "summary": "Creation de document",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Création utilisateur",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Connexion utilisateur",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAuth"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/students": {
+      "post": {
+        "tags": [
+          "student-controller"
+        ],
+        "summary": "Création d'un étudiant",
+        "operationId": "createStudent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/payment/mobile/callback": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Callback FlexPaie mobile money",
+        "operationId": "mobileMoneyCallback",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionCallBack"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/api/v1/public/payment/card/callback": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Callback FlexPaie carte bancaire",
+        "operationId": "cardPaymentCallback",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionCallBack"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/api/v1/public/otp/validate": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "OTP validate account",
+        "operationId": "validationAccountOTP",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/otp/generate": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "OTP activation send code",
+        "operationId": "generateKeyOTP",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifiantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/contenu": {
+      "get": {
+        "tags": [
+          "contenu-controller"
+        ],
+        "operationId": "getAllContenu",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ContenuDto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "contenu-controller"
+        ],
+        "summary": "Creation de contenu",
+        "operationId": "createContenu",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ContenuRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/accounts/selectable": {
+      "get": {
+        "tags": [
+          "account-controller"
+        ],
+        "summary": "Liste des comptes sélectionnables (type de compte 1)",
+        "operationId": "getSelectableAccounts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AccountDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "account-controller"
+        ],
+        "summary": "Sélection du compte utilisateur (type de compte 1)",
+        "operationId": "selectAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/token/refresh": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "operationId": "refresh",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPair"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/payment/subscription": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Abonnement premium mobile money (15 USD)",
+        "operationId": "subscribeMobileMoney",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/payment/card": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Abonnement premium par carte (15 USD)",
+        "operationId": "subscribeCard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionCardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/evaluations/{id}/reponses": {
+      "post": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Soumettre les réponses à une évaluation (une seule fois, le créateur ne peut pas répondre)",
+        "operationId": "submitReponsesEvaluation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationAnswerSubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/type-document": {
+      "post": {
+        "tags": [
+          "type-document-controller"
+        ],
+        "summary": "Creation de document type",
+        "operationId": "create_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TypeDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TypeDocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/type-contenu": {
+      "post": {
+        "tags": [
+          "type-contenu-controller"
+        ],
+        "summary": "Creation de type de contenu accept : TEXTE,IMAGE,VIDEO,AUDIO,LIEN,STORY,LIVE",
+        "operationId": "create_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TypeContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TypeContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/status": {
+      "post": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Création d'un statut",
+        "operationId": "createStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/StatusPost"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/response": {
+      "post": {
+        "tags": [
+          "commentaire-response-contenu-controller"
+        ],
+        "summary": "Creation de categorie",
+        "operationId": "createResponseContenuCommentaire",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentaireResponseContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CommentaireResponseContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/like": {
+      "post": {
+        "tags": [
+          "like-contenus-controller"
+        ],
+        "summary": "Creation de like",
+        "operationId": "createLike",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavorisContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/LikeContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/favori": {
+      "post": {
+        "tags": [
+          "favori-contenu-controller"
+        ],
+        "summary": "Creation de favoris",
+        "operationId": "createFavoris",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavorisContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/FavorisContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/evaluations": {
+      "post": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Création de la session d'evaluation",
+        "operationId": "createSessionEvaluation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/commentaire": {
+      "get": {
+        "tags": [
+          "commentaire-contenu-controller"
+        ],
+        "summary": "recuperation des commentaire contenu",
+        "operationId": "getAllCategorie",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CommentaireContenuEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "commentaire-contenu-controller"
+        ],
+        "summary": "Creation de categorie",
+        "operationId": "createCommentaire",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentaireContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CommentaireContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/classrooms": {
+      "post": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Création d'une classe",
+        "operationId": "create_3",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassroomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/classrooms/users": {
+      "post": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Ajouter un utilisateur à une classe",
+        "operationId": "addUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassroomUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/categoriecontenu": {
+      "post": {
+        "tags": [
+          "categorie-contenu-controller"
+        ],
+        "summary": "Creation de categorie contenu",
+        "operationId": "createCategorieContenu",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategorieContenuRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CategorieContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/categorie": {
+      "post": {
+        "tags": [
+          "categorie-controller"
+        ],
+        "summary": "Creation de categorie",
+        "operationId": "createCategorie",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategorieRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CategorieEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/cat-document": {
+      "post": {
+        "tags": [
+          "document-categorie-controller"
+        ],
+        "summary": "Creation de document categorie",
+        "operationId": "create_4",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DocumentCategoryEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/avis": {
+      "post": {
+        "tags": [
+          "avis-contenus-controller"
+        ],
+        "summary": "Creation de avis sur contenu",
+        "operationId": "createAvisContenu",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvisContenusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/AvisContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/avis-document": {
+      "post": {
+        "tags": [
+          "avis-document-controller"
+        ],
+        "summary": "Creation de document avis",
+        "operationId": "createAvisDoc",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvisDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/AvisDocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/quiz/notion-types": {
+      "get": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Liste des types de notion (Droit, Info, etc.)",
+        "operationId": "listNotionTypes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/QuizNotionType"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/protected/teachers": {
+      "get": {
+        "tags": [
+          "teacher-controller"
+        ],
+        "summary": "Liste des Enseignatn",
+        "operationId": "getAllTeacher",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Teacher"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/protected/quiz": {
+      "get": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Liste des quiz actifs",
+        "operationId": "listQuizzes",
+        "parameters": [
+          {
+            "name": "notionTypeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Quiz"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/protected/quiz/progression": {
+      "get": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Avancement global de l'utilisateur par type de notion",
+        "operationId": "getUserProgression",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/QuizUserProgressOverview"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/protected/quiz/progression/{notionTypeId}": {
+      "get": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Avancement de l'utilisateur pour un type de notion",
+        "operationId": "getUserProgressionByNotionType",
+        "parameters": [
+          {
+            "name": "notionTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/QuizNotionTypeProgress"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/private/quiz/{id}": {
+      "get": {
+        "tags": [
+          "Quiz"
+        ],
+        "summary": "Détail d'un quiz (niveaux, questions, options)",
+        "operationId": "getQuizById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/QuizDetail"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protected/document": {
+      "get": {
+        "tags": [
+          "document-controller"
+        ],
+        "operationId": "getAll",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DocumentEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/private/document/{id}": {
+      "get": {
+        "tags": [
+          "document-controller"
+        ],
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/teacher-types": {
+      "get": {
+        "tags": [
+          "teacher-type-controller"
+        ],
+        "summary": "Liste des types d'enseignants",
+        "operationId": "getAllTeacherTypes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TeacherType"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/promotions": {
+      "get": {
+        "tags": [
+          "promotion-controller"
+        ],
+        "summary": "Liste des promotions",
+        "operationId": "getAllPromotions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Promotion"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/payment/devises": {
+      "get": {
+        "tags": [
+          "Devise"
+        ],
+        "summary": "Liste des devises disponibles",
+        "operationId": "getAllDevises",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Devise"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/evaluations": {
+      "get": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Liste des evaluations",
+        "operationId": "getAllEvaluation",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/evaluations/{id}": {
+      "get": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Liste by ID",
+        "operationId": "getEvaluationByID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/etablissements": {
+      "get": {
+        "tags": [
+          "etablissement-controller"
+        ],
+        "summary": "Liste des établissements",
+        "operationId": "getAllEtablissements",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Etablissement"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/accounts": {
+      "get": {
+        "tags": [
+          "account-controller"
+        ],
+        "summary": "Liste de Accounts",
+        "operationId": "getAllAccountE",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AccountDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/accounts/type": {
+      "get": {
+        "tags": [
+          "type-account-controller"
+        ],
+        "summary": "Liste de Type Accounts",
+        "operationId": "getAllTypeAccountE",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListTypeAccount"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/users": {
+      "get": {
+        "tags": [
+          "Utilisateur"
+        ],
+        "summary": "Liste des utilisateurs",
+        "operationId": "getListUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/type-document": {
+      "get": {
+        "tags": [
+          "type-document-controller"
+        ],
+        "operationId": "getAll_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TypeDocumentEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/type-contenu": {
+      "get": {
+        "tags": [
+          "type-contenu-controller"
+        ],
+        "operationId": "getAll_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TypeContenuEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/students": {
+      "get": {
+        "tags": [
+          "student-controller"
+        ],
+        "summary": "Liste des étudiants",
+        "operationId": "getAllStudent",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Student"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/status": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Liste des statuts actifs",
+        "operationId": "listActive",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/StatusPost"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/scope": {
+      "get": {
+        "tags": [
+          "scope-controller"
+        ],
+        "operationId": "getAllScope",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ScopeEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/scope-contenu": {
+      "get": {
+        "tags": [
+          "scope-contenu-controller"
+        ],
+        "operationId": "getAllScopeContenu",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ScopeContenuEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/response": {
+      "get": {
+        "tags": [
+          "commentaire-response-contenu-controller"
+        ],
+        "summary": "recuperation des response commentaires contenu",
+        "operationId": "getAllResponseContenuCommentaire",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CommentaireResponseContenuEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/payment/subscription/status": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Statut de l'abonnement premium",
+        "operationId": "subscriptionStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/SubscriptionStatus"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/payment/owner/{userId}": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Historique des paiements d'un utilisateur",
+        "operationId": "getPaymentsByUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/like": {
+      "get": {
+        "tags": [
+          "like-contenus-controller"
+        ],
+        "operationId": "getAllFavoris",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/LikeContenusEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/favori": {
+      "get": {
+        "tags": [
+          "favori-contenu-controller"
+        ],
+        "operationId": "getAllFavoris_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/FavorisContenusEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/evaluations/{id}/passage": {
+      "get": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Feuille d'évaluation pour répondre (sans les bonnes réponses QCM)",
+        "operationId": "getPassageEvaluation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EvaluationPassageView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/evaluations/repondre": {
+      "get": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Liste des évaluations ouvertes auxquelles vous pouvez répondre (hors les vôtres)",
+        "operationId": "listEvaluationsPourReponse",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EvaluationAnswerableSummary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/commentaire/{id}": {
+      "get": {
+        "tags": [
+          "commentaire-contenu-controller"
+        ],
+        "summary": "recuperer une commentaire contenu par id",
+        "operationId": "getById_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CommentaireContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/classrooms": {
+      "get": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Liste de toutes les classes",
+        "operationId": "getAll_3",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Classroom"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/categoriecontenu": {
+      "get": {
+        "tags": [
+          "categorie-contenu-controller"
+        ],
+        "summary": "recuperation des categories contenu",
+        "operationId": "getAllCategorieContenu",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CategorieContenuEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/categorie": {
+      "get": {
+        "tags": [
+          "categorie-controller"
+        ],
+        "summary": "recuperation des categories contenu",
+        "operationId": "getAllCategorie_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CategorieEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/cat-document": {
+      "get": {
+        "tags": [
+          "document-categorie-controller"
+        ],
+        "operationId": "getAllFavoris_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DocumentCategoryEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/avis": {
+      "get": {
+        "tags": [
+          "avis-contenus-controller"
+        ],
+        "summary": "recuperation des avis sur contenu",
+        "operationId": "getAllAvisContenu",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AvisContenusEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/protected/avis-document": {
+      "get": {
+        "tags": [
+          "avis-document-controller"
+        ],
+        "operationId": "getAllAvisDoc",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AvisDocumentEntity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/users": {
+      "get": {
+        "tags": [
+          "Utilisateur"
+        ],
+        "operationId": "getAllUserPrivate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListUserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/type-document/{id}": {
+      "get": {
+        "tags": [
+          "type-document-controller"
+        ],
+        "operationId": "getById_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TypeDocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/type-contenu/{id}": {
+      "get": {
+        "tags": [
+          "type-contenu-controller"
+        ],
+        "operationId": "getById_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TypeContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/status/{id}": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Détail d'un statut par id",
+        "operationId": "getById_4",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/StatusPost"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/scope/{id}": {
+      "get": {
+        "tags": [
+          "scope-controller"
+        ],
+        "operationId": "getById_5",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/ScopeEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/scope-contenu/{id}": {
+      "get": {
+        "tags": [
+          "scope-contenu-controller"
+        ],
+        "operationId": "getById_6",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/ScopeContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/response/{id}": {
+      "get": {
+        "tags": [
+          "commentaire-response-contenu-controller"
+        ],
+        "summary": "recuperer une Response Contenu Commentaire par id",
+        "operationId": "getById_7",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CommentaireResponseContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/like/{id}": {
+      "get": {
+        "tags": [
+          "like-contenus-controller"
+        ],
+        "operationId": "getById_8",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/LikeContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/favori/{id}": {
+      "get": {
+        "tags": [
+          "favori-contenu-controller"
+        ],
+        "operationId": "getById_9",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/FavorisContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/contenu/{id}": {
+      "get": {
+        "tags": [
+          "contenu-controller"
+        ],
+        "operationId": "getById_10",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/classrooms/{id}": {
+      "get": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Détail d'une classe",
+        "operationId": "getById_11",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Classroom"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/classrooms/{id}/users": {
+      "get": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Liste des utilisateurs d'une classe",
+        "operationId": "getUsers",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ClassroomUser"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/classrooms/mine": {
+      "get": {
+        "tags": [
+          "classroom-controller"
+        ],
+        "summary": "Liste des classes de l'utilisateur connecté",
+        "operationId": "getMine",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Classroom"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/categoriecontenu/{id}": {
+      "get": {
+        "tags": [
+          "categorie-contenu-controller"
+        ],
+        "summary": "recuperer une categorie contenu par id",
+        "operationId": "getById_12",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CategorieContenuEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/categorie/{id}": {
+      "get": {
+        "tags": [
+          "categorie-controller"
+        ],
+        "summary": "recuperer une categorie contenu par id",
+        "operationId": "getById_13",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CategorieEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/cat-document/{id}": {
+      "get": {
+        "tags": [
+          "document-categorie-controller"
+        ],
+        "operationId": "getById_14",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/DocumentCategoryEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/avis/{id}": {
+      "get": {
+        "tags": [
+          "avis-contenus-controller"
+        ],
+        "summary": "recuperer un avis sur contenu par id",
+        "operationId": "getById_15",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/AvisContenusEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/private/avis-document/{id}": {
+      "get": {
+        "tags": [
+          "avis-document-controller"
+        ],
+        "operationId": "getById_16",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/AvisDocumentEntity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google": {
+      "get": {
+        "tags": [
+          "Authentification"
+        ],
+        "operationId": "redirectToGoogle",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/protected/users/delete/user": {
+      "delete": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Delete Account User",
+        "operationId": "lockAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserRequestChange": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "city",
+          "email",
+          "firstName",
+          "lastName",
+          "phone",
+          "pseudo"
+        ]
+      },
+      "ValidationAccountTeacher": {
+        "type": "object",
+        "properties": {
+          "teacherId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "teacherId"
+        ]
+      },
+      "UserPassword": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "maxLength": 2147483647,
+            "minLength": 6
+          }
+        },
+        "required": [
+          "newPassword"
+        ]
+      },
+      "CertificationState": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "QuizProgressUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "levelOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EtablissementRequest": {
+        "type": "object",
+        "properties": {
+          "etablisementId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TeacherRequest": {
+        "type": "object",
+        "properties": {
+          "typeTeacherId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "departement": {
+            "type": "string"
+          },
+          "justificatif": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "etablissement": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtablissementRequest"
+            }
+          }
+        }
+      },
+      "QuizLevelRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "levelOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestionRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "questions",
+          "title"
+        ]
+      },
+      "QuizOptionRequest": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "option"
+        ]
+      },
+      "QuizQuestionRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "point": {
+            "type": "number",
+            "format": "double"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizOptionRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "options",
+          "title"
+        ]
+      },
+      "QuizRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "notionTypeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizLevelRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "levels",
+          "notionTypeId",
+          "title"
+        ]
+      },
+      "QuizNotionTypeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ]
+      },
+      "DocumentRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "typeDocument": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "backGroundImage": {
+            "type": "string"
+          },
+          "fileBook": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deviseId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DocumentEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "typeDocument": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "backGroundImage": {
+            "type": "string"
+          },
+          "fileBook": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deviseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "datePublication": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "premium": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 2147483647,
+            "minLength": 6
+          },
+          "confirmPassword": {
+            "type": "string"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "city",
+          "confirmPassword",
+          "email",
+          "firstName",
+          "lastName",
+          "password"
+        ]
+      },
+      "UserAuth": {
+        "type": "object",
+        "properties": {
+          "identifiant": {
+            "type": "string",
+            "maxLength": 2147483647,
+            "minLength": 4
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 2147483647,
+            "minLength": 4
+          }
+        },
+        "required": [
+          "identifiant",
+          "password"
+        ]
+      },
+      "StudentRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "promotionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "etablissementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "matricule": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "promotionId",
+          "userId"
+        ]
+      },
+      "TransactionCallBack": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "provider_reference": {
+            "type": "string"
+          }
+        }
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "identifier"
+        ]
+      },
+      "IdentifiantRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identifier"
+        ]
+      },
+      "ContenuRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "typeContenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "fileContent": {
+            "type": "string",
+            "format": "binary"
+          },
+          "scope": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "description",
+          "scope",
+          "title",
+          "typeContenuId",
+          "userId"
+        ]
+      },
+      "SelectAccountRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "accountId",
+          "userId"
+        ]
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenPair": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deviseId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "deviseId",
+          "phone"
+        ]
+      },
+      "TransactionCardRequest": {
+        "type": "object",
+        "properties": {
+          "deviseId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "deviseId"
+        ]
+      },
+      "EvaluationAnswerSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionAnswerItemRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "QuestionAnswerItemRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "textResponse": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId"
+        ]
+      },
+      "TypeDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "titre": {
+            "type": "string"
+          }
+        }
+      },
+      "TypeDocumentEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "titre": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TypeContenuRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "TEXTE",
+              "IMAGE",
+              "VIDEO",
+              "AUDIO",
+              "LIEN",
+              "STORY",
+              "LIVE",
+              "PDF"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TypeContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StatusPostRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1
+          },
+          "backgroundColor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
+      "StatusPost": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "backgroundColor": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CommentaireResponseContenuRequest": {
+        "type": "object",
+        "properties": {
+          "commentaireContenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "commentaireContenuId",
+          "description",
+          "userId"
+        ]
+      },
+      "CommentaireResponseContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "commentaireContenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FavorisContenuRequest": {
+        "type": "object",
+        "properties": {
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "contenuId",
+          "userId"
+        ]
+      },
+      "LikeContenusEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "like": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FavorisContenusEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EvaluationRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "compteur": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fileContent": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "option": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionOptionRequestDAO"
+            }
+          },
+          "ouverte": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionOuverteRequestDAO"
+            }
+          },
+          "caseStudy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionCaseStudyRequestDAO"
+            }
+          }
+        }
+      },
+      "QuestionCaseStudyRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "fileContent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "QuestionCaseStudyRequestDAO": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "$ref": "#/components/schemas/QuestionRequest"
+          },
+          "questionCaseStudy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionCaseStudyRequest"
+            }
+          }
+        }
+      },
+      "QuestionOptionRequest": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "option"
+        ]
+      },
+      "QuestionOptionRequestDAO": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "$ref": "#/components/schemas/QuestionRequest"
+          },
+          "questionOption": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionOptionRequest"
+            }
+          }
+        }
+      },
+      "QuestionOuverteRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "fileContent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "QuestionOuverteRequestDAO": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "$ref": "#/components/schemas/QuestionRequest"
+          },
+          "questionOuverte": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionOuverteRequest"
+            }
+          }
+        }
+      },
+      "QuestionRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "point": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "point",
+          "title"
+        ]
+      },
+      "CommentaireContenuRequest": {
+        "type": "object",
+        "properties": {
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contenuId",
+          "description",
+          "userId"
+        ]
+      },
+      "CommentaireContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ClassroomRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ClassroomUserRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "classroomId",
+          "userId"
+        ]
+      },
+      "CategorieContenuRequest": {
+        "type": "object",
+        "properties": {
+          "categorieId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "categorieId",
+          "contenuId"
+        ]
+      },
+      "CategorieContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categorieId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CategorieRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CategorieEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DocumentCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DocumentCategoryEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AvisContenusRequest": {
+        "type": "object",
+        "properties": {
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "cote": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "contenuId",
+          "cote",
+          "description",
+          "userId"
+        ]
+      },
+      "AvisContenusEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "cote": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AvisDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "commentaire": {
+            "type": "string"
+          },
+          "cote": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AvisDocumentEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "commentaire": {
+            "type": "string"
+          },
+          "cote": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuizNotionType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Teacher": {
+        "type": "object",
+        "properties": {
+          "teacherId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "typeTeacherId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "departement": {
+            "type": "string"
+          },
+          "justificatif": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          }
+        }
+      },
+      "Quiz": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notionTypeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuizNotionTypeProgress": {
+        "type": "object",
+        "properties": {
+          "notionType": {
+            "$ref": "#/components/schemas/QuizNotionType"
+          },
+          "totalQuizzes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedQuizzes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalLevels": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedLevels": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "progressPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "quizzes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizUserProgressItem"
+            }
+          }
+        }
+      },
+      "QuizUserProgressItem": {
+        "type": "object",
+        "properties": {
+          "quizId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quizTitle": {
+            "type": "string"
+          },
+          "notionTypeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "highestCompletedLevelOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalLevels": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "progressPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuizUserProgressOverview": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notionTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizNotionTypeProgress"
+            }
+          }
+        }
+      },
+      "QuizDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notionTypeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notionType": {
+            "$ref": "#/components/schemas/QuizNotionType"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizLevelNode"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuizLevelNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "levelOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestionNode"
+            }
+          }
+        }
+      },
+      "QuizOptionNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "option": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuizQuestionNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "point": {
+            "type": "number",
+            "format": "double"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizOptionNode"
+            }
+          }
+        }
+      },
+      "TeacherType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Devise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "tauxLocal": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Etablissement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CommentaireContenuDto": {
+        "type": "object",
+        "properties": {
+          "commentaire": {
+            "$ref": "#/components/schemas/CommentaireContenuEntity"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        }
+      },
+      "ContenuDto": {
+        "type": "object",
+        "properties": {
+          "contenu": {
+            "$ref": "#/components/schemas/ContenuEntity"
+          },
+          "typeContenu": {
+            "$ref": "#/components/schemas/TypeContenuEntity"
+          },
+          "scope": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScopeEntity"
+            }
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "commentaires": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentaireContenuDto"
+            }
+          },
+          "likes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LikeContenuDto"
+            }
+          }
+        }
+      },
+      "ContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "typeContenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "fileContent": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LikeContenuDto": {
+        "type": "object",
+        "properties": {
+          "like": {
+            "$ref": "#/components/schemas/LikeContenusEntity"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        }
+      },
+      "ScopeEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "email": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "premium": {
+            "type": "boolean"
+          },
+          "certified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "typeAccount": {
+            "$ref": "#/components/schemas/TypeAccount"
+          }
+        }
+      },
+      "TypeAccount": {
+        "type": "object",
+        "properties": {
+          "typeAccountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListTypeAccount": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeAccount"
+            }
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "matricule": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          }
+        }
+      },
+      "ScopeContenuEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scopeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contenuId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Paiement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "devise": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "typePayment": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date"
+          },
+          "dateUpdated": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "SubscriptionStatus": {
+        "type": "object",
+        "properties": {
+          "subscriptionAmountUsd": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastPayment": {
+            "$ref": "#/components/schemas/Paiement"
+          },
+          "premium": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EvaluationOptionPassageView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "option": {
+            "type": "string"
+          }
+        }
+      },
+      "EvaluationPassageView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationQuestionPassageView"
+            }
+          }
+        }
+      },
+      "EvaluationQuestionPassageView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "point": {
+            "type": "number",
+            "format": "double"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationOptionPassageView"
+            }
+          },
+          "promptTitle": {
+            "type": "string"
+          },
+          "promptFileContent": {
+            "type": "string"
+          }
+        }
+      },
+      "EvaluationAnswerableSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Classroom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseListUserDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          }
+        }
+      },
+      "ClassroomUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "classroomId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "x-postman-note": "Import this OpenAPI JSON directly into Postman."
+}
