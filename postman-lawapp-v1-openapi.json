@@ -920,7 +920,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Soumission unique autorisée par utilisateur (hors créateur). Le chrono est exprimé en minutes et démarre au lancement de l'évaluation; les autres menus sont bloqués pendant la session (anti-cheat) et la progression est conservée."
       }
     },
     "/api/v1/private/type-document": {
@@ -2256,7 +2257,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Le champ compteur représente le chrono en minutes. Dès le lancement de l'évaluation, les autres menus deviennent inaccessibles (système anti-cheat) et la progression est automatiquement conservée."
       }
     },
     "/api/v1/protected/evaluations/repondre": {
@@ -3923,7 +3925,8 @@
           },
           "compteur": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Le champ compteur représente le chrono en minutes. Dès le lancement de l'évaluation, les autres menus deviennent inaccessibles (système anti-cheat) et la progression est automatiquement conservée."
           },
           "fileContent": {
             "type": "string"
