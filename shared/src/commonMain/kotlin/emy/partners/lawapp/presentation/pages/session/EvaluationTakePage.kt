@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -39,11 +41,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import emy.partners.lawapp.LockSystemBack
 import emy.partners.lawapp.data.remote.evaluation.EvaluationAnswerInput
+import emy.partners.lawapp.data.remote.evaluation.EvaluationAttemptProgress
+import emy.partners.lawapp.data.remote.evaluation.EvaluationOptionAnswerStore
 import emy.partners.lawapp.data.remote.evaluation.EvaluationQuestionKind
 import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
 import emy.partners.lawapp.data.remote.evaluation.EvaluationTakeQuestion
 import emy.partners.lawapp.data.remote.evaluation.EvaluationTakeSheet
+import emy.partners.lawapp.data.remote.evaluation.EvaluationTextAnswerStore
 import emy.partners.lawapp.presentation.pages.auth.AuthColors
 import emy.partners.lawapp.presentation.pages.auth.AuthFormPanel
 import emy.partners.lawapp.presentation.pages.auth.AuthLoadingDialog
@@ -61,7 +67,7 @@ private val PageBgDark = Color(0xFF0B1220)
 fun EvaluationTakePage(
     evaluationId: Long,
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {},
+    onExitAllowed: () -> Unit = {},
     onSubmitted: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
@@ -74,16 +80,46 @@ fun EvaluationTakePage(
     var isSubmitting by remember { mutableStateOf(false) }
     var resultTitle by remember { mutableStateOf<String?>(null) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
+    var allowExitAfterResult by remember { mutableStateOf(false) }
     val currentIndex = remember { mutableIntStateOf(0) }
     val selectedOptions = remember { mutableStateMapOf<Long, Long>() }
     val textAnswers = remember { mutableStateMapOf<Long, String>() }
+    val examInProgress = errorMessage == null && (sheet == null || sheet!!.questions.isNotEmpty())
+    LockSystemBack(enabled = examInProgress)
+
+    fun persistProgress(currentSheet: EvaluationTakeSheet) {
+        EvaluationRepository.saveAttemptProgress(
+            EvaluationAttemptProgress(
+                evaluationId = currentSheet.id,
+                currentIndex = currentIndex.intValue.coerceIn(0, currentSheet.questions.lastIndex.coerceAtLeast(0)),
+                optionAnswers = selectedOptions.map { (questionId, optionId) ->
+                    EvaluationOptionAnswerStore(questionId = questionId, optionId = optionId)
+                },
+                textAnswers = textAnswers.map { (questionId, text) ->
+                    EvaluationTextAnswerStore(questionId = questionId, text = text)
+                },
+                questionCount = currentSheet.questions.size,
+            )
+        )
+    }
 
     LaunchedEffect(evaluationId) {
         isLoading = true
         EvaluationRepository.getTakeSheet(evaluationId)
-            .onSuccess {
-                sheet = it
+            .onSuccess { loaded ->
+                sheet = loaded
                 errorMessage = null
+                if (loaded.questions.isNotEmpty()) {
+                    EvaluationRepository.beginAttempt(loaded.id, loaded.questions.size)
+                    val saved = EvaluationRepository.loadAttemptProgress(loaded.id)
+                    if (saved != null) {
+                        currentIndex.intValue = saved.currentIndex.coerceIn(0, loaded.questions.lastIndex)
+                        selectedOptions.clear()
+                        selectedOptions.putAll(saved.optionAnswers.associate { it.questionId to it.optionId })
+                        textAnswers.clear()
+                        textAnswers.putAll(saved.textAnswers.associate { it.questionId to it.text })
+                    }
+                }
             }
             .onFailure {
                 errorMessage = it.message ?: "Impossible d'ouvrir cette evaluation"
@@ -95,21 +131,24 @@ fun EvaluationTakePage(
         modifier
             .fillMaxSize()
             .background(pageBg)
+            .statusBarsPadding()
             .verticalScroll(scrollVertical)
             .padding(horizontal = 14.dp)
-            .padding(top = 8.dp, bottom = 96.dp)
+            .padding(top = 8.dp, bottom = 32.dp)
     ) {
-        Text(
-            text = "< Retour",
-            color = AuthColors.TextPrimary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color.White)
-                .clickable(onClick = onBack)
-                .padding(horizontal = 14.dp, vertical = 9.dp)
-        )
-        Spacer(Modifier.height(14.dp))
+        if (errorMessage != null) {
+            Text(
+                text = "< Quitter",
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(Color.White)
+                    .clickable(onClick = onExitAllowed)
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+        }
 
         when {
             isLoading -> {
@@ -121,12 +160,14 @@ fun EvaluationTakePage(
                 AuthFormPanel {
                     Text(errorMessage.orEmpty(), color = AuthColors.TextPrimary, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(12.dp))
-                    AuthPrimaryButton(text = "Retour", onClick = onBack)
+                    AuthPrimaryButton(text = "Quitter", onClick = onExitAllowed)
                 }
             }
             sheet == null || sheet!!.questions.isEmpty() -> {
                 AuthFormPanel {
                     Text("Cette evaluation n'a pas encore de questions.", color = AuthColors.TextPrimary)
+                    Spacer(Modifier.height(12.dp))
+                    AuthPrimaryButton(text = "Quitter", onClick = onExitAllowed)
                 }
             }
             else -> {
@@ -140,6 +181,7 @@ fun EvaluationTakePage(
                 }
                 val progress = (answeredCount.toFloat() / currentSheet.questions.size).coerceIn(0f, 1f)
                 val isLast = currentIndex.intValue == currentSheet.questions.lastIndex
+                val isFirst = currentIndex.intValue == 0
                 val canAdvance = when (question.kind) {
                     EvaluationQuestionKind.Option -> selectedOptions.containsKey(question.id)
                     else -> !textAnswers[question.id].isNullOrBlank()
@@ -159,52 +201,88 @@ fun EvaluationTakePage(
                         total = currentSheet.questions.size,
                         selectedOptionId = selectedOptions[question.id],
                         textValue = textAnswers[question.id].orEmpty(),
-                        onSelectOption = { selectedOptions[question.id] = it },
-                        onTextChange = { textAnswers[question.id] = it },
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    AuthPrimaryButton(
-                        text = if (isLast) "Soumettre l'evaluation" else "Question suivante",
-                        enabled = canAdvance && !isSubmitting,
-                        onClick = {
-                            if (!isLast) {
-                                currentIndex.intValue += 1
-                                return@AuthPrimaryButton
-                            }
-                            val answers = currentSheet.questions.mapNotNull { item ->
-                                when (item.kind) {
-                                    EvaluationQuestionKind.Option -> {
-                                        val optionId = selectedOptions[item.id] ?: return@mapNotNull null
-                                        EvaluationAnswerInput(
-                                            questionId = item.id,
-                                            selectedOptionId = optionId,
-                                        )
-                                    }
-                                    else -> {
-                                        val text = textAnswers[item.id]?.trim().orEmpty()
-                                        if (text.isBlank()) return@mapNotNull null
-                                        EvaluationAnswerInput(
-                                            questionId = item.id,
-                                            textResponse = text,
-                                        )
-                                    }
-                                }
-                            }
-                            isSubmitting = true
-                            scope.launch {
-                                EvaluationRepository.submitAnswers(currentSheet.id, answers)
-                                    .onSuccess { result ->
-                                        resultTitle = "Evaluation soumise"
-                                        resultMessage = result.message
-                                    }
-                                    .onFailure {
-                                        resultTitle = "Soumission impossible"
-                                        resultMessage = it.message ?: "La soumission a echoue"
-                                    }
-                                isSubmitting = false
-                            }
+                        onSelectOption = {
+                            selectedOptions[question.id] = it
+                            persistProgress(currentSheet)
+                        },
+                        onTextChange = {
+                            textAnswers[question.id] = it
+                            persistProgress(currentSheet)
                         },
                     )
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (!isFirst) {
+                            OutlinedButton(
+                                onClick = {
+                                    currentIndex.intValue -= 1
+                                    persistProgress(currentSheet)
+                                },
+                                modifier = Modifier.weight(1f).height(52.dp),
+                                shape = RoundedCornerShape(18.dp),
+                            ) {
+                                Text("Precedente", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Box(Modifier.weight(1.4f)) {
+                            AuthPrimaryButton(
+                                text = if (isLast) "Soumettre l'evaluation" else "Question suivante",
+                                enabled = canAdvance && !isSubmitting,
+                                onClick = {
+                                    if (!isLast) {
+                                        currentIndex.intValue += 1
+                                        persistProgress(currentSheet)
+                                        return@AuthPrimaryButton
+                                    }
+                                    val answers = currentSheet.questions.mapNotNull { item ->
+                                        when (item.kind) {
+                                            EvaluationQuestionKind.Option -> {
+                                                val optionId = selectedOptions[item.id] ?: return@mapNotNull null
+                                                EvaluationAnswerInput(
+                                                    questionId = item.id,
+                                                    selectedOptionId = optionId,
+                                                )
+                                            }
+                                            else -> {
+                                                val text = textAnswers[item.id]?.trim().orEmpty()
+                                                if (text.isBlank()) return@mapNotNull null
+                                                EvaluationAnswerInput(
+                                                    questionId = item.id,
+                                                    textResponse = text,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    persistProgress(currentSheet)
+                                    isSubmitting = true
+                                    scope.launch {
+                                        EvaluationRepository.submitAnswers(currentSheet.id, answers)
+                                            .onSuccess { result ->
+                                                allowExitAfterResult = true
+                                                resultTitle = "Evaluation soumise"
+                                                resultMessage = result.message
+                                            }
+                                            .onFailure {
+                                                val message = it.message.orEmpty()
+                                                val alreadyDone = message.lowercase().let { text ->
+                                                    text.contains("deja") ||
+                                                        text.contains("déjà") ||
+                                                        text.contains("une seule") ||
+                                                        text.contains("already")
+                                                }
+                                                if (alreadyDone) {
+                                                    EvaluationRepository.clearAttempt(currentSheet.id)
+                                                    allowExitAfterResult = true
+                                                }
+                                                resultTitle = "Soumission impossible"
+                                                resultMessage = message.ifBlank { "La soumission a echoue" }
+                                            }
+                                        isSubmitting = false
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -216,10 +294,11 @@ fun EvaluationTakePage(
             title = resultTitle.orEmpty(),
             message = resultMessage.orEmpty(),
             onConfirm = {
-                val success = resultTitle == "Evaluation soumise"
+                val leave = allowExitAfterResult
                 resultTitle = null
                 resultMessage = null
-                if (success) onSubmitted()
+                allowExitAfterResult = false
+                if (leave) onSubmitted()
             },
         )
     }
@@ -247,8 +326,15 @@ private fun EvaluationTakeHeader(
             )
             .padding(18.dp)
     ) {
-        Text("Passer l'evaluation", color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text("Evaluation verrouillee", color = Color.White.copy(alpha = 0.75f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
         Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Menus et navigation desactives jusqu'a la soumission. Ta progression est enregistree a chaque reponse.",
+            color = Color.White.copy(alpha = 0.78f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+        )
         Spacer(Modifier.height(16.dp))
         LinearProgressIndicator(
             progress = { progress },
@@ -261,7 +347,7 @@ private fun EvaluationTakeHeader(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "$answered/$total reponse(s)",
+            "$answered/$total reponse(s) conservees",
             color = Color.White.copy(alpha = 0.8f),
             fontWeight = FontWeight.Bold,
         )

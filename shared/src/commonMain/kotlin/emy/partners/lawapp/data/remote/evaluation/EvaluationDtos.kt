@@ -214,6 +214,39 @@ data class EvaluationSubmitResult(
     val rawResponse: String,
 )
 
+@Serializable
+data class EvaluationOptionAnswerStore(
+    val questionId: Long,
+    val optionId: Long,
+)
+
+@Serializable
+data class EvaluationTextAnswerStore(
+    val questionId: Long,
+    val text: String,
+)
+
+@Serializable
+data class EvaluationAttemptProgress(
+    val evaluationId: Long,
+    val currentIndex: Int = 0,
+    val optionAnswers: List<EvaluationOptionAnswerStore> = emptyList(),
+    val textAnswers: List<EvaluationTextAnswerStore> = emptyList(),
+    val questionCount: Int = 0,
+) {
+    val answeredCount: Int
+        get() {
+            val optionIds = optionAnswers.map { it.questionId }.toSet()
+            val textIds = textAnswers.mapNotNull { item ->
+                item.questionId.takeIf { item.text.isNotBlank() }
+            }.toSet()
+            return (optionIds + textIds).size
+        }
+
+    val progressPercent: Float
+        get() = if (questionCount <= 0) 0f else (answeredCount.toFloat() / questionCount).coerceIn(0f, 1f)
+}
+
 fun EvaluationSessionDto.questionCount(): Int =
     option.size + ouverte.size + caseStudy.size
 

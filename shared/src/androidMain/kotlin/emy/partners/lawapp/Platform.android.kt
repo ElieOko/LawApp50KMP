@@ -20,6 +20,13 @@ class AndroidPlatform : Platform {
 actual fun getPlatform(): Platform = AndroidPlatform()
 
 @Composable
+actual fun LockSystemBack(enabled: Boolean) {
+    androidx.activity.compose.BackHandler(enabled = enabled) {
+        // Bloque le retour systeme pendant une evaluation.
+    }
+}
+
+@Composable
 actual fun PlatformVideoPlayer(
     url: String,
     modifier: Modifier,

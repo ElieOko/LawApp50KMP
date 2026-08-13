@@ -158,6 +158,8 @@ class EvaluationApiException(message: String) : Exception(message)
 object EvaluationRepository {
     private const val KEY_EVAL_CACHE = "lawapp_evaluation_list_cache"
     private const val KEY_SUBMITTED_PREFIX = "lawapp_evaluation_submitted_u"
+    private const val KEY_ACTIVE_ATTEMPT_PREFIX = "lawapp_evaluation_active_u"
+    private const val KEY_ATTEMPT_PREFIX = "lawapp_evaluation_attempt_u"
 
     private val api = EvaluationApi()
     private val json = AppJson
@@ -207,10 +209,11 @@ object EvaluationRepository {
         val mapped = details.values.mapNotNull { dto ->
             val id = dto.id ?: return@mapNotNull null
             val canAnswer = if (token == null) true else answerableIds.contains(id)
-            dto.toSession(
+            val session = dto.toSession(
                 canAnswer = canAnswer && !submitted.contains(id),
                 alreadySubmitted = submitted.contains(id),
-            )
+            ) ?: return@mapNotNull null
+            applyAttemptProgress(session)
         }.sortedByDescending { it.id }
         memorySessions = mapped
         persistCache(mapped)
@@ -230,7 +233,7 @@ object EvaluationRepository {
             dto.toSession(
                 canAnswer = !submitted.contains(dto.id),
                 alreadySubmitted = submitted.contains(dto.id),
-            ) ?: throw EvaluationApiException("Evaluation invalide")
+            )?.let(::applyAttemptProgress) ?: throw EvaluationApiException("Evaluation invalide")
         }.onSuccess { session ->
             val current = cachedSessions().toMutableList()
             val index = current.indexOfFirst { it.id == session.id }
@@ -274,6 +277,7 @@ object EvaluationRepository {
         }
         return api.submitAnswers(token, id, answers).onSuccess {
             markSubmitted(id)
+            clearAttempt(id)
             val current = cachedSessions().toMutableList()
             val index = current.indexOfFirst { it.id == id }
             if (index >= 0) {
@@ -312,6 +316,84 @@ object EvaluationRepository {
             persistCache(current)
         }
     }
+
+    fun activeAttemptEvaluationId(): Long? {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return null
+        val raw = store.getString(activeAttemptKey(userId)) ?: return null
+        val id = raw.toLongOrNull() ?: return null
+        if (loadSubmittedIds().contains(id)) {
+            clearAttempt(id)
+            return null
+        }
+        return id
+    }
+
+    fun loadAttemptProgress(evaluationId: Long): EvaluationAttemptProgress? {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return null
+        val raw = store.getString(attemptKey(userId, evaluationId)) ?: return null
+        return runCatching {
+            json.decodeFromString(EvaluationAttemptProgress.serializer(), raw)
+        }.getOrNull()
+    }
+
+    fun beginAttempt(evaluationId: Long, questionCount: Int) {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return
+        store.putString(activeAttemptKey(userId), evaluationId.toString())
+        if (loadAttemptProgress(evaluationId) == null) {
+            saveAttemptProgress(
+                EvaluationAttemptProgress(
+                    evaluationId = evaluationId,
+                    questionCount = questionCount,
+                )
+            )
+        }
+    }
+
+    fun saveAttemptProgress(progress: EvaluationAttemptProgress) {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return
+        store.putString(activeAttemptKey(userId), progress.evaluationId.toString())
+        store.putString(
+            attemptKey(userId, progress.evaluationId),
+            json.encodeToString(EvaluationAttemptProgress.serializer(), progress),
+        )
+        applyAttemptToCachedSession(progress)
+    }
+
+    fun clearAttempt(evaluationId: Long) {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return
+        store.remove(attemptKey(userId, evaluationId))
+        val active = store.getString(activeAttemptKey(userId))?.toLongOrNull()
+        if (active == null || active == evaluationId) {
+            store.remove(activeAttemptKey(userId))
+        }
+    }
+
+    private fun applyAttemptProgress(session: EvaluationSession): EvaluationSession {
+        if (session.alreadySubmitted) return session
+        val attempt = loadAttemptProgress(session.id) ?: return session
+        val total = session.questionCount.coerceAtLeast(attempt.questionCount)
+        val answered = attempt.answeredCount.coerceAtMost(total)
+        if (answered <= 0) return session
+        return session.copy(
+            status = emy.partners.lawapp.domain.models.EvaluationStatus.InProgress,
+            progress = if (total > 0) answered.toFloat() / total else session.progress,
+            completedQuestions = answered,
+        )
+    }
+
+    private fun applyAttemptToCachedSession(progress: EvaluationAttemptProgress) {
+        val current = cachedSessions().toMutableList()
+        val index = current.indexOfFirst { it.id == progress.evaluationId }
+        if (index < 0) return
+        current[index] = applyAttemptProgress(current[index])
+        memorySessions = current
+        persistCache(current)
+    }
+
+    private fun activeAttemptKey(userId: Long): String = KEY_ACTIVE_ATTEMPT_PREFIX + userId
+
+    private fun attemptKey(userId: Long, evaluationId: Long): String =
+        KEY_ATTEMPT_PREFIX + userId + "_e" + evaluationId
 
     private fun markSubmitted(id: Long) {
         val userId = AuthRepository.currentSession?.profile?.userId ?: return

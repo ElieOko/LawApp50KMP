@@ -175,4 +175,22 @@ class QuizEvaluationApiMappingTest {
         assertEquals("2026-08-13", toApiDate("13/08/2026"))
         assertEquals("2026-04-03", toApiDate("2026-04-03"))
     }
+
+    @Test
+    fun attemptProgressCountsAnswersAndPercent() {
+        val progress = emy.partners.lawapp.data.remote.evaluation.EvaluationAttemptProgress(
+            evaluationId = 4,
+            currentIndex = 1,
+            optionAnswers = listOf(
+                emy.partners.lawapp.data.remote.evaluation.EvaluationOptionAnswerStore(4, 8),
+            ),
+            textAnswers = listOf(
+                emy.partners.lawapp.data.remote.evaluation.EvaluationTextAnswerStore(5, "val et var"),
+            ),
+            questionCount = 3,
+        )
+        assertEquals(2, progress.answeredCount)
+        assertEquals(1, progress.currentIndex)
+        assertEquals(2f / 3f, progress.progressPercent, 0.001f)
+    }
 }

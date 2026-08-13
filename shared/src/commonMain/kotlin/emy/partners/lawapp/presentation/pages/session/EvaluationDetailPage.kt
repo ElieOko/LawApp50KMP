@@ -168,7 +168,7 @@ fun EvaluationDetailBuild(
                         text = if (completed) {
                             "Evaluation terminee. Consulte ton score, puis relance un quiz pour consolider tes acquis."
                         } else {
-                            "Tu peux reprendre exactement ou tu t'es arrete. Le compteur t'indique les questions restantes."
+                            "Une fois commencee, l'evaluation verrouille les menus et la navigation. Tes reponses sont conservees jusqu'a la soumission."
                         },
                         color = Color.Black.copy(alpha = 0.56f),
                         lineHeight = 19.sp
@@ -181,11 +181,12 @@ fun EvaluationDetailBuild(
                         colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
                     ) {
                         Text(
-                            text = when {
-                                completed -> "Reviser avec un quiz"
-                                evaluation.canAnswer -> "Commencer l'evaluation"
-                                else -> "Consulter l'evaluation"
-                            },
+                        text = when {
+                            completed -> "Reviser avec un quiz"
+                            evaluation.completedQuestions > 0 -> "Reprendre l'evaluation"
+                            evaluation.canAnswer -> "Commencer l'evaluation"
+                            else -> "Consulter l'evaluation"
+                        },
                             fontWeight = FontWeight.Bold
                         )
                     }

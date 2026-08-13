@@ -154,6 +154,7 @@ private interface LawAppScreen : Screen {
     val topLevelDestinationKind: TopLevelDestinationKind
     val pageStateKey: String
     val showsAppChrome: Boolean get() = true
+    val locksAppNavigation: Boolean get() = false
 }
 
 private abstract class UniqueLawAppScreen : LawAppScreen {
@@ -274,7 +275,7 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawApp
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
             onBack = { navigator.pop() },
-            onContinue = { navigator.push(EvaluationTakeScreen(evaluationId)) },
+            onContinue = { navigator.replaceAll(EvaluationTakeScreen(evaluationId)) },
             onReviseWithQuiz = { navigator.replaceAll(QuizScreen()) },
             scrollVertical = scrollVertical,
         )
@@ -357,17 +358,22 @@ private data class QuizPlayScreen(val quizId: Long) : UniqueLawAppScreen() {
 private data class EvaluationTakeScreen(val evaluationId: Long) : UniqueLawAppScreen() {
     override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
     override val pageStateKey: String = "evaluation/take/$evaluationId"
+    override val showsAppChrome: Boolean = false
+    override val locksAppNavigation: Boolean = true
 
     @Composable
     override fun Content() {
-        val context = LocalLawAppNavigationContext.current
         val navigator = LocalNavigator.currentOrThrow
         val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
         EvaluationTakePage(
             evaluationId = evaluationId,
-            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
-            onBack = { navigator.pop() },
-            onSubmitted = { navigator.pop() },
+            modifier = Modifier.fillMaxSize(),
+            onExitAllowed = {
+                if (navigator.canPop) navigator.pop() else navigator.replaceAll(EvaluationScreen())
+            },
+            onSubmitted = {
+                navigator.replaceAll(EvaluationScreen())
+            },
             scrollVertical = scrollVertical,
         )
     }
@@ -602,6 +608,20 @@ private fun rememberPageScrollState(
 }
 
 @Composable
+private fun RedirectIfEvaluationLocked(navigator: Navigator) {
+    val lockedEvaluationId = EvaluationRepository.activeAttemptEvaluationId()
+    val current = navigator.lastItem
+    LaunchedEffect(lockedEvaluationId, current) {
+        if (lockedEvaluationId == null) return@LaunchedEffect
+        val alreadyOnLockedExam = current is EvaluationTakeScreen &&
+            current.evaluationId == lockedEvaluationId
+        if (!alreadyOnLockedExam) {
+            navigator.replaceAll(EvaluationTakeScreen(lockedEvaluationId))
+        }
+    }
+}
+
+@Composable
 @Preview(showBackground = true)
 fun App() {
     val liquidState = rememberLiquidState()
@@ -652,12 +672,23 @@ fun App() {
             colorScheme = colorScheme,
             typography = tekoTypography()
         ) {
-            Navigator(HomeScreen()) { navigator ->
+            Navigator(
+                remember {
+                    EvaluationRepository.activeAttemptEvaluationId()
+                        ?.let { EvaluationTakeScreen(it) }
+                        ?: HomeScreen()
+                },
+                onBackPressed = { screen ->
+                    (screen as? LawAppScreen)?.locksAppNavigation != true
+                },
+            ) { navigator ->
                 val topBarScrollState = appState.currentPageState?.scrollState ?: defaultTopBarScrollState
                 val selectedTopLevel = (navigator.lastItem as? LawAppScreen)
                     ?.topLevelDestinationKind
                     ?: TopLevelDestinationKind.Home
-                val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.showsAppChrome != false
+                val showsAppChrome = (navigator.lastItem as? LawAppScreen)?.let { screen ->
+                    screen.showsAppChrome && !screen.locksAppNavigation
+                } != false
                 val isHomeChrome = selectedTopLevel == TopLevelDestinationKind.Home
                 Scaffold(
                     //            contentWindowInsets = WindowInsets(0),
@@ -684,7 +715,12 @@ fun App() {
                                                 unselectedTextColor = Color.Black.copy(0.6f),
                                             ),
                                             selected = destination.kind == selectedTopLevel,
-                                            onClick = { navigator.replaceAll(destination.createScreen()) },
+                                            onClick = {
+                                                if ((navigator.lastItem as? LawAppScreen)?.locksAppNavigation == true) {
+                                                    return@NavigationBarItem
+                                                }
+                                                navigator.replaceAll(destination.createScreen())
+                                            },
                                             icon = {
                                                 Icon(
                                                     painter = painterResource(destination.icon),
@@ -814,6 +850,7 @@ fun App() {
                                 LocalLawAppNavigationContext provides navigationContext,
                                 LocalAuthActions provides authActions,
                             ) {
+                                RedirectIfEvaluationLocked(navigator)
                                 CurrentScreen()
                             }
                         }
