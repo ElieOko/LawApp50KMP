@@ -104,6 +104,7 @@ data class EvaluationPassageDto(
     val description: String? = null,
     val startDate: String? = null,
     val endDate: String? = null,
+    val compteur: Long? = null,
     val questions: List<EvaluationQuestionPassageDto> = emptyList(),
 )
 
@@ -201,6 +202,7 @@ data class EvaluationTakeSheet(
     val startDate: String?,
     val endDate: String?,
     val questions: List<EvaluationTakeQuestion>,
+    val compteurMinutes: Long = 0,
 )
 
 data class EvaluationAnswerInput(
@@ -213,6 +215,41 @@ data class EvaluationSubmitResult(
     val message: String,
     val rawResponse: String,
 )
+
+@Serializable
+data class EvaluationOptionAnswerStore(
+    val questionId: Long,
+    val optionId: Long,
+)
+
+@Serializable
+data class EvaluationTextAnswerStore(
+    val questionId: Long,
+    val text: String,
+)
+
+@Serializable
+data class EvaluationAttemptProgress(
+    val evaluationId: Long,
+    val currentIndex: Int = 0,
+    val optionAnswers: List<EvaluationOptionAnswerStore> = emptyList(),
+    val textAnswers: List<EvaluationTextAnswerStore> = emptyList(),
+    val questionCount: Int = 0,
+    val durationMinutes: Long = 0,
+    val startedAtEpochMs: Long? = null,
+) {
+    val answeredCount: Int
+        get() {
+            val optionIds = optionAnswers.map { it.questionId }.toSet()
+            val textIds = textAnswers.mapNotNull { item ->
+                item.questionId.takeIf { item.text.isNotBlank() }
+            }.toSet()
+            return (optionIds + textIds).size
+        }
+
+    val progressPercent: Float
+        get() = if (questionCount <= 0) 0f else (answeredCount.toFloat() / questionCount).coerceIn(0f, 1f)
+}
 
 fun EvaluationSessionDto.questionCount(): Int =
     option.size + ouverte.size + caseStudy.size
@@ -244,6 +281,7 @@ fun EvaluationSessionDto.toSession(
         alreadySubmitted = completed,
         startDate = startDate,
         endDate = endDate,
+        compteurMinutes = minutes,
     )
 }
 
@@ -308,6 +346,7 @@ fun EvaluationSessionDto.toTakeSheet(): EvaluationTakeSheet? {
         startDate = startDate,
         endDate = endDate,
         questions = questions,
+        compteurMinutes = compteur?.takeIf { it > 0 } ?: 0L,
     )
 }
 
@@ -339,6 +378,7 @@ fun EvaluationPassageDto.toTakeSheet(): EvaluationTakeSheet? {
         startDate = startDate,
         endDate = endDate,
         questions = mapped,
+        compteurMinutes = compteur?.takeIf { it > 0 } ?: 0L,
     )
 }
 
@@ -419,6 +459,7 @@ fun EvaluationDAO.toLocalSession(index: Int): EvaluationSession = EvaluationSess
     alreadySubmitted = false,
     startDate = startDate,
     endDate = endDate,
+    compteurMinutes = compteur?.takeIf { it > 0 },
 )
 
 private fun String?.toQuestionKind(hasOptions: Boolean): EvaluationQuestionKind {

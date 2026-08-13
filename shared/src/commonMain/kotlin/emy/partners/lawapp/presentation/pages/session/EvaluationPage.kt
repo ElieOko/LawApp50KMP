@@ -432,7 +432,7 @@ private fun EvaluationCard(
                 label = "Questions",
                 value = "${evaluation.completedQuestions}/${evaluation.questionCount}",
             )
-            EvaluationSmallInfo(label = "Duree", value = evaluation.duration)
+            EvaluationSmallInfo(label = "Chrono", value = evaluation.duration)
             EvaluationSmallInfo(
                 label = if (completed) "Score" else "Maj",
                 value = if (completed) "${evaluation.score}%" else evaluation.updatedAt,
