@@ -11,6 +11,7 @@ import emy.partners.lawapp.domain.navigation.QuizScreen
 import emy.partners.lawapp.domain.navigation.SettingScreen
 import emy.partners.lawapp.domain.navigation.TopLevelRoute
 import emy.partners.lawapp.domain.navigation.saveableKey
+import emy.partners.lawapp.presentation.components.basics.LawAppBottomBarColors
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -65,6 +66,18 @@ class SharedCommonTest {
         assertEquals("home", HomeScreen.saveableKey())
         assertEquals("explore/detail/3", ExploreDetailScreen(blogId = 3).saveableKey())
         assertEquals("settings", SettingScreen.saveableKey())
+    }
+
+    @Test
+    fun tiktokBottomBarColorsAreFullyOpaque() {
+        assertEquals(1f, LawAppBottomBarColors.Background.alpha)
+        assertEquals(1f, LawAppBottomBarColors.Divider.alpha)
+        assertEquals(1f, LawAppBottomBarColors.Selected.alpha)
+        assertEquals(1f, LawAppBottomBarColors.Unselected.alpha)
+        assertEquals(1f, LawAppBottomBarColors.PlusCyan.alpha)
+        assertEquals(1f, LawAppBottomBarColors.PlusRed.alpha)
+        assertEquals(1f, LawAppBottomBarColors.PlusCenter.alpha)
+        assertEquals(1f, LawAppBottomBarColors.PlusIcon.alpha)
     }
 
     private fun testNavigator(startRoute: TopLevelRoute): Navigator {
