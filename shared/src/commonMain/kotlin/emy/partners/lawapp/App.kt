@@ -2,27 +2,16 @@ package emy.partners.lawapp
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
@@ -32,10 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
@@ -55,6 +42,8 @@ import emy.partners.lawapp.domain.models.EvaluationSession
 import emy.partners.lawapp.domain.models.EvaluationStatus
 import emy.partners.lawapp.domain.models.UserGeneratedContent
 import emy.partners.lawapp.domain.models.UserGeneratedContentDraft
+import emy.partners.lawapp.presentation.components.basics.LawAppBottomBar
+import emy.partners.lawapp.presentation.components.basics.LawAppBottomBarItem
 import emy.partners.lawapp.presentation.components.basics.TopBarCustom
 import emy.partners.lawapp.presentation.pages.ProfilPage
 import emy.partners.lawapp.presentation.pages.auth.AuthActions
@@ -93,6 +82,7 @@ import lawapp.shared.generated.resources.justice
 import lawapp.shared.generated.resources.profil
 import lawapp.shared.generated.resources.profil_user
 import lawapp.shared.generated.resources.quiz
+import lawapp.shared.generated.resources.create
 import lawapp.shared.generated.resources.session
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -690,55 +680,42 @@ fun App() {
                     screen.showsAppChrome && !screen.locksAppNavigation
                 } != false
                 val isHomeChrome = selectedTopLevel == TopLevelDestinationKind.Home
+                val openCreate = {
+                    if ((navigator.lastItem as? LawAppScreen)?.locksAppNavigation != true) {
+                        val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
+                        if (!loggedIn) {
+                            navigator.push(LoginScreen())
+                        } else {
+                            navigator.push(
+                                ContentCreateScreen(
+                                    initialDestination = selectedTopLevel.toDestination()
+                                )
+                            )
+                        }
+                    }
+                }
                 Scaffold(
-                    //            contentWindowInsets = WindowInsets(0),
                     bottomBar = {
                         if (showsAppChrome) {
-                            // Meme style partout : glace liquid, fond transparent (pas d'image dediee).
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(9.dp))
-                                    .liquid(liquidState)
-                                    .background(Color.Transparent)
-                            ) {
-                                BottomAppBar(
-                                    containerColor = Color.Transparent,
-                                ) {
-                                    topLevelDestinations.forEach { destination ->
-                                        NavigationBarItem(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                indicatorColor = Color.White.copy(alpha = 0.65f),
-                                                selectedTextColor = Color(0xFf2563EB),
-                                                selectedIconColor = Color(0xFf2563EB),
-                                                unselectedIconColor = Color.Black.copy(0.6f),
-                                                unselectedTextColor = Color.Black.copy(0.6f),
-                                            ),
-                                            selected = destination.kind == selectedTopLevel,
-                                            onClick = {
-                                                if ((navigator.lastItem as? LawAppScreen)?.locksAppNavigation == true) {
-                                                    return@NavigationBarItem
-                                                }
-                                                navigator.replaceAll(destination.createScreen())
-                                            },
-                                            icon = {
-                                                Icon(
-                                                    painter = painterResource(destination.icon),
-                                                    null,
-                                                    modifier = Modifier.size(28.dp),
-                                                )
-                                            },
-                                            label = {
-                                                Text(
-                                                    destination.name,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp,
-                                                )
-                                            }
-                                        )
+                            LawAppBottomBar(
+                                items = topLevelDestinations.map { destination ->
+                                    LawAppBottomBarItem(
+                                        id = destination.kind.name,
+                                        label = destination.name,
+                                        icon = destination.icon,
+                                    )
+                                },
+                                selectedId = selectedTopLevel.name,
+                                onItemClick = { item ->
+                                    if ((navigator.lastItem as? LawAppScreen)?.locksAppNavigation != true) {
+                                        topLevelDestinations
+                                            .firstOrNull { it.kind.name == item.id }
+                                            ?.let { navigator.replaceAll(it.createScreen()) }
                                     }
-                                }
-                            }
+                                },
+                                onCreateClick = openCreate,
+                                createContentDescription = stringResource(Res.string.create),
+                            )
                         }
                     },
                     topBar = {
@@ -747,18 +724,7 @@ fun App() {
                                 TopBarCustom(
                                     scrollState = topBarScrollState,
                                     frosted = false,
-                                    onActionClick = {
-                                        val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
-                                        if (!loggedIn) {
-                                            navigator.push(LoginScreen())
-                                        } else {
-                                            navigator.push(
-                                                ContentCreateScreen(
-                                                    initialDestination = selectedTopLevel.toDestination()
-                                                )
-                                            )
-                                        }
-                                    }
+                                    onActionClick = openCreate
                                 )
                             } else {
                                 Box(
@@ -770,18 +736,7 @@ fun App() {
                                     TopBarCustom(
                                         scrollState = topBarScrollState,
                                         frosted = true,
-                                        onActionClick = {
-                                            val loggedIn = !AuthRepository.currentSession?.accessToken.isNullOrBlank()
-                                            if (!loggedIn) {
-                                                navigator.push(LoginScreen())
-                                            } else {
-                                                navigator.push(
-                                                    ContentCreateScreen(
-                                                        initialDestination = selectedTopLevel.toDestination()
-                                                    )
-                                                )
-                                            }
-                                        }
+                                        onActionClick = openCreate
                                     )
                                 }
                             }
