@@ -74,10 +74,6 @@ class SharedCommonTest {
         assertEquals(1f, LawAppBottomBarColors.Divider.alpha)
         assertEquals(1f, LawAppBottomBarColors.Selected.alpha)
         assertEquals(1f, LawAppBottomBarColors.Unselected.alpha)
-        assertEquals(1f, LawAppBottomBarColors.PlusCyan.alpha)
-        assertEquals(1f, LawAppBottomBarColors.PlusRed.alpha)
-        assertEquals(1f, LawAppBottomBarColors.PlusCenter.alpha)
-        assertEquals(1f, LawAppBottomBarColors.PlusIcon.alpha)
     }
 
     private fun testNavigator(startRoute: TopLevelRoute): Navigator {

@@ -82,7 +82,6 @@ import lawapp.shared.generated.resources.justice
 import lawapp.shared.generated.resources.profil
 import lawapp.shared.generated.resources.profil_user
 import lawapp.shared.generated.resources.quiz
-import lawapp.shared.generated.resources.create
 import lawapp.shared.generated.resources.session
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -713,8 +712,6 @@ fun App() {
                                             ?.let { navigator.replaceAll(it.createScreen()) }
                                     }
                                 },
-                                onCreateClick = openCreate,
-                                createContentDescription = stringResource(Res.string.create),
                             )
                         }
                     },
