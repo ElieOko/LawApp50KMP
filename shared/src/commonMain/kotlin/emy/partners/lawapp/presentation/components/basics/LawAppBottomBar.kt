@@ -14,19 +14,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -36,21 +32,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import lawapp.shared.generated.resources.Res
-import lawapp.shared.generated.resources.ic_add_media
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
-/** Couleurs 100% opaques, style TikTok. Aucun canal alpha. */
+/** Couleurs 100% opaques. Aucun canal alpha. */
 object LawAppBottomBarColors {
     val Background = Color(0xFF000000)
     val Divider = Color(0xFF2C2C2C)
     val Selected = Color(0xFFFFFFFF)
     val Unselected = Color(0xFF8A8A8A)
-    val PlusCyan = Color(0xFF25F4EE)
-    val PlusRed = Color(0xFFFE2C55)
-    val PlusCenter = Color(0xFFFFFFFF)
-    val PlusIcon = Color(0xFF000000)
 }
 
 data class LawAppBottomBarItem(
@@ -59,18 +49,14 @@ data class LawAppBottomBarItem(
     val icon: DrawableResource,
 )
 
-/** Barre basse opaque facon TikTok : fond noir, labels, bouton + au centre. */
+/** Barre basse opaque : fond noir, icones et labels. */
 @Composable
 fun LawAppBottomBar(
     items: List<LawAppBottomBarItem>,
     selectedId: String,
     onItemClick: (LawAppBottomBarItem) -> Unit,
-    onCreateClick: () -> Unit,
-    createContentDescription: String,
     modifier: Modifier = Modifier,
 ) {
-    val splitIndex = items.size / 2
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -89,16 +75,7 @@ fun LawAppBottomBar(
                 .height(56.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            items.forEachIndexed { index, item ->
-                if (index == splitIndex) {
-                    TikTokCreateButton(
-                        contentDescription = createContentDescription,
-                        onClick = onCreateClick,
-                        modifier = Modifier
-                            .width(52.dp)
-                            .fillMaxHeight(),
-                    )
-                }
+            items.forEach { item ->
                 LawAppBottomBarTab(
                     item = item,
                     selected = item.id == selectedId,
@@ -153,61 +130,5 @@ private fun LawAppBottomBarTab(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun TikTokCreateButton(
-    contentDescription: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .semantics { this.contentDescription = contentDescription }
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                role = Role.Button,
-                onClick = onClick,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier.size(width = 46.dp, height = 30.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = (-3).dp)
-                    .size(width = 26.dp, height = 22.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(LawAppBottomBarColors.PlusCyan)
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .offset(x = 3.dp)
-                    .size(width = 26.dp, height = 22.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(LawAppBottomBarColors.PlusRed)
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(width = 32.dp, height = 22.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(LawAppBottomBarColors.PlusCenter),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_add_media),
-                    contentDescription = null,
-                    tint = LawAppBottomBarColors.PlusIcon,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
     }
 }
