@@ -48,6 +48,7 @@ import emy.partners.lawapp.data.remote.auth.SelectableAccountDto
 import emy.partners.lawapp.data.remote.auth.UserRequestChange
 import emy.partners.lawapp.data.remote.student.NamedOption
 import emy.partners.lawapp.data.remote.student.StudentRepository
+import emy.partners.lawapp.data.remote.teacher.TeacherRepository
 import emy.partners.lawapp.presentation.components.basics.ProfilePhotoAvatar
 import emy.partners.lawapp.presentation.components.basics.rememberFilePickerLauncher
 import emy.partners.lawapp.presentation.pages.auth.AuthChoiceChips
@@ -122,6 +123,15 @@ fun ProfilBuild(
     var studentProfileDone by remember(profile?.userId) {
         mutableStateOf(StudentRepository.isStudentProfileCompleted(profile?.userId))
     }
+    var teacherTypes by remember { mutableStateOf<List<NamedOption>>(emptyList()) }
+    var selectedTeacherTypeName by remember { mutableStateOf("") }
+    var teacherDepartement by remember { mutableStateOf("") }
+    var teacherJustificatif by remember { mutableStateOf("") }
+    var teacherGender by remember { mutableStateOf("Masculin") }
+    var teacherEtablissementName by remember { mutableStateOf("") }
+    var teacherProfileDone by remember(profile?.userId) {
+        mutableStateOf(TeacherRepository.isTeacherProfileCompleted(profile?.userId))
+    }
 
     var email by remember(profile?.email) { mutableStateOf(profile?.email.orEmpty()) }
     var pseudo by remember(profile?.username) { mutableStateOf(profile?.username?.trimStart('@').orEmpty()) }
@@ -174,6 +184,26 @@ fun ProfilBuild(
             if (selectedEtablissementName.isBlank()) {
                 selectedEtablissementName = list.firstOrNull()?.name.orEmpty()
             }
+        }
+    }
+
+    LaunchedEffect(isLoggedIn, profile?.isTeacher, teacherProfileDone) {
+        if (!isLoggedIn || profile?.isTeacher != true || teacherProfileDone) return@LaunchedEffect
+        TeacherRepository.loadTeacherTypes().onSuccess { list ->
+            teacherTypes = list
+            if (selectedTeacherTypeName.isBlank()) {
+                selectedTeacherTypeName = list.firstOrNull()?.name.orEmpty()
+            }
+        }
+        if (etablissements.isEmpty()) {
+            StudentRepository.loadEtablissements().onSuccess { list ->
+                etablissements = list
+                if (teacherEtablissementName.isBlank()) {
+                    teacherEtablissementName = list.firstOrNull()?.name.orEmpty()
+                }
+            }
+        } else if (teacherEtablissementName.isBlank()) {
+            teacherEtablissementName = etablissements.firstOrNull()?.name.orEmpty()
         }
     }
 
@@ -542,6 +572,131 @@ fun ProfilBuild(
                                                 ?: strings.t(
                                                     "Impossible d'enregistrer le profil etudiant.",
                                                     "Unable to save student profile."
+                                                ),
+                                        )
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                if (profile?.isTeacher == true && !teacherProfileDone) {
+                    AuthFormPanel {
+                        Text(
+                            text = strings.t("Completer le profil enseignant", "Complete teacher profile"),
+                            color = AuthColors.TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = strings.t(
+                                "Le dossier enseignant debloque creation d'evaluations, quiz, salles et correction.",
+                                "The teacher file unlocks evaluation, quiz, classroom and grading tools."
+                            ),
+                            color = AuthColors.TextSecondary,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        if (teacherTypes.isNotEmpty()) {
+                            Text(
+                                text = strings.t("Type d'enseignant *", "Teacher type *"),
+                                color = AuthColors.TextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OptionChipGrid(
+                                options = teacherTypes.map { it.name },
+                                selected = selectedTeacherTypeName.ifBlank { teacherTypes.first().name },
+                                onSelected = { selectedTeacherTypeName = it },
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        if (etablissements.isNotEmpty()) {
+                            Text(
+                                text = strings.t("Etablissement", "School"),
+                                color = AuthColors.TextSecondary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            OptionChipGrid(
+                                options = etablissements.map { it.name },
+                                selected = teacherEtablissementName,
+                                onSelected = { teacherEtablissementName = it },
+                                collapsedLimit = 5,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        AuthTextField(
+                            value = teacherDepartement,
+                            onValueChange = { teacherDepartement = it },
+                            label = strings.t("Departement", "Department"),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        AuthTextField(
+                            value = teacherJustificatif,
+                            onValueChange = { teacherJustificatif = it },
+                            label = strings.t("Justificatif", "Supporting document"),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        AuthChoiceChips(
+                            label = strings.t("Genre", "Gender"),
+                            options = listOf("Masculin", "Feminin"),
+                            selected = teacherGender,
+                            onSelected = { teacherGender = it },
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        AuthPrimaryButton(
+                            text = strings.t("Enregistrer mon profil enseignant", "Save teacher profile"),
+                            enabled = !isSaving && (teacherTypes.isEmpty() || selectedTeacherTypeName.isNotBlank()),
+                            onClick = {
+                                val type = teacherTypes.firstOrNull {
+                                    it.name.equals(selectedTeacherTypeName, ignoreCase = true)
+                                } ?: teacherTypes.firstOrNull()
+                                if (type == null) {
+                                    popup = ProfilePopup(
+                                        title = strings.t("Type requis", "Type required"),
+                                        message = strings.t(
+                                            "Selectionnez un type d'enseignant.",
+                                            "Select a teacher type."
+                                        ),
+                                    )
+                                    return@AuthPrimaryButton
+                                }
+                                val school = etablissements.firstOrNull {
+                                    it.name.equals(teacherEtablissementName, ignoreCase = true)
+                                }
+                                isSaving = true
+                                scope.launch {
+                                    val result = TeacherRepository.completeTeacherProfile(
+                                        typeTeacherId = type.id,
+                                        departement = teacherDepartement,
+                                        justificatif = teacherJustificatif,
+                                        gender = teacherGender,
+                                        etablissementId = school?.id,
+                                    )
+                                    isSaving = false
+                                    result.onSuccess {
+                                        teacherProfileDone = true
+                                        popup = ProfilePopup(
+                                            title = strings.t("Profil enseignant", "Teacher profile"),
+                                            message = strings.t(
+                                                "Dossier enseignant envoye. Vous pouvez creer evaluations, quiz et salles.",
+                                                "Teacher file submitted. You can create evaluations, quizzes and classrooms."
+                                            ),
+                                        )
+                                    }.onFailure { error ->
+                                        popup = ProfilePopup(
+                                            title = strings.t("Echec", "Failed"),
+                                            message = error.message
+                                                ?: strings.t(
+                                                    "Impossible d'enregistrer le profil enseignant.",
+                                                    "Unable to save teacher profile."
                                                 ),
                                         )
                                     }

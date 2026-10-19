@@ -237,6 +237,59 @@ class QuizEvaluationApiMappingTest {
     }
 
     @Test
+    fun mapsPrivateEvaluationCodeAndCriteres() {
+        val body = """
+            {
+              "id":21,
+              "title":"Devoir prive",
+              "description":"Acces par code",
+              "startDate":"2026-10-01",
+              "endDate":"2026-10-20",
+              "publicationScope":"PRIVATE",
+              "audienceMode":"CODE",
+              "criteres":{"accessCode":"8F2K9Q","classroomId":4,"audienceMode":"CODE"}
+            }
+        """.trimIndent()
+        val dto = json.decodeFromString(EvaluationSessionDto.serializer(), body)
+        assertEquals("8F2K9Q", dto.resolvedAccessCode)
+        assertEquals(4L, dto.resolvedClassroomId)
+        assertTrue(dto.requiresAccessCode)
+        val locked = dto.toSession(canAnswer = true, alreadySubmitted = false, unlocked = false)
+        assertNotNull(locked)
+        assertEquals("Code requis", locked.domain)
+        assertTrue(!locked.canAnswer)
+        val unlocked = dto.toSession(canAnswer = true, alreadySubmitted = false, unlocked = true)
+        assertNotNull(unlocked)
+        assertTrue(unlocked.canAnswer)
+        assertEquals("8F2K9Q", unlocked.accessCode)
+    }
+
+    @Test
+    fun mapsTeacherCreateRequestWithVisibility() {
+        val dao = EvaluationDAO(
+            title = "Interro privee",
+            description = "Code",
+            compteur = 20,
+            startDate = "13/08/2026",
+            endDate = "14/08/2026",
+            option = listOf(
+                QuestionOptionDAO(
+                    question = Question(title = "Q1"),
+                    questionOption = listOf(QuestionOption(title = "A", isCorrect = true))
+                )
+            ),
+            publicationScope = "PRIVATE",
+            audienceMode = "CODE",
+            accessCode = "LAW50X",
+        )
+        val request = dao.toCreateRequest("2026-08-13", "2026-08-14")
+        assertEquals("PRIVATE", request.publicationScope)
+        assertEquals("CODE", request.audienceMode)
+        assertEquals("LAW50X", request.accessCode)
+        assertEquals("LAW50X", request.criteres?.accessCode)
+    }
+
+    @Test
     fun convertsDisplayDateToApiDate() {
         assertEquals("2026-08-13", toApiDate("13/08/2026"))
         assertEquals("2026-04-03", toApiDate("2026-04-03"))

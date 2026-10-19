@@ -43,7 +43,11 @@ data class EvaluationDAO(
     val endDate: String,
     val option: List<QuestionOptionDAO>? = emptyList(),
     val ouverte: List<QuestionOuverteDAO>? = emptyList(),
-    val caseStudy: List<QuestionCaseStudyDAO>? = emptyList()
+    val caseStudy: List<QuestionCaseStudyDAO>? = emptyList(),
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
 )
 
 data class Question(

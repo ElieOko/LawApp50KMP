@@ -13,6 +13,7 @@ import emy.partners.lawapp.data.remote.toApiDate
 import emy.partners.lawapp.data.remote.withBearerToken
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.EvaluationSession
+import emy.partners.lawapp.domain.models.EvaluationStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -160,6 +161,7 @@ object EvaluationRepository {
     private const val KEY_SUBMITTED_PREFIX = "lawapp_evaluation_submitted_u"
     private const val KEY_ACTIVE_ATTEMPT_PREFIX = "lawapp_evaluation_active_u"
     private const val KEY_ATTEMPT_PREFIX = "lawapp_evaluation_attempt_u"
+    private const val KEY_UNLOCKED_PREFIX = "lawapp_evaluation_unlocked_u"
 
     private val api = EvaluationApi()
     private val json = AppJson
@@ -206,12 +208,14 @@ object EvaluationRepository {
             emptySet()
         }
         val submitted = loadSubmittedIds()
+        val unlocked = loadUnlockedIds()
         val mapped = details.values.mapNotNull { dto ->
             val id = dto.id ?: return@mapNotNull null
             val canAnswer = if (token == null) true else answerableIds.contains(id)
             val session = dto.toSession(
                 canAnswer = canAnswer && !submitted.contains(id),
                 alreadySubmitted = submitted.contains(id),
+                unlocked = unlocked.contains(id) || !dto.requiresAccessCode,
             ) ?: return@mapNotNull null
             applyAttemptProgress(session)
         }.sortedByDescending { it.id }
@@ -233,6 +237,7 @@ object EvaluationRepository {
             dto.toSession(
                 canAnswer = !submitted.contains(dto.id),
                 alreadySubmitted = submitted.contains(dto.id),
+                unlocked = loadUnlockedIds().contains(dto.id) || !dto.requiresAccessCode,
             )?.let(::applyAttemptProgress) ?: throw EvaluationApiException("Evaluation invalide")
         }.onSuccess { session ->
             val current = cachedSessions().toMutableList()
@@ -298,6 +303,68 @@ object EvaluationRepository {
         }
     }
 
+    suspend fun unlockByAccessCode(code: String): Result<EvaluationSession> {
+        val normalized = normalizeAccessCode(code)
+        if (normalized.isBlank()) {
+            return Result.failure(EvaluationApiException("Saisissez le code de l'evaluation."))
+        }
+        val refresh = loadEvaluations(forceRefresh = true)
+        if (refresh.isFailure && cachedSessions().isEmpty()) {
+            return Result.failure(
+                refresh.exceptionOrNull() ?: EvaluationApiException("Impossible de verifier le code.")
+            )
+        }
+        val match = memoryDetails.values.firstOrNull { dto ->
+            dto.resolvedAccessCode?.let(::normalizeAccessCode) == normalized
+        } ?: cachedSessions().firstOrNull { session ->
+            session.accessCode?.let(::normalizeAccessCode) == normalized
+        }?.let { session -> memoryDetails[session.id] }
+        if (match?.id == null) {
+            return Result.failure(EvaluationApiException("Aucune evaluation ne correspond a ce code."))
+        }
+        markUnlocked(match.id)
+        val submitted = loadSubmittedIds()
+        val session = match.toSession(
+            canAnswer = true,
+            alreadySubmitted = submitted.contains(match.id),
+            unlocked = true,
+        )?.let(::applyAttemptProgress)
+            ?: return Result.failure(EvaluationApiException("Evaluation invalide"))
+        val current = cachedSessions().toMutableList()
+        val index = current.indexOfFirst { it.id == session.id }
+        if (index >= 0) current[index] = session else current.add(0, session)
+        memorySessions = current
+        persistCache(current)
+        return Result.success(session)
+    }
+
+    fun submittedHistory(): List<EvaluationSession> =
+        cachedSessions().filter { it.alreadySubmitted || it.status == EvaluationStatus.Completed }
+
+    fun correctionQuestions(evaluationId: Long): List<EvaluationTakeQuestion> {
+        val detail = memoryDetails[evaluationId] ?: return emptyList()
+        return detail.toTakeSheet()?.questions.orEmpty()
+    }
+
+    fun correctionAnswerKey(evaluationId: Long): List<Pair<EvaluationTakeQuestion, String?>> {
+        val detail = memoryDetails[evaluationId] ?: return emptyList()
+        return detail.option.mapNotNull { block ->
+            val question = block.question ?: return@mapNotNull null
+            val questionId = question.id ?: return@mapNotNull null
+            val correct = block.questionOption.firstOrNull { it.valid == true }?.option
+            EvaluationTakeQuestion(
+                id = questionId,
+                title = question.title.orEmpty(),
+                point = question.point ?: 1.0,
+                kind = EvaluationQuestionKind.Option,
+                options = block.questionOption.mapIndexedNotNull { index, item ->
+                    val label = item.option?.takeIf { it.isNotBlank() } ?: return@mapIndexedNotNull null
+                    EvaluationTakeOption(id = item.id ?: (index + 1L), label = label)
+                },
+            ) to correct
+        }
+    }
+
     suspend fun createEvaluation(dao: EvaluationDAO): Result<EvaluationSession> {
         val token = AuthRepository.currentSession?.accessToken?.takeIf { it.isNotBlank() }
             ?: return Result.failure(EvaluationApiException("Connectez-vous pour creer une evaluation."))
@@ -307,8 +374,17 @@ object EvaluationRepository {
         )
         return api.createEvaluation(token, request).mapCatching { dto ->
             dto.id?.let { memoryDetails = memoryDetails + (it to dto) }
-            dto.toSession(canAnswer = false, alreadySubmitted = false)
+            val created = dto.toSession(canAnswer = false, alreadySubmitted = false, unlocked = true)
                 ?: dao.toLocalSession(cachedSessions().size)
+            created.copy(
+                publicationScope = dao.publicationScope ?: created.publicationScope,
+                audienceMode = dao.audienceMode ?: created.audienceMode,
+                accessCode = dao.accessCode ?: created.accessCode,
+                classroomId = dao.classroomId ?: created.classroomId,
+                requiresCode = dao.audienceMode?.contains("CODE", ignoreCase = true) == true || created.requiresCode,
+                isPrivate = dao.publicationScope?.contains("PRIV", ignoreCase = true) == true || created.isPrivate,
+                unlocked = true,
+            )
         }.onSuccess { session ->
             val current = cachedSessions().toMutableList()
             if (current.none { it.id == session.id }) {
@@ -436,6 +512,26 @@ object EvaluationRepository {
 
     private fun submittedKey(userId: Long): String = KEY_SUBMITTED_PREFIX + userId
 
+    private fun markUnlocked(id: Long) {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return
+        val ids = loadUnlockedIds().toMutableSet()
+        ids.add(id)
+        store.putString(
+            unlockedKey(userId),
+            json.encodeToString(SubmittedStore.serializer(), SubmittedStore(ids = ids.toList())),
+        )
+    }
+
+    private fun loadUnlockedIds(): Set<Long> {
+        val userId = AuthRepository.currentSession?.profile?.userId ?: return emptySet()
+        val raw = store.getString(unlockedKey(userId)) ?: return emptySet()
+        return runCatching {
+            json.decodeFromString(SubmittedStore.serializer(), raw).ids.toSet()
+        }.getOrDefault(emptySet())
+    }
+
+    private fun unlockedKey(userId: Long): String = KEY_UNLOCKED_PREFIX + userId
+
     private fun fallbackCompteurMinutes(id: Long): Long =
         resolveCompteurMinutes(
             memoryDetails[id]?.compteur,
@@ -486,6 +582,13 @@ private data class EvaluationCacheItem(
     val startDate: String? = null,
     val endDate: String? = null,
     val compteurMinutes: Long? = null,
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val requiresCode: Boolean = false,
+    val unlocked: Boolean = true,
+    val isPrivate: Boolean = false,
 )
 
 private fun EvaluationSession.toCacheItem() = EvaluationCacheItem(
@@ -506,6 +609,13 @@ private fun EvaluationSession.toCacheItem() = EvaluationCacheItem(
     startDate = startDate,
     endDate = endDate,
     compteurMinutes = compteurMinutes,
+    publicationScope = publicationScope,
+    audienceMode = audienceMode,
+    accessCode = accessCode,
+    classroomId = classroomId,
+    requiresCode = requiresCode,
+    unlocked = unlocked,
+    isPrivate = isPrivate,
 )
 
 private fun EvaluationCacheItem.toSession() = EvaluationSession(
@@ -525,9 +635,16 @@ private fun EvaluationCacheItem.toSession() = EvaluationSession(
     duration = duration,
     updatedAt = updatedAt,
     level = level,
-    canAnswer = canAnswer && !alreadySubmitted,
+    canAnswer = canAnswer && !alreadySubmitted && (!requiresCode || unlocked),
     alreadySubmitted = alreadySubmitted,
     startDate = startDate,
     endDate = endDate,
     compteurMinutes = compteurMinutes,
+    publicationScope = publicationScope,
+    audienceMode = audienceMode,
+    accessCode = accessCode,
+    classroomId = classroomId,
+    requiresCode = requiresCode,
+    unlocked = unlocked,
+    isPrivate = isPrivate,
 )

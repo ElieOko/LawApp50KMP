@@ -42,17 +42,21 @@ import emy.partners.lawapp.presentation.themes.BlueDarkEffect
 fun EvaluationDetailPage(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    isTeacher: Boolean = false,
     onBack: () -> Unit = {},
     onContinue: () -> Unit = {},
     onReviseWithQuiz: () -> Unit = {},
+    onCorrect: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
     EvaluationDetailBuild(
         evaluation = evaluation,
         modifier = modifier,
+        isTeacher = isTeacher,
         onBack = onBack,
         onContinue = onContinue,
         onReviseWithQuiz = onReviseWithQuiz,
+        onCorrect = onCorrect,
         scrollVertical
     )
 }
@@ -61,12 +65,15 @@ fun EvaluationDetailPage(
 fun EvaluationDetailBuild(
     evaluation: EvaluationSession,
     modifier: Modifier = Modifier,
+    isTeacher: Boolean = false,
     onBack: () -> Unit = {},
     onContinue: () -> Unit = {},
     onReviseWithQuiz: () -> Unit = {},
+    onCorrect: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState()
 ) {
     val completed = evaluation.status == EvaluationStatus.Completed || evaluation.alreadySubmitted
+    val lockedByCode = evaluation.requiresCode && !evaluation.unlocked && !isTeacher
 
     Column(
         Modifier
@@ -165,17 +172,37 @@ fun EvaluationDetailBuild(
                     }
                     Spacer(Modifier.height(18.dp))
                     Text(
-                        text = if (completed) {
-                            "Evaluation terminee. Consulte ton score, puis relance un quiz pour consolider tes acquis."
-                        } else {
-                            "Une fois commencee, l'evaluation verrouille les menus et la navigation. Tes reponses sont conservees jusqu'a la soumission."
+                        text = when {
+                            lockedByCode -> "Cette evaluation est privee. Entrez le code fourni par l'enseignant depuis la liste."
+                            completed -> "Evaluation terminee. Consulte ton score, puis relance un quiz pour consolider tes acquis."
+                            else -> "Une fois commencee, l'evaluation verrouille les menus et la navigation. Tes reponses sont conservees jusqu'a la soumission."
                         },
                         color = Color.Black.copy(alpha = 0.56f),
                         lineHeight = 19.sp
                     )
+                    if (isTeacher && !evaluation.accessCode.isNullOrBlank()) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Code etudiants : ${evaluation.accessCode}",
+                            color = BlueDark,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
+                    }
+                    if (isTeacher) {
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = onCorrect,
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                        ) {
+                            Text("Ouvrir la correction", fontWeight = FontWeight.Bold)
+                        }
+                    }
                     Spacer(Modifier.height(18.dp))
                     Button(
                         onClick = if (completed) onReviseWithQuiz else onContinue,
+                        enabled = completed || (!lockedByCode && evaluation.canAnswer),
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BlueDark)
@@ -183,6 +210,7 @@ fun EvaluationDetailBuild(
                         Text(
                         text = when {
                             completed -> "Reviser avec un quiz"
+                            lockedByCode -> "Code requis"
                             evaluation.completedQuestions > 0 -> "Reprendre l'evaluation"
                             evaluation.canAnswer -> "Commencer l'evaluation"
                             else -> "Consulter l'evaluation"

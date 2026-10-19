@@ -58,6 +58,8 @@ fun EvaluationPage(
     modifier: Modifier = Modifier,
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
+    onOpenClassrooms: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
     canCreateEvaluations: Boolean = false,
     createBlockedMessage: String? = null,
     scrollVertical: ScrollState = rememberScrollState(),
@@ -67,6 +69,8 @@ fun EvaluationPage(
     var isInitialLoading by remember { mutableStateOf(evaluations.isEmpty()) }
     var isRefreshing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var accessCode by remember { mutableStateOf("") }
+    var codeMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val cached = EvaluationRepository.cachedSessions()
@@ -116,8 +120,27 @@ fun EvaluationPage(
         },
         onEvaluationClick = onEvaluationClick,
         onCreateClick = onCreateClick,
+        onOpenClassrooms = onOpenClassrooms,
+        onOpenHistory = onOpenHistory,
         canCreateEvaluations = canCreateEvaluations,
         createBlockedMessage = createBlockedMessage,
+        accessCode = accessCode,
+        onAccessCodeChange = { accessCode = it },
+        codeMessage = codeMessage,
+        onUnlockByCode = {
+            val typed = accessCode
+            scope.launch {
+                EvaluationRepository.unlockByAccessCode(typed)
+                    .onSuccess {
+                        evaluations = EvaluationRepository.cachedSessions()
+                        codeMessage = "Evaluation debloquee : ${it.title}"
+                        onEvaluationClick(it)
+                    }
+                    .onFailure {
+                        codeMessage = it.message ?: "Code invalide"
+                    }
+            }
+        },
         scrollVertical = scrollVertical,
     )
 }
@@ -133,8 +156,14 @@ fun EvaluationBuild(
     onRetry: () -> Unit = {},
     onEvaluationClick: (EvaluationSession) -> Unit = {},
     onCreateClick: () -> Unit = {},
+    onOpenClassrooms: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
     canCreateEvaluations: Boolean = false,
     createBlockedMessage: String? = null,
+    accessCode: String = "",
+    onAccessCodeChange: (String) -> Unit = {},
+    codeMessage: String? = null,
+    onUnlockByCode: () -> Unit = {},
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     val ui = LocalAppUiController.current
@@ -183,7 +212,50 @@ fun EvaluationBuild(
             canCreateEvaluations = canCreateEvaluations,
             createBlockedMessage = createBlockedMessage,
             onCreateClick = onCreateClick,
+            onOpenClassrooms = onOpenClassrooms,
+            onOpenHistory = onOpenHistory,
         )
+        Spacer(Modifier.height(14.dp))
+        AuthFormPanel {
+            Text(
+                "Rejoindre avec un code",
+                color = AuthColors.TextPrimary,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Les evaluations privees s'ouvrent avec le code fourni par l'enseignant.",
+                color = AuthColors.TextSecondary,
+                fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            androidx.compose.material3.OutlinedTextField(
+                value = accessCode,
+                onValueChange = onAccessCodeChange,
+                label = { Text("Code d'acces") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+            AuthPrimaryButton(
+                text = "Debloquer",
+                enabled = accessCode.isNotBlank(),
+                onClick = onUnlockByCode,
+            )
+            if (!codeMessage.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(codeMessage, color = AuthColors.TextSecondary, fontSize = 12.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Voir l'historique des soumissions",
+                color = AuthColors.AccentBright,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier.clickable(onClick = onOpenHistory),
+            )
+        }
         Spacer(Modifier.height(14.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -248,6 +320,8 @@ private fun EvaluationHero(
     canCreateEvaluations: Boolean,
     createBlockedMessage: String?,
     onCreateClick: () -> Unit,
+    onOpenClassrooms: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     Column(
         Modifier
@@ -298,12 +372,17 @@ private fun EvaluationHero(
                 Column {
                     Text("Creer une evaluation", color = BlueDark, fontWeight = FontWeight.ExtraBold)
                     Text(
-                        "Questions, compteur, dates et contenu",
+                        "Public, privee par code ou reservee a une salle",
                         color = AuthColors.TextSecondary,
                         fontSize = 12.sp,
                     )
                 }
                 Text("+", color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TeacherToolChip("Salles / presence", onOpenClassrooms, Modifier.weight(1f))
+                TeacherToolChip("Historique", onOpenHistory, Modifier.weight(1f))
             }
         } else if (!createBlockedMessage.isNullOrBlank()) {
             Text(
@@ -333,6 +412,21 @@ private fun EvaluationMetric(
         Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
         Text(label, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp)
     }
+}
+
+@Composable
+private fun TeacherToolChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Text(
+        text = label,
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.16f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+    )
 }
 
 @Composable

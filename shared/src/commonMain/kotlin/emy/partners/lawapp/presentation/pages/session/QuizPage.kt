@@ -54,6 +54,8 @@ private val PageBgDark = Color(0xFF0B1220)
 fun QuizPage(
     modifier: Modifier = Modifier,
     onQuizClick: (QuizSummary) -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    canCreateQuizzes: Boolean = false,
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     val scope = rememberCoroutineScope()
@@ -109,6 +111,8 @@ fun QuizPage(
             }
         },
         onQuizClick = onQuizClick,
+        onCreateClick = onCreateClick,
+        canCreateQuizzes = canCreateQuizzes,
         scrollVertical = scrollVertical,
     )
 }
@@ -123,6 +127,8 @@ fun QuizBuild(
     errorMessage: String? = null,
     onRetry: () -> Unit = {},
     onQuizClick: (QuizSummary) -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    canCreateQuizzes: Boolean = false,
     scrollVertical: ScrollState = rememberScrollState(),
 ) {
     val ui = LocalAppUiController.current
@@ -170,6 +176,8 @@ fun QuizBuild(
                     QuizListHeader(
                         total = quizzes.size,
                         completed = completedCount,
+                        canCreateQuizzes = canCreateQuizzes,
+                        onCreateClick = onCreateClick,
                     )
                     Spacer(Modifier.height(14.dp))
                     AuthFormPanel {
@@ -207,6 +215,8 @@ fun QuizBuild(
 private fun QuizListHeader(
     total: Int,
     completed: Int,
+    canCreateQuizzes: Boolean = false,
+    onCreateClick: () -> Unit = {},
 ) {
     Column(
         Modifier
@@ -240,6 +250,29 @@ private fun QuizListHeader(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             QuizMetric("Disponibles", total.toString(), Modifier.weight(1f))
             QuizMetric("Termines", completed.toString(), Modifier.weight(1f))
+        }
+        if (canCreateQuizzes) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .clickable(onClick = onCreateClick)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text("Creer un quiz", color = BlueDark, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        "Niveaux, questions et type de notion",
+                        color = AuthColors.TextSecondary,
+                        fontSize = 12.sp,
+                    )
+                }
+                Text("+", color = BlueDark, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
+            }
         }
     }
 }

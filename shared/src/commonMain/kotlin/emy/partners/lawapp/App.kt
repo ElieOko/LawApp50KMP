@@ -58,12 +58,17 @@ import emy.partners.lawapp.presentation.pages.content.ContentCreatePage
 import emy.partners.lawapp.presentation.pages.explore.ExploreDetailPage
 import emy.partners.lawapp.presentation.pages.explore.ExplorePage
 import emy.partners.lawapp.presentation.pages.home.HomePage
+import emy.partners.lawapp.data.remote.teacher.TeacherRepository
+import emy.partners.lawapp.presentation.pages.session.ClassroomPage
+import emy.partners.lawapp.presentation.pages.session.EvaluationCorrectionPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationCreatePage
 import emy.partners.lawapp.presentation.pages.session.EvaluationDetailPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationPage
 import emy.partners.lawapp.presentation.pages.session.EvaluationTakePage
+import emy.partners.lawapp.presentation.pages.session.QuizCreatePage
 import emy.partners.lawapp.presentation.pages.session.QuizPage
 import emy.partners.lawapp.presentation.pages.session.QuizPlayPage
+import emy.partners.lawapp.presentation.pages.session.SessionHistoryPage
 import emy.partners.lawapp.presentation.pages.settings.LanguageSettingsPage
 import emy.partners.lawapp.presentation.pages.settings.ThemeSettingsPage
 import emy.partners.lawapp.presentation.settings.AppUiController
@@ -263,9 +268,11 @@ private data class EvaluationDetailScreen(val evaluationId: Long) : UniqueLawApp
         EvaluationDetailPage(
             evaluation = evaluation,
             modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            isTeacher = AuthRepository.currentSession?.profile?.isTeacher == true,
             onBack = { navigator.pop() },
             onContinue = { navigator.replaceAll(EvaluationTakeScreen(evaluationId)) },
             onReviseWithQuiz = { navigator.replaceAll(QuizScreen()) },
+            onCorrect = { navigator.push(EvaluationCorrectionScreen(evaluationId)) },
             scrollVertical = scrollVertical,
         )
     }
@@ -288,6 +295,91 @@ private class EvaluationCreateScreen : UniqueLawAppScreen() {
                 context.state.createdEvaluations.add(evaluation.toSession(context.state.createdEvaluations.size))
                 navigator.pop()
             },
+            scrollVertical = scrollVertical,
+        )
+    }
+}
+
+private class QuizCreateScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Quiz
+    override val pageStateKey: String = "quiz/create"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        if (!TeacherRepository.isTeacherAuthorized()) {
+            EvaluationRootContent("evaluation")
+            return
+        }
+        QuizCreatePage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onCreated = { navigator.pop() },
+            scrollVertical = scrollVertical,
+        )
+    }
+}
+
+private class ClassroomScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/classrooms"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        if (!TeacherRepository.isTeacherAuthorized()) {
+            EvaluationRootContent("evaluation")
+            return
+        }
+        ClassroomPage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            scrollVertical = scrollVertical,
+        )
+    }
+}
+
+private class SessionHistoryScreen : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/history"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        SessionHistoryPage(
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
+            onEvaluationClick = { navigator.push(EvaluationDetailScreen(it.id)) },
+            onQuizClick = { navigator.push(QuizPlayScreen(it)) },
+            scrollVertical = scrollVertical,
+        )
+    }
+}
+
+private data class EvaluationCorrectionScreen(val evaluationId: Long) : UniqueLawAppScreen() {
+    override val topLevelDestinationKind: TopLevelDestinationKind = TopLevelDestinationKind.Evaluation
+    override val pageStateKey: String = "evaluation/correction/$evaluationId"
+
+    @Composable
+    override fun Content() {
+        val context = LocalLawAppNavigationContext.current
+        val navigator = LocalNavigator.currentOrThrow
+        val evaluation = context.evaluations.firstOrNull { it.id == evaluationId }
+        if (evaluation == null || !TeacherRepository.isTeacherAuthorized()) {
+            EvaluationRootContent("evaluation")
+            return
+        }
+        val scrollVertical = rememberPageScrollState(pageStateKey, topLevelDestinationKind)
+        EvaluationCorrectionPage(
+            evaluation = evaluation,
+            modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
+            onBack = { navigator.pop() },
             scrollVertical = scrollVertical,
         )
     }
@@ -320,6 +412,12 @@ private class QuizScreen : UniqueLawAppScreen() {
             QuizPage(
                 modifier = Modifier.padding(top = context.contentPadding.calculateTopPadding()),
                 onQuizClick = { quiz: QuizSummary -> navigator.push(QuizPlayScreen(quiz.id)) },
+                onCreateClick = {
+                    if (TeacherRepository.isTeacherAuthorized()) {
+                        navigator.push(QuizCreateScreen())
+                    }
+                },
+                canCreateQuizzes = TeacherRepository.isTeacherAuthorized(),
                 scrollVertical = scrollVertical,
             )
         }
@@ -563,6 +661,10 @@ private fun EvaluationRootContent(pageStateKey: String) {
             onCreateClick = {
                 if (isTeacher) navigator.push(EvaluationCreateScreen())
             },
+            onOpenClassrooms = {
+                if (isTeacher) navigator.push(ClassroomScreen())
+            },
+            onOpenHistory = { navigator.push(SessionHistoryScreen()) },
             canCreateEvaluations = canCreate,
             createBlockedMessage = blockedMessage,
             scrollVertical = scrollVertical,
@@ -828,7 +930,7 @@ expect fun PlatformVideoPlayer(
 private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
     id = id ?: (1_000L + index),
     title = title,
-    domain = "Brouillon",
+    domain = if (audienceMode?.contains("CODE", ignoreCase = true) == true) "Code requis" else "Brouillon",
     description = description,
     status = EvaluationStatus.InProgress,
     progress = 0f,
@@ -837,7 +939,14 @@ private fun EvaluationDAO.toSession(index: Int) = EvaluationSession(
     completedQuestions = 0,
     duration = compteur?.let(::formatDurationFromMinutes) ?: "A definir",
     updatedAt = "Cree maintenant",
-    level = "Personnalise"
+    level = "Personnalise",
+    publicationScope = publicationScope,
+    audienceMode = audienceMode,
+    accessCode = accessCode,
+    classroomId = classroomId,
+    requiresCode = audienceMode?.contains("CODE", ignoreCase = true) == true,
+    unlocked = true,
+    isPrivate = publicationScope?.contains("PRIV", ignoreCase = true) == true,
 )
 
 private fun formatDurationFromMinutes(totalMinutes: Long): String {
