@@ -70,6 +70,41 @@ data class QuizDetailDto(
 )
 
 @Serializable
+data class QuizOptionRequestDto(
+    val option: String,
+    val goal: Boolean = false,
+)
+
+@Serializable
+data class QuizQuestionRequestDto(
+    val title: String,
+    val point: Double = 1.0,
+    val options: List<QuizOptionRequestDto>,
+)
+
+@Serializable
+data class QuizLevelRequestDto(
+    val title: String,
+    val levelOrder: Int,
+    val questions: List<QuizQuestionRequestDto>,
+)
+
+@Serializable
+data class QuizCreateRequest(
+    val title: String,
+    val description: String? = null,
+    val notionTypeId: Long,
+    val levels: List<QuizLevelRequestDto>,
+)
+
+@Serializable
+data class QuizNotionTypeRequest(
+    val code: String,
+    val label: String,
+    val description: String? = null,
+)
+
+@Serializable
 data class QuizProgressUpdateRequest(
     val levelOrder: Int,
     val score: Double,

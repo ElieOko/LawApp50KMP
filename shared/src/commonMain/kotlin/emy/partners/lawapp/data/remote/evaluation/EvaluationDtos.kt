@@ -58,6 +58,17 @@ data class EvaluationCaseBlockDto(
 )
 
 @Serializable
+data class EvaluationCriteresDto(
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val etablissementId: Long? = null,
+    val institutionPublicationStatus: String? = null,
+    val allowDocumentUpload: Boolean? = null,
+)
+
+@Serializable
 data class EvaluationSessionDto(
     val id: Long? = null,
     val title: String? = null,
@@ -66,10 +77,42 @@ data class EvaluationSessionDto(
     val fileContent: String? = null,
     val startDate: String? = null,
     val endDate: String? = null,
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val criteres: EvaluationCriteresDto? = null,
     val option: List<EvaluationOptionBlockDto> = emptyList(),
     val ouverte: List<EvaluationOpenBlockDto> = emptyList(),
     val caseStudy: List<EvaluationCaseBlockDto> = emptyList(),
-)
+) {
+    val resolvedPublicationScope: String
+        get() = publicationScope?.takeIf { it.isNotBlank() }
+            ?: criteres?.publicationScope?.takeIf { it.isNotBlank() }
+            ?: "FREE"
+
+    val resolvedAudienceMode: String
+        get() = audienceMode?.takeIf { it.isNotBlank() }
+            ?: criteres?.audienceMode?.takeIf { it.isNotBlank() }
+            ?: "OPEN"
+
+    val resolvedAccessCode: String?
+        get() = accessCode?.takeIf { it.isNotBlank() }
+            ?: criteres?.accessCode?.takeIf { it.isNotBlank() }
+
+    val resolvedClassroomId: Long?
+        get() = classroomId ?: criteres?.classroomId
+
+    val requiresAccessCode: Boolean
+        get() {
+            val mode = resolvedAudienceMode.uppercase()
+            return mode.contains("CODE") || mode.contains("PRIVATE") ||
+                (resolvedAccessCode != null && !mode.contains("OPEN"))
+        }
+
+    val isPrivateScope: Boolean
+        get() = resolvedPublicationScope.uppercase().contains("PRIV")
+}
 
 @Serializable
 data class EvaluationAnswerableSummaryDto(
@@ -163,6 +206,15 @@ data class EvaluationCaseBlockRequestDto(
 )
 
 @Serializable
+data class EvaluationCriteresRequest(
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val allowDocumentUpload: Boolean = false,
+)
+
+@Serializable
 data class EvaluationCreateRequest(
     val title: String,
     val description: String? = null,
@@ -170,6 +222,11 @@ data class EvaluationCreateRequest(
     val fileContent: String? = null,
     val startDate: String? = null,
     val endDate: String? = null,
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val criteres: EvaluationCriteresRequest? = null,
     val option: List<EvaluationOptionBlockRequestDto> = emptyList(),
     val ouverte: List<EvaluationOpenBlockRequestDto> = emptyList(),
     val caseStudy: List<EvaluationCaseBlockRequestDto> = emptyList(),
@@ -257,16 +314,25 @@ fun EvaluationSessionDto.questionCount(): Int =
 fun EvaluationSessionDto.toSession(
     canAnswer: Boolean,
     alreadySubmitted: Boolean,
+    unlocked: Boolean = true,
 ): EvaluationSession? {
     val evaluationId = id ?: return null
     val resolvedTitle = title?.takeIf { it.isNotBlank() } ?: "Evaluation"
     val count = questionCount()
     val completed = alreadySubmitted
     val minutes = compteur?.takeIf { it > 0 }
+    val codeRequired = requiresAccessCode
+    val visibilityLabel = when {
+        completed -> "Terminee"
+        codeRequired && !unlocked -> "Code requis"
+        isPrivateScope -> "Privee"
+        canAnswer -> "Ouverte"
+        else -> "Session"
+    }
     return EvaluationSession(
         id = evaluationId,
         title = resolvedTitle,
-        domain = if (canAnswer) "Ouverte" else if (completed) "Terminee" else "Session",
+        domain = visibilityLabel,
         description = description?.takeIf { it.isNotBlank() && it != "string" }
             ?: "Evaluation disponible du ${startDate.orEmpty()} au ${endDate.orEmpty()}".trim(),
         status = if (completed) EvaluationStatus.Completed else EvaluationStatus.InProgress,
@@ -277,11 +343,18 @@ fun EvaluationSessionDto.toSession(
         duration = minutes?.let { formatMinutes(it) } ?: dateRangeLabel(startDate, endDate),
         updatedAt = endDate ?: startDate ?: "",
         level = "Evaluation",
-        canAnswer = canAnswer && !completed,
+        canAnswer = canAnswer && !completed && (!codeRequired || unlocked),
         alreadySubmitted = completed,
         startDate = startDate,
         endDate = endDate,
         compteurMinutes = minutes,
+        publicationScope = resolvedPublicationScope,
+        audienceMode = resolvedAudienceMode,
+        accessCode = resolvedAccessCode,
+        classroomId = resolvedClassroomId,
+        requiresCode = codeRequired,
+        unlocked = !codeRequired || unlocked,
+        isPrivate = isPrivateScope || codeRequired,
     )
 }
 
@@ -392,6 +465,16 @@ fun EvaluationDAO.toCreateRequest(
     fileContent = fileContent,
     startDate = startDateApi,
     endDate = endDateApi,
+    publicationScope = publicationScope,
+    audienceMode = audienceMode,
+    accessCode = accessCode,
+    classroomId = classroomId,
+    criteres = EvaluationCriteresRequest(
+        publicationScope = publicationScope,
+        audienceMode = audienceMode,
+        accessCode = accessCode,
+        classroomId = classroomId,
+    ),
     option = option.orEmpty().mapNotNull { block ->
         val questionTitle = block.question?.title?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
         val options = block.questionOption.mapNotNull { item ->
@@ -460,6 +543,13 @@ fun EvaluationDAO.toLocalSession(index: Int): EvaluationSession = EvaluationSess
     startDate = startDate,
     endDate = endDate,
     compteurMinutes = compteur?.takeIf { it > 0 },
+    publicationScope = publicationScope,
+    audienceMode = audienceMode,
+    accessCode = accessCode,
+    classroomId = classroomId,
+    requiresCode = audienceMode?.contains("CODE", ignoreCase = true) == true,
+    unlocked = true,
+    isPrivate = publicationScope?.contains("PRIV", ignoreCase = true) == true,
 )
 
 private fun String?.toQuestionKind(hasOptions: Boolean): EvaluationQuestionKind {
@@ -494,3 +584,17 @@ private fun dateRangeLabel(start: String?, end: String?): String {
         else -> "A definir"
     }
 }
+
+fun generateAccessCode(): String {
+    val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    val seed = nowEpochMs()
+    return buildString {
+        repeat(6) { index ->
+            val pick = ((seed + index * 37) % alphabet.length).toInt().let { if (it < 0) -it else it }
+            append(alphabet[pick % alphabet.length])
+        }
+    }
+}
+
+fun normalizeAccessCode(raw: String): String =
+    raw.trim().uppercase().replace(" ", "")

@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -55,7 +56,10 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import emy.partners.lawapp.convertMillisToDate
 import emy.partners.lawapp.data.Constants.typeEvaluationItems
+import emy.partners.lawapp.data.remote.classroom.ClassroomRepository
+import emy.partners.lawapp.data.remote.classroom.ClassroomSummary
 import emy.partners.lawapp.data.remote.evaluation.EvaluationRepository
+import emy.partners.lawapp.data.remote.evaluation.generateAccessCode
 import emy.partners.lawapp.domain.models.EvaluationDAO
 import emy.partners.lawapp.domain.models.Question
 import emy.partners.lawapp.domain.models.QuestionCaseStudy
@@ -108,6 +112,10 @@ fun EvaluationCreateBuild(
     var showDatePicker2 by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var typeEvaluation by remember { mutableStateOf("") }
+    var visibility by remember { mutableStateOf("Public") }
+    var accessCode by remember { mutableStateOf(generateAccessCode()) }
+    var classrooms by remember { mutableStateOf<List<ClassroomSummary>>(emptyList()) }
+    var selectedClassroomId by remember { mutableStateOf<Long?>(null) }
     var matiere by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var instructions by remember { mutableStateOf("") }
@@ -147,7 +155,12 @@ fun EvaluationCreateBuild(
     val canContinueFromInfo = title.isNotBlank() &&
         matiere.isNotBlank() &&
         typeEvaluation.isNotBlank() &&
-        durationTotalMinutes > 0
+        durationTotalMinutes > 0 &&
+        (visibility != "Salle" || selectedClassroomId != null)
+
+    LaunchedEffect(Unit) {
+        ClassroomRepository.loadMine().onSuccess { classrooms = it }
+    }
     val canContinueFromQuestions = totalQuestions > 0
     val canSave = canContinueFromInfo && canContinueFromQuestions
     val launchFilePicker = rememberFilePickerLauncher { files ->
@@ -275,6 +288,77 @@ fun EvaluationCreateBuild(
                                         unselectedContainer = Color(0xFFF1F5F9),
                                         unselectedText = Color(0xFF1E293B)
                                     )
+                                }
+                            }
+                            Spacer(Modifier.height(14.dp))
+
+                            CreationSection("Visibilite *", size = 16)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("Public", "Code prive", "Salle").forEach { option ->
+                                    QuestionTypeChip(
+                                        label = option,
+                                        selected = visibility == option,
+                                        onClick = {
+                                            visibility = option
+                                            if (option == "Code prive" && accessCode.isBlank()) {
+                                                accessCode = generateAccessCode()
+                                            }
+                                        },
+                                        selectedContainer = Color(0xFF2563EB),
+                                        selectedText = Color.White,
+                                        unselectedContainer = Color(0xFFF1F5F9),
+                                        unselectedText = Color(0xFF1E293B)
+                                    )
+                                }
+                            }
+                            if (visibility == "Code prive") {
+                                Spacer(Modifier.height(10.dp))
+                                CreationField(
+                                    "Code d'acces",
+                                    accessCode,
+                                    { accessCode = it.uppercase() },
+                                    singleLine = true,
+                                    placeHolder = "EX: 8F2K9Q"
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    "Les etudiants rejoignent cette evaluation avec ce code.",
+                                    color = Color(0xFF475569),
+                                    fontSize = 12.sp,
+                                )
+                            }
+                            if (visibility == "Salle") {
+                                Spacer(Modifier.height(10.dp))
+                                if (classrooms.isEmpty()) {
+                                    Text(
+                                        "Creez d'abord une salle depuis le centre d'evaluation.",
+                                        color = Color(0xFFB45309),
+                                        fontSize = 12.sp,
+                                    )
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        classrooms.forEach { room ->
+                                            QuestionTypeChip(
+                                                label = room.name,
+                                                selected = selectedClassroomId == room.id,
+                                                onClick = { selectedClassroomId = room.id },
+                                                selectedContainer = Color(0xFF2563EB),
+                                                selectedText = Color.White,
+                                                unselectedContainer = Color(0xFFF1F5F9),
+                                                unselectedText = Color(0xFF1E293B)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                             Spacer(Modifier.height(14.dp))
@@ -676,6 +760,11 @@ fun EvaluationCreateBuild(
                                     append(filesAsText)
                                 }
                             }.takeIf { it.isNotBlank() }
+                            val resolvedCode = if (visibility == "Code prive") {
+                                accessCode.trim().ifBlank { generateAccessCode() }
+                            } else {
+                                null
+                            }
                             val dao = EvaluationDAO(
                                 title = title.ifBlank { "Nouvelle evaluation" },
                                 description = finalDescription,
@@ -685,7 +774,15 @@ fun EvaluationCreateBuild(
                                 endDate = endDate,
                                 option = optionQuestions.toList(),
                                 ouverte = openQuestions.toList(),
-                                caseStudy = caseStudyQuestions.toList()
+                                caseStudy = caseStudyQuestions.toList(),
+                                publicationScope = if (visibility == "Public") "FREE" else "PRIVATE",
+                                audienceMode = when (visibility) {
+                                    "Code prive" -> "CODE"
+                                    "Salle" -> "CLASSROOM"
+                                    else -> "OPEN"
+                                },
+                                accessCode = resolvedCode,
+                                classroomId = selectedClassroomId.takeIf { visibility == "Salle" },
                             )
                             isSaving = true
                             scope.launch {

@@ -61,6 +61,67 @@ class QuizApi(
         }
     }
 
+    suspend fun listNotionTypes(accessToken: String): Result<List<QuizNotionTypeDto>> = runCatching {
+        val body = authorizedGet(
+            accessToken,
+            "/v1/public/quiz/notion-types",
+            "/api/v1/public/quiz/notion-types",
+            "/v1/protected/quiz/notion-types",
+            "/api/v1/protected/quiz/notion-types",
+        )
+        json.extractArray(body, "notionTypes", "types", "data", "content", "items")
+            .mapNotNull { element ->
+                runCatching { json.decodeFromJsonElement(QuizNotionTypeDto.serializer(), element) }.getOrNull()
+            }
+    }
+
+    suspend fun createNotionType(
+        accessToken: String,
+        request: QuizNotionTypeRequest,
+    ): Result<QuizNotionTypeDto> = runCatching {
+        val paths = listOf("/v1/private/quiz/notion-types", "/api/v1/private/quiz/notion-types")
+        var lastError: String? = null
+        for (path in paths) {
+            val response = client.post {
+                url.takeFrom("${ApiConfig.BASE_URL}$path")
+                withBearerToken(accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            val body = response.bodyAsText()
+            if (response.status.isSuccess()) {
+                return@runCatching json.extractObject(body, "notionType", "data", "content")?.let {
+                    runCatching { json.decodeFromJsonElement(QuizNotionTypeDto.serializer(), it) }.getOrNull()
+                } ?: QuizNotionTypeDto(code = request.code, label = request.label, description = request.description)
+            }
+            lastError = json.extractMessage(body) ?: "Creation du type de notion impossible (${response.status.value})"
+            if (response.status.value != 404) throw QuizApiException(lastError)
+        }
+        throw QuizApiException(lastError ?: "Creation du type de notion impossible")
+    }
+
+    suspend fun createQuiz(accessToken: String, request: QuizCreateRequest): Result<QuizSummaryDto> = runCatching {
+        val paths = listOf("/v1/private/quiz", "/api/v1/private/quiz")
+        var lastError: String? = null
+        for (path in paths) {
+            val response = client.post {
+                url.takeFrom("${ApiConfig.BASE_URL}$path")
+                withBearerToken(accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            val body = response.bodyAsText()
+            if (response.status.isSuccess()) {
+                val obj = json.extractObject(body, "quiz", "data", "content")
+                    ?: throw QuizApiException("Quiz cree mais reponse illisible")
+                return@runCatching json.decodeFromJsonElement(QuizSummaryDto.serializer(), obj)
+            }
+            lastError = json.extractMessage(body) ?: "Creation du quiz impossible (${response.status.value})"
+            if (response.status.value != 404) throw QuizApiException(lastError)
+        }
+        throw QuizApiException(lastError ?: "Creation du quiz impossible")
+    }
+
     suspend fun recordLevelProgress(
         accessToken: String,
         quizId: Long,
@@ -153,6 +214,65 @@ object QuizRepository {
             dto.toPlayContent() ?: throw QuizApiException("Quiz sans questions")
         }
     }
+
+    suspend fun loadNotionTypes(): Result<List<QuizNotionTypeDto>> {
+        val token = requireToken()
+            ?: return Result.failure(QuizApiException("Connectez-vous pour charger les types de notion."))
+        return api.listNotionTypes(token)
+    }
+
+    suspend fun createQuiz(
+        title: String,
+        description: String?,
+        notionTypeId: Long?,
+        notionLabel: String?,
+        levels: List<QuizLevelRequestDto>,
+    ): Result<QuizSummary> {
+        val token = requireToken()
+            ?: return Result.failure(QuizApiException("Connectez-vous pour creer un quiz."))
+        if (title.isBlank()) {
+            return Result.failure(QuizApiException("Le titre du quiz est obligatoire."))
+        }
+        if (levels.isEmpty() || levels.all { it.questions.isEmpty() }) {
+            return Result.failure(QuizApiException("Ajoutez au moins une question."))
+        }
+        val resolvedTypeId = notionTypeId ?: run {
+            val code = (notionLabel ?: title).trim().take(12).uppercase().replace(" ", "_")
+            val created = api.createNotionType(
+                token,
+                QuizNotionTypeRequest(
+                    code = code.ifBlank { "DROIT" },
+                    label = notionLabel?.takeIf { it.isNotBlank() } ?: "Droit",
+                ),
+            ).getOrElse { return Result.failure(it) }
+            created.id ?: return Result.failure(QuizApiException("Type de notion introuvable."))
+        }
+        return api.createQuiz(
+            token,
+            QuizCreateRequest(
+                title = title.trim(),
+                description = description?.trim()?.takeIf { it.isNotBlank() },
+                notionTypeId = resolvedTypeId,
+                levels = levels,
+            ),
+        ).mapCatching { dto ->
+            dto.toSummary() ?: QuizSummary(
+                id = dto.id ?: 0L,
+                title = title.trim(),
+                description = description.orEmpty(),
+                notionTypeId = resolvedTypeId,
+                notionTypeLabel = notionLabel ?: "Quiz",
+                totalLevels = levels.size,
+            )
+        }.onSuccess { created ->
+            if (created.id > 0L) {
+                memoryCache = listOf(created) + cachedQuizzes().filter { it.id != created.id }
+                persistCache(cachedQuizzes())
+            }
+        }
+    }
+
+    fun history(): List<QuizSummary> = cachedQuizzes().filter { it.highestCompletedLevelOrder > 0 || it.completed }
 
     suspend fun recordLevelProgress(quizId: Long, levelOrder: Int, score: Double): Result<Unit> {
         val token = requireToken()

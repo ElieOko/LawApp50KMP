@@ -18,6 +18,13 @@ data class EvaluationSession(
     val startDate: String? = null,
     val endDate: String? = null,
     val compteurMinutes: Long? = null,
+    val publicationScope: String? = null,
+    val audienceMode: String? = null,
+    val accessCode: String? = null,
+    val classroomId: Long? = null,
+    val requiresCode: Boolean = false,
+    val unlocked: Boolean = true,
+    val isPrivate: Boolean = false,
 )
 
 enum class EvaluationStatus {
